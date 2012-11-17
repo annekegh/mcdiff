@@ -10,8 +10,6 @@ class Logger(object):
         nf = int(n/100)
         self.nf = nf
 
-        self.edges = MC.model.edges
-        self.wunit = MC.model.wunit
         # arrays
         self.v         = np.zeros((nf,MC.model.dim_v),float)
         self.w         = np.zeros((nf,MC.model.dim_w),float)
@@ -28,7 +26,6 @@ class Logger(object):
         if MC.do_radial:
           if MC.model.ncosDrad > 0:
             self.wrad_coeff   = np.zeros((nf,MC.model.ncosDrad),float)
-
 
     def log(self,j,MC):
         i = j/self.freq
@@ -74,7 +71,7 @@ class Logger(object):
             for i in range(self.v_coeff.shape[1]):
                 print i, np.mean(self.v_coeff[s:,i]),np.std(self.v_coeff[s:,i])
         if MC.model.ncosD > 0:
-            print "===== stat v_coeff ====="
+            print "===== stat w_coeff ====="
             for i in range(self.w_coeff.shape[1]):
                 print i, np.mean(self.w_coeff[s:,i]),np.std(self.w_coeff[s:,i])
         if MC.do_radial:

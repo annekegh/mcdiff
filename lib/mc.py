@@ -97,6 +97,7 @@ def find_parameters(filenames,pbc,dv,dw,dwrad,dtimezero,temp,temp_end,nmc,nmc_up
     MC.print_final(f)
     if outfile is not None:
         f.close()
+    logger.model = MC.model   # this is not a hard copy
     logger.statistics(MC)  #st=1000)
     logger.dump(picfile)
     return()
