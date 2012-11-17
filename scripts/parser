@@ -1,0 +1,112 @@
+#!/usr/bin/env python
+#
+# copyright: Gerhard Hummer (NIH, July 2012)
+# adapted by An Ghysels (August 2012)
+#
+
+
+import numpy as np
+
+from mcdiff.mc import find_parameters
+
+if __name__ == '__main__':
+    
+    from optparse import OptionParser
+    usage = "usage: %prog [options] file1 [file2 ...]"
+    version = "%prog Sept2012"
+    parser = OptionParser(usage=usage,version=version)
+    parser.add_option("-o","--outfile", dest="outfile", default=None,
+                      metavar="FILE",
+                      help="filename FILE where F and D results will be stored")
+    parser.add_option("--nopbc", dest="pbc", default=True,
+                      action="store_false",
+                      help="when no periodic boundary conditions should be used")
+    parser.add_option("--initf", dest="initfile", default=None,
+                      metavar="FILE",
+                      help="filename FILE with initial guess for F, D, dv, dw")
+    parser.add_option("-n","--nmc", dest="nmc", default=1000,
+                      type="int",
+                      help="number of Monte Carlo cycles")
+    parser.add_option("-T", dest="temp", default=1.,
+                      type="float", metavar="TEMP",
+                      help="temperature in parameter space in Monte Carlo run")
+    parser.add_option("--Tend", dest="temp_end", default=0.01,
+                      type="float",
+                      help="temperature in parameter space in Monte Carlo run, attained by updating every nmc_update steps")
+    parser.add_option("--nbins", dest="nbins", default=None,
+                      type="int",
+                      help="number of bins (usually equals number of edges minus one)")
+    #parser.add_option("--dt", dest="dt", default=1.,   # in ps   # TODO this just the unit
+    #                  type="float",
+    #                  help="time step in ps between snapshots, so this is unit for lagtimes")
+    parser.add_option("--dv", dest="dv", default=0.5,   # in kBT, T is parameter temperature
+                      type="float",
+                      help="potential Monte Carlo move width")
+    parser.add_option("--dw", dest="dw", default=0.5,
+                      type="float",
+                      help="log(diffusion) Monte Carlo move width")
+    parser.add_option("--dwrad", dest="dwrad", default=0.5,
+                      type="float",
+                      help="log(diffusion) Monte Carlo move width")
+
+    parser.add_option("--nmc_update", dest="nmc_update", default=100,
+                      type="float", metavar="nmc_update",
+                      help="number of moves between Monte Carlo step width/temp adjustments (0 if no adjustment)")
+
+    parser.add_option("-s","--seed", dest="seed", default=None,
+                      type="int", metavar="SEED",
+                      help="SEED of the random generator")
+
+    parser.add_option("--ncosF", dest="ncosF", default=0,
+                      type="int", metavar="NCOSF",
+                      help="Switches basis set of cosinus' on, for the free energy profile. NCOSF is the number of basis set functions.")
+    parser.add_option("--ncosD", dest="ncosD", default=0,
+                      type="int", metavar="NCOSD",
+                      help="Switches basis set of cosinus' on, for the diffusion profile. NCOSD is the number of basis set functions.")
+    parser.add_option("--ncosDrad", dest="ncosDrad", default=0,
+                      type="int", metavar="NCOSDRAD",
+                      help="Switches basis set of cosinus' on, for the radial diffusion profile. NCOSDRAD is the number of basis set functions.")
+
+    parser.add_option("-k", dest="k", default=-1,
+                      type="float", metavar="K",
+                      help="spring constant to keep D profile smoother")
+    parser.add_option("--t0", dest="move_timezero", default=False,
+                      action="store_true",
+                      help="Also make the time offset a variable.")
+    parser.add_option("--dt0", dest="dtimezero", default=0.1,   # in ps
+                      type="float",
+                      help="time offset (timezero t0) Monte Carlo move width")
+
+    parser.add_option("--rad", dest="lmax", default=-1,   # in ps
+                      type="int", metavar="LMAX",
+                      help="Solve radial diffusion equation with LMAX Bessel functions")
+
+    # Monte Carlo parameters
+    #dt  = 1.                      # time step in ps between snapshots, kind of unit for lag times
+    #dv = 0.5                      # v=potential MC move width
+    #dw = 0.5                      # w=log(D) MC move width
+    #temp = .01                    # effective temperature used in MC sampling of posterior
+    #nmc = 10000                   # number of MC moves
+    #num_MC_update = 100           # number of moves between MC step width adjustments
+                                   #     (0 if no adjustment)
+
+    (options, args) = parser.parse_args()
+    print "options:"
+    print options.__dict__
+    print "args:"
+    print args
+    # check arguments
+    assert len(args) >= 1
+    print "="*20
+    find_parameters(args, options.pbc, 
+                options.dv, options.dw, options.dwrad, options.dtimezero,
+                options.temp, options.temp_end,
+                options.nmc, options.nmc_update,
+                options.seed,
+                options.outfile,
+                options.ncosF, options.ncosD, options.ncosDrad,
+                options.move_timezero,
+                options.initfile,
+                options.k,
+                options.lmax)
+

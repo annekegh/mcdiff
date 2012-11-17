@@ -1,0 +1,92 @@
+#!/bin/env/python
+
+import sys
+from mcdiff.outreading import read_many_profiles
+from mcdiff.outreading import read_many_profiles_Drad
+from mcdiff.plot import make_plots
+
+if __name__ == '__main__':
+
+    from optparse import OptionParser
+    usage = "usage: %prog [options] file1 [file2 ...]"
+    version = "%prog Sept2012"
+    parser = OptionParser(usage=usage,version=version)
+
+    parser.add_option("-o","--outfile", dest="outfile", default=None,
+                      metavar="FILE",
+                      help="basename FILE of the figures with the free energy and diffusion constant profiles")
+    parser.add_option("--ave", dest="ave", default=False,
+                      action="store_true",
+                      help="whether to plot the averages of the list of filenames as well")
+    parser.add_option("-t", dest="title", default=None,
+                      metavar="TITLE",
+                      help="TITLE will be added to the title of the plots")
+    parser.add_option("--rad", dest="do_rad", default=False,
+                      action='store_true',
+                      help="whether to plot the radial diffusion coefficient")
+    parser.add_option("--pic", dest="pic", default=False,
+                      action='store_true',
+                      help="whether to plot the information in a Pickled Object (logger)")
+
+
+    (options, args) = parser.parse_args()
+    print "options:"
+    print options.__dict__
+    print "args:"
+    print args
+    # check arguments
+    assert len(args) >= 1
+    print "="*20
+    list_filenames = args
+
+    if options.outfile is None:
+        options.outfile = "all"
+
+    options.pbc = True   # TODO make this optional (whether to plot the profile twice
+
+    options.grey = True   # TODO make this optional
+
+
+
+    if options.pic: options.ave = True
+
+    """    F,D,edges = read_many_profiles(list_filenames)
+    make_plots(F,D,edges,options.outfile,pbc=options.pbc,
+           legend=range(len(list_filenames)),
+           grey=options.grey, 
+           title=options.title)
+
+    if options.ave:
+        F,D,edges = read_many_profiles(list_filenames,ave=True)
+        make_plots(F,D,edges,options.outfile+"_ave",pbc=options.pbc)
+    """
+    figname = options.outfile
+    if options.ave: figname += "_ave"
+
+    if (len(list_filenames) > 1 and options.ave) or (len(list_filenames)==1 and options.pic):
+        if options.do_rad:
+           F,D,Drad,edges,Fst,Dst = read_many_profiles_Drad(list_filenames,ave=options.ave)  #### pic
+        else:
+           F,D,edges,Fst,Dst = read_many_profiles(list_filenames,ave=options.ave,pic=options.pic)
+           Drad = None
+        make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
+           legend=range(len(list_filenames)),
+           grey=options.grey,
+           title=options.title,error=[Fst,Dst])
+
+    elif len(list_filenames) >= 1 :
+        if options.do_rad:
+           F,D,Drad,edges = read_many_profiles_Drad(list_filenames,pic=options.pic)
+        else:
+           F,D,edges = read_many_profiles(list_filenames,pic=options.pic)
+           Drad = None
+        make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
+           legend=range(len(list_filenames)),
+           grey=options.grey,
+           title=options.title,)
+
+    else:
+        raise Error("No filenames in list_filenames.")
+
+
+
