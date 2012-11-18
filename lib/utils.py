@@ -126,3 +126,36 @@ def log_like_lag(num_bin,num_lag, v,w,lagtimes,transition, pbc):
     return log_like
 
 
+# TODO
+def calc_overlap_basis(p_basis):
+    L = len(p_basis)
+    overlap = np.zeros((L,L),float)
+    for i in xrange(L):
+        for j in np.arange(j,L):
+            a = np.sum(p_basis[:,i]*p_basis[:,j])
+            overlap[i,j] = a
+            overlap[j,i] = a
+    return overlap
+
+def calc_rhs_diffusionequation_basisfunctions(p_basis,rate):
+    L = len(p_basis)
+    rhs = np.zeros((L,L),float)
+    for i in xrange(L):
+        for j in xrange(L):
+            a = np.sum(p_basis[:,i]*p_basis[:,j]*rate[:,j])  # I can do this better  TODO might be wrong
+            rhs[i,j] = a
+    return rhs
+
+
+def log_likelihood_basis(transition,p_basis,rate,lagtime):
+    overlap = calc_overlap_basis(p_basis)
+    rhs = calc_rhs_diffusionequation_basisfunctions(p_basis,rate)
+    vals,vecs = np.linalg.eig(np.dot(np.inv(overlap),rhs))
+
+    # lagtime:
+    prop = np.sum(vecs*np.exp(lagtime*vals),axis=X)
+
+    pass
+    # TODO
+
+
