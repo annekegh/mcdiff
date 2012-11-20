@@ -27,6 +27,9 @@ if __name__ == '__main__':
     parser.add_option("--pic", dest="pic", default=False,
                       action='store_true',
                       help="whether to plot the information in a Pickled Object (logger)")
+    parser.add_option("--transparent", dest="transparent", default=False,
+                      action='store_true',
+                      help="whether to save a transparent plot")
 
 
     (options, args) = parser.parse_args()
@@ -47,19 +50,9 @@ if __name__ == '__main__':
     options.grey = True   # TODO make this optional
 
 
-
     if options.pic: options.ave = True
 
-    """    F,D,edges = read_many_profiles(list_filenames)
-    make_plots(F,D,edges,options.outfile,pbc=options.pbc,
-           legend=range(len(list_filenames)),
-           grey=options.grey, 
-           title=options.title)
 
-    if options.ave:
-        F,D,edges = read_many_profiles(list_filenames,ave=True)
-        make_plots(F,D,edges,options.outfile+"_ave",pbc=options.pbc)
-    """
     figname = options.outfile
     if options.ave: figname += "_ave"
 
@@ -69,21 +62,26 @@ if __name__ == '__main__':
         else:
            F,D,edges,Fst,Dst = read_many_profiles(list_filenames,ave=options.ave,pic=options.pic)
            Drad = None
+
         make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
            legend=range(len(list_filenames)),
            grey=options.grey,
-           title=options.title,error=[Fst,Dst])
+           title=options.title,error=[Fst,Dst],
+           transparent=options.transparent)
 
+    # NO ERROR BARS
     elif len(list_filenames) >= 1 :
         if options.do_rad:
            F,D,Drad,edges = read_many_profiles_Drad(list_filenames,pic=options.pic)
         else:
            F,D,edges = read_many_profiles(list_filenames,pic=options.pic)
            Drad = None
+
         make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
            legend=range(len(list_filenames)),
            grey=options.grey,
-           title=options.title,)
+           title=options.title,
+           transparent=options.transparent)
 
     else:
         raise Error("No filenames in list_filenames.")

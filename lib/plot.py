@@ -27,7 +27,7 @@ plotsettings()
 
 
 def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
-           error=None):
+           error=None,transparent=False):
     # assume F in units kBT
     dx = edges[1]-edges[0]
     x = edges[:len(F)]+dx/2.
@@ -54,9 +54,10 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
     plt.ylabel("F [kBT]")
     plt.title(title)
     plt.ylim(0,5)
-    plt.savefig(filename)
+    plt.savefig(filename,transparent=transparent)
 
-def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,error=None):
+def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
+           error=None,transparent=False):
     # assume D in units angstrom**2/ps
     dx = edges[1]-edges[0]
     x = edges[:len(D)]+dx    # if periodic, then one more than if non-periodic
@@ -83,9 +84,10 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,er
     plt.title(title)
     if legend is not None and error is None:
         plt.legend(legend)
-    plt.savefig(filename)
+    plt.savefig(filename,transparent=transparent)
 
-def plot_Drad(D,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,error=None):
+def plot_Drad(D,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,
+              error=None,transparent=False):
     # assume D in units angstrom**2/ps
     dx = edges[1]-edges[0]
     x = edges[:len(D)]+dx/2.    # if periodic, then one more than if non-periodic
@@ -112,10 +114,10 @@ def plot_Drad(D,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=F
     plt.title(title)
     if legend is not None and error is None:
         plt.legend(legend)
-    plt.savefig(filename)
+    plt.savefig(filename,transparent=transparent)
 
 
-def plot_both(F,D,filename,edges):
+def plot_both(F,D,filename,edges,transparent=False):
     dx = edges[1]-edges[0]
     x_F = edges[:len(F)] + dx/2.  # these are the middle points of the bins
     x_D = edges[:len(D)] + dx  # if periodic, then one more than if non-periodic
@@ -130,9 +132,9 @@ def plot_both(F,D,filename,edges):
     plt.ylabel("D [A^2/ps]")
     plt.xlabel("z [A]")
 
-    plt.savefig(filename)
+    plt.savefig(filename,transparent=transparent)
 
-def plot_three(F,D,Drad,filename,edges):
+def plot_three(F,D,Drad,filename,edges,transparent=False):
     dx = edges[1]-edges[0]
     x_F = edges[:len(F)] + dx/2.  # these are the middle points of the bins
     x_D = edges[:len(D)] + dx  # if periodic, then one more than if non-periodic
@@ -152,7 +154,7 @@ def plot_three(F,D,Drad,filename,edges):
     plt.ylabel("Drad [A^2/ps]")
     plt.xlabel("z [A]")
 
-    plt.savefig(filename)
+    plt.savefig(filename,transparent=transparent)
 
 def plot_ratio(D,Drad,filename,edges):
     dx = edges[1]-edges[0]
@@ -170,7 +172,8 @@ def plot_ratio(D,Drad,filename,edges):
         # TODO
     plt.savefig(filename)
 
-def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=None,error=None,):
+def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=None,error=None,
+    transparent=False):
     outF = filename+"_F.png"
     outD = filename+"_D.png"
     outDrad = filename+"_Drad.png"
@@ -184,12 +187,12 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=Non
         Fst = None
         Dst = None
 
-    plot_F(F,outF,edges,pbc=pbc,grey=grey,title=title,error=Fst)
-    plot_D(D,outD,edges,pbc=pbc,legend=legend,grey=grey,title=title,error=Dst)
+    plot_F(F,outF,edges,pbc=pbc,grey=grey,title=title,error=Fst,transparent=transparent)
+    plot_D(D,outD,edges,pbc=pbc,legend=legend,grey=grey,title=title,error=Dst,transparent=transparent)
     if Drad is not None:
-        plot_Drad(Drad,outDrad,edges,pbc=pbc,legend=legend,grey=grey,title=title,)
-        plot_three(F,D,Drad,outboth,edges,)
-        plot_ratio(D,Drad,outDratio,edges)
+        plot_Drad(Drad,outDrad,edges,pbc=pbc,legend=legend,grey=grey,title=title,transparent=transparent)
+        plot_three(F,D,Drad,outboth,edges,transparent=transparent)
+        plot_ratio(D,Drad,outDratio,edges,transparent=transparent)
     else:
         plot_both(F,D,outboth,edges,)
 
