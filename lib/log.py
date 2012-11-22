@@ -26,6 +26,8 @@ class Logger(object):
         if MC.model.ncosD > 0:
             self.w_coeff   = np.zeros((nf,MC.model.ncosD),float)
         if MC.do_radial:
+          self.wrad = np.zeros((nf),float)
+          self.dwrad = np.zeros((nf),float)
           if MC.model.ncosDrad > 0:
             self.wrad_coeff   = np.zeros((nf,MC.model.ncosDrad),float)
 
@@ -47,6 +49,8 @@ class Logger(object):
             if MC.model.ncosD > 0:
                 self.w_coeff[i,:] = MC.model.w_coeff
             if MC.do_radial:
+              self.dwrad[i,:] = MC.model.dwrad
+              self.wrad[i,:] = MC.model.w
               if MC.model.ncosDrad > 0:
                 self.wrad_coeff[i,:] = MC.model.wrad_coeff
 
@@ -80,10 +84,13 @@ class Logger(object):
             for i in range(self.w_coeff.shape[1]):
                 print i, np.mean(self.w_coeff[s:,i]),np.std(self.w_coeff[s:,i])
         if MC.do_radial:
+          print "===== stat wrad ====="
+          for i in range(self.wrad.shape[1]):
+              print i, np.mean(self.wrad[s:,i]),np.std(self.wrad[s:,i])
           if MC.model.ncosDrad > 0:
-            print "===== stat w_coeff ====="
-            for i in range(self.wrad_coeff.shape[1]):
-                print i, np.mean(self.wrad_coeff[s:,i]),np.std(self.wrad_coeff[s:,i])
+              print "===== stat w_coeff ====="
+              for i in range(self.wrad_coeff.shape[1]):
+                  print i, np.mean(self.wrad_coeff[s:,i]),np.std(self.wrad_coeff[s:,i])
 
 
 
