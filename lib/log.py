@@ -24,7 +24,7 @@ class Logger(object):
         if MC.model.ncosD > 0:
             self.w_coeff   = np.zeros((nf,MC.model.ncosD),float)
         if MC.do_radial:
-          self.wrad = np.zeros((nf),float)
+          self.wrad = np.zeros((nf,MC.model.dim_wrad),float)
           self.dwrad = np.zeros((nf),float)
           if MC.model.ncosDrad > 0:
             self.wrad_coeff   = np.zeros((nf,MC.model.ncosDrad),float)
@@ -46,7 +46,7 @@ class Logger(object):
             if MC.model.ncosD > 0:
                 self.w_coeff[i,:] = MC.model.w_coeff
             if MC.do_radial:
-              self.dwrad[i,:] = MC.model.dwrad
+              self.dwrad[:] = MC.dwrad
               self.wrad[i,:] = MC.model.w
               if MC.model.ncosDrad > 0:
                 self.wrad_coeff[i,:] = MC.model.wrad_coeff
