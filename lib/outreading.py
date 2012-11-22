@@ -66,6 +66,7 @@ def read_Drad(filename):
     return np.array(D),np.array(edges)
 
 def read_many_profiles_Drad(list_filename,ave=False,pic=False):
+  print "pic",pic
   if pic:
     from mcdiff.log import load_logger
     if len(list_filename) == 1:
@@ -73,13 +74,13 @@ def read_many_profiles_Drad(list_filename,ave=False,pic=False):
     else:
         raise ValueError("list_filename should contain one pickled object in current implementation")
     if ave:
+        F,D,edges,Fst,Dst = read_F_D_edges_logger(logger,ave)
         Drad,redges,Dradst = read_Drad_logger(logger,ave)
-        print "doing average"
-        return Drad,redges,Dradst
+        return F,D,Drad,edges,Fst,Dst,Dradst
     else:
+        F,D,edges = read_F_D_edges_logger(logger,ave)
         Drad,redges = read_Drad_logger(logger,ave)
-        print Drad,redges
-        return Drad,redges
+        return F,D,Drad,edges
 
   else:
  
@@ -256,12 +257,14 @@ def read_F_D_edges_logger(logger,ave=False):
         return F,D,edges
 
 def read_Drad_logger(logger,ave=False):
-    Wrad = np.mean(logger.wrad,0)
+    #TODO Wrad = np.mean(logger.wrad,0)
+    Wrad = logger.model.wrad  ############ TODO
     wradunit = logger.model.wradunit
     Drad = np.exp(Wrad+wradunit)
     redges = logger.model.redges
     if ave:
-        Wradst = np.std(logger.wrad,0)
+        #Wradst = np.std(logger.wrad,0)                # TODO
+        Wradst = np.zeros(len(Wrad))
         Dradst = Drad*(np.exp(Wradst)-1)
         return Drad,redges,Dradst
     else:

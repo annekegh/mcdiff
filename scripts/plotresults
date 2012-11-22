@@ -56,9 +56,13 @@ if __name__ == '__main__':
     figname = options.outfile
     if options.ave: figname += "_ave"
 
+
+    print options.pic
+
     if (len(list_filenames) > 1 and options.ave) or (len(list_filenames)==1 and options.pic):
         if options.do_rad:
-           F,D,Drad,edges,Fst,Dst = read_many_profiles_Drad(list_filenames,ave=options.ave)  #### pic
+           print options.pic
+           F,D,Drad,edges,Fst,Dst,Dradst = read_many_profiles_Drad(list_filenames,ave=options.ave,pic=options.pic)
         else:
            F,D,edges,Fst,Dst = read_many_profiles(list_filenames,ave=options.ave,pic=options.pic)
            Drad = None
@@ -66,7 +70,7 @@ if __name__ == '__main__':
         make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
            legend=range(len(list_filenames)),
            grey=options.grey,
-           title=options.title,error=[Fst,Dst],
+           title=options.title,error=[Fst,Dst,Dradst],
            transparent=options.transparent)
 
     # NO ERROR BARS
