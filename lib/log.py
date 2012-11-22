@@ -7,7 +7,7 @@ class Logger(object):
         n = MC.nmc
         self.nmc = n
         self.freq = 100
-        nf = int(n/100)
+        nf = n/100+1
         self.nf = nf
 
         self.edges = MC.model.edges
@@ -32,21 +32,23 @@ class Logger(object):
 
     def log(self,j,MC):
         i = j/self.freq
-        self.v[i,:]       = MC.model.v
-        self.w[i,:]       = MC.model.w
-        self.log_like[i]  = MC.log_like
-        self.timezero[i]  = MC.model.timezero
-        self.dv[i]        = MC.dv
-        self.dw[i]        = MC.dw
-        self.dtimezero[i] = MC.dtimezero
-        #self.Ew[i]        = MC.Ew
-        if MC.model.ncosF > 0:
-            self.v_coeff[i,:] = MC.model.v_coeff
-        if MC.model.ncosD > 0:
-            self.w_coeff[i,:] = MC.model.w_coeff
-        if MC.do_radial:
-          if MC.model.ncosDrad > 0:
-            self.wrad_coeff[i,:] = MC.model.wrad_coeff
+        if i*self.freq == j:
+            print i,j,self.freq,self.v.shape,MC.model.v.shape
+            self.v[i,:]       = MC.model.v
+            self.w[i,:]       = MC.model.w
+            self.log_like[i]  = MC.log_like
+            self.timezero[i]  = MC.model.timezero
+            self.dv[i]        = MC.dv
+            self.dw[i]        = MC.dw
+            self.dtimezero[i] = MC.dtimezero
+            #self.Ew[i]        = MC.Ew
+            if MC.model.ncosF > 0:
+                self.v_coeff[i,:] = MC.model.v_coeff
+            if MC.model.ncosD > 0:
+                self.w_coeff[i,:] = MC.model.w_coeff
+            if MC.do_radial:
+              if MC.model.ncosDrad > 0:
+                self.wrad_coeff[i,:] = MC.model.wrad_coeff
 
     def dump(self,filename):
         #f = file(filename+"2","w+")
