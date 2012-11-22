@@ -156,7 +156,7 @@ def plot_three(F,D,Drad,filename,edges,transparent=False):
 
     plt.savefig(filename,transparent=transparent)
 
-def plot_ratio(D,Drad,filename,edges):
+def plot_ratio(D,Drad,filename,edges,transparent=False):
     dx = edges[1]-edges[0]
     #x_D = edges[:len(D)] + dx  # if periodic, then one more than if non-periodic
     #x_Drad = edges[:len(Drad)] + dx/2.  # these are the middle points of the bins
@@ -170,7 +170,7 @@ def plot_ratio(D,Drad,filename,edges):
     if len(D) != len(Drad):  # if not periodic...
         ratio = Drad[-nc:]/D[-nc:]
         # TODO
-    plt.savefig(filename)
+    plt.savefig(filename,transparent=transparent)
 
 def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=None,error=None,
     transparent=False):

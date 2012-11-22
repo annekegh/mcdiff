@@ -65,7 +65,24 @@ def read_Drad(filename):
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
     return np.array(D),np.array(edges)
 
-def read_many_profiles_Drad(list_filename,ave=False):
+def read_many_profiles_Drad(list_filename,ave=False,pic=False):
+  if pic:
+    from mcdiff.log import load_logger
+    if len(list_filename) == 1:
+        logger = load_logger(list_filename[0])
+    else:
+        raise ValueError("list_filename should contain one pickled object in current implementation")
+    if ave:
+        Drad,redges,Dradst = read_Drad_logger(logger,ave)
+        print "doing average"
+        return Drad,redges,Dradst
+    else:
+        Drad,redges = read_Drad_logger(logger,ave)
+        print Drad,redges
+        return Drad,redges
+
+  else:
+ 
     F = []
     D = []
     Drad = []
@@ -237,4 +254,16 @@ def read_F_D_edges_logger(logger,ave=False):
         return F,D,edges,Fst,Dst
     else:
         return F,D,edges
+
+def read_Drad_logger(logger,ave=False):
+    Wrad = np.mean(logger.wrad,0)
+    wradunit = logger.model.wradunit
+    Drad = np.exp(Wrad+wradunit)
+    redges = logger.model.redges
+    if ave:
+        Wradst = np.std(logger.wrad,0)
+        Dradst = Drad*(np.exp(Wradst)-1)
+        return Drad,redges,Dradst
+    else:
+        return Drad,redges
 
