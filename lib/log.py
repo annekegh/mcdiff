@@ -46,8 +46,8 @@ class Logger(object):
             if MC.model.ncosD > 0:
                 self.w_coeff[i,:] = MC.model.w_coeff
             if MC.do_radial:
-              self.dwrad[:] = MC.dwrad
-              self.wrad[i,:] = MC.model.w
+              self.dwrad[i] = MC.dwrad
+              self.wrad[i,:] = MC.model.wrad
               if MC.model.ncosDrad > 0:
                 self.wrad_coeff[i,:] = MC.model.wrad_coeff
 

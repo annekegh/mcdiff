@@ -57,11 +57,9 @@ if __name__ == '__main__':
     if options.ave: figname += "_ave"
 
 
-    print options.pic
 
     if (len(list_filenames) > 1 and options.ave) or (len(list_filenames)==1 and options.pic):
         if options.do_rad:
-           print options.pic
            F,D,Drad,edges,Fst,Dst,Dradst = read_many_profiles_Drad(list_filenames,ave=options.ave,pic=options.pic)
         else:
            F,D,edges,Fst,Dst = read_many_profiles(list_filenames,ave=options.ave,pic=options.pic)
@@ -89,6 +87,5 @@ if __name__ == '__main__':
 
     else:
         raise Error("No filenames in list_filenames.")
-
 
 

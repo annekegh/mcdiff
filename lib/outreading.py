@@ -73,13 +73,11 @@ def read_many_profiles_Drad(list_filename,ave=False,pic=False):
         logger = load_logger(list_filename[0])
     else:
         raise ValueError("list_filename should contain one pickled object in current implementation")
+    F,D,edges,Fst,Dst = read_F_D_edges_logger(logger)
+    Drad,redges,Dradst = read_Drad_logger(logger)
     if ave:
-        F,D,edges,Fst,Dst = read_F_D_edges_logger(logger,ave)
-        Drad,redges,Dradst = read_Drad_logger(logger,ave)
         return F,D,Drad,edges,Fst,Dst,Dradst
     else:
-        F,D,edges = read_F_D_edges_logger(logger,ave)
-        Drad,redges = read_Drad_logger(logger,ave)
         return F,D,Drad,edges
 
   else:
@@ -125,14 +123,12 @@ def read_many_profiles(list_filename,ave=False,pic=False):
         logger = load_logger(list_filename[0])
     else:
         raise ValueError("list_filename should contain one pickled object in current implementation")
+    F,D,edges,Fst,Dst = read_F_D_edges_logger(logger)
+    F -= min(F)
     if ave:
-        F,D,edges,Fst,Dst = read_F_D_edges_logger(logger,ave)
-        F -= min(F)
         print "doing average"
         return F,D,edges,Fst,Dst
     else:
-        F,D,edges = read_F_D_edges_logger(logger,ave)
-        F -= min(F)
         return F,D,edges
 
   else:
@@ -242,31 +238,34 @@ def read_dv_dw(filename,final=False):
     f.close()
     return dv,dw
 
-def read_F_D_edges_logger(logger,ave=False):
+def read_F_D_edges_logger(logger):
     F = np.mean(logger.v,0)
     W = np.mean(logger.w,0)
     wunit = logger.model.wunit
     D = np.exp(W+wunit)
     edges = logger.model.edges
-    if ave:
-        Fst = np.std(logger.v,0)
-        Wst = np.std(logger.w,0)
-        Dst = D*(np.exp(Wst)-1)
-        return F,D,edges,Fst,Dst
-    else:
-        return F,D,edges
+    Fst = np.std(logger.v,0)
+    Wst = np.std(logger.w,0)
+    Dst = D*(np.exp(Wst)-1)
+    return F,D,edges,Fst,Dst
 
-def read_Drad_logger(logger,ave=False):
-    #TODO Wrad = np.mean(logger.wrad,0)
-    Wrad = logger.model.wrad  ############ TODO
+def read_Drad_logger(logger):
     wradunit = logger.model.wradunit
+    Wrad = np.mean(logger.wrad,0)
     Drad = np.exp(Wrad+wradunit)
     redges = logger.model.redges
-    if ave:
-        #Wradst = np.std(logger.wrad,0)                # TODO
-        Wradst = np.zeros(len(Wrad))
-        Dradst = Drad*(np.exp(Wradst)-1)
-        return Drad,redges,Dradst
-    else:
-        return Drad,redges
+    Wradst = np.std(logger.wrad,0)
+    Dradst = Drad*(np.exp(Wradst)-1)
+
+#  TODO  fix
+    wrad_coeff = np.mean(logger.wrad_coeff,0)
+    Wrad = logger.model.calc_profile(wrad_coeff,logger.model.wrad_basis)
+    Drad = np.exp(Wrad+wradunit)
+
+    wrad_coeffst = np.std(logger.wrad_coeff,0)
+    wradpluswradst = logger.model.calc_profile(wrad_coeff+wrad_coeffst,logger.model.wrad_basis)
+    Wradst = wradpluswradst - Wrad
+    Dradst = Drad*(np.exp(Wradst)-1)
+
+    return Drad,redges,Dradst
 

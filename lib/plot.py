@@ -183,14 +183,17 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=Non
     if error is not None:
         Fst = error[0]
         Dst = error[1]
+        if Drad is not None:
+            Dradst = error[2]
     else:
         Fst = None
         Dst = None
+        Dradst = None
 
     plot_F(F,outF,edges,pbc=pbc,grey=grey,title=title,error=Fst,transparent=transparent)
     plot_D(D,outD,edges,pbc=pbc,legend=legend,grey=grey,title=title,error=Dst,transparent=transparent)
     if Drad is not None:
-        plot_Drad(Drad,outDrad,edges,pbc=pbc,legend=legend,grey=grey,title=title,transparent=transparent)
+        plot_Drad(Drad,outDrad,edges,pbc=pbc,legend=legend,grey=grey,title=title,transparent=transparent,error=Dradst)
         plot_three(F,D,Drad,outboth,edges,transparent=transparent)
         plot_ratio(D,Drad,outDratio,edges,transparent=transparent)
     else:
