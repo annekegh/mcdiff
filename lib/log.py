@@ -11,30 +11,31 @@ class Logger(object):
         self.nf = nf
 
         # arrays
-        self.v         = np.zeros((nf,MC.model.dim_v),float)
-        self.w         = np.zeros((nf,MC.model.dim_w),float)
         self.log_like  = np.zeros((nf),float)
         self.timezero  = np.zeros((nf),float)
         self.dv        = np.zeros((nf),float)
         self.dw        = np.zeros((nf),float)
         self.dtimezero = np.zeros((nf),float)
         #self.Ew        = np.zeros((nf),float)
-        if MC.model.ncosF > 0:
-            self.v_coeff   = np.zeros((nf,MC.model.ncosF),float)
-        if MC.model.ncosD > 0:
-            self.w_coeff   = np.zeros((nf,MC.model.ncosD),float)
+        if MC.model.ncosF <= 0:
+            self.v       = np.zeros((nf,MC.model.dim_v),float)
+        else:
+            self.v_coeff = np.zeros((nf,MC.model.ncosF),float)
+        if MC.model.ncosD <= 0:
+            self.w       = np.zeros((nf,MC.model.dim_w),float)
+        else:
+            self.w_coeff = np.zeros((nf,MC.model.ncosD),float)
         if MC.do_radial:
-          self.wrad = np.zeros((nf,MC.model.dim_wrad),float)
-          self.dwrad = np.zeros((nf),float)
-          if MC.model.ncosDrad > 0:
-            self.wrad_coeff   = np.zeros((nf,MC.model.ncosDrad),float)
+            self.dwrad = np.zeros((nf),float)
+            if MC.model.ncosDrad <= 0:
+                self.wrad = np.zeros((nf,MC.model.dim_wrad),float)
+            else:
+                self.wrad_coeff = np.zeros((nf,MC.model.ncosDrad),float)
 
     def log(self,j,MC):
         i = j/self.freq
         if i*self.freq == j:
-            print i,j,self.freq,self.v.shape,MC.model.v.shape
-            self.v[i,:]       = MC.model.v
-            self.w[i,:]       = MC.model.w
+            #print i,j,self.freq,self.v.shape,MC.model.v.shape
             self.log_like[i]  = MC.log_like
             self.timezero[i]  = MC.model.timezero
             self.dv[i]        = MC.dv
@@ -43,52 +44,78 @@ class Logger(object):
             #self.Ew[i]        = MC.Ew
             if MC.model.ncosF > 0:
                 self.v_coeff[i,:] = MC.model.v_coeff
+            else:
+                self.v[i,:]       = MC.model.v
             if MC.model.ncosD > 0:
                 self.w_coeff[i,:] = MC.model.w_coeff
+            else:
+                self.w[i,:]       = MC.model.w
             if MC.do_radial:
-              self.dwrad[:] = MC.dwrad
-              self.wrad[i,:] = MC.model.w
-              if MC.model.ncosDrad > 0:
-                self.wrad_coeff[i,:] = MC.model.wrad_coeff
+                self.dwrad[i] = MC.dwrad
+                if MC.model.ncosDrad > 0:
+                    self.wrad_coeff[i,:] = MC.model.wrad_coeff
+                else:
+                    self.wrad[i,:] = MC.model.wrad
+
+    def prettyprint(self,f):
+        #f = file(filename+"2","w+")
+        from pprint import pprint
+        pprint (vars(self))
+        for attr in dir(self):
+            print >> f, "obj.%s = %s" % (attr, getattr(self, attr))
+        #f.close()
 
     def dump(self,filename):
-        #f = file(filename+"2","w+")
-        #from pprint import pprint
-        #pprint (vars(self))
-        #for attr in dir(self):
-        #    print >> f, "obj.%s = %s" % (attr, getattr(self, attr))
-        #f.close()
         f = file(filename,"w+")
         import pickle
         pickle.dump(self,f)
         f.close()
 
     def statistics(self,MC,st=0) : #f):
-        s = st/self.nf
+        s = st/self.freq
         # st  --  start (cutting out the first MC steps)
-        print "===== stat v ====="
-        for i in range(self.v.shape[1]):
-            print i, np.mean(self.v[s:,i]),np.std(self.v[s:,i])
-        print "===== stat w ====="
-        for i in range(self.w.shape[1]):
-            print i, np.mean(self.w[s:,i]),np.std(self.w[s:,i])
-        if MC.model.ncosF > 0:
-            print "===== stat v_coeff ====="
-            for i in range(self.v_coeff.shape[1]):
-                print i, np.mean(self.v_coeff[s:,i]),np.std(self.v_coeff[s:,i])
-        if MC.model.ncosD > 0:
-            print "===== stat w_coeff ====="
-            for i in range(self.w_coeff.shape[1]):
-                print i, np.mean(self.w_coeff[s:,i]),np.std(self.w_coeff[s:,i])
-        if MC.do_radial:
-          print "===== stat wrad ====="
-          for i in range(self.wrad.shape[1]):
-              print i, np.mean(self.wrad[s:,i]),np.std(self.wrad[s:,i])
-          if MC.model.ncosDrad > 0:
-              print "===== stat w_coeff ====="
-              for i in range(self.wrad_coeff.shape[1]):
-                  print i, np.mean(self.wrad_coeff[s:,i]),np.std(self.wrad_coeff[s:,i])
+        if s >= self.nf:
+            print "WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s)
 
+        def print_vector(vec,s):
+            print "VEC",vec.shape
+            assert len(vec.shape) == 2
+            for i in range(vec.shape[1]):
+                print i, np.mean(vec[s:,i]),np.std(vec[s:,i])
+
+        print "===== stat v ====="
+        if MC.model.ncosF <= 0:
+            print_vector(self.v,s)
+        else:
+            vec = np.zeros((nf,MC.model.dim_v),float)
+            for i in range(len(vec)):
+                vec[i,:] = MC.model.calc_profile(self.v_coeff[i,:],MC.model.v_basis)
+            print_vector(vec,s)
+            print "===== stat v_coeff ====="
+            print_vector(self.v_coeff,s)
+
+        print "===== stat w ====="
+        if MC.model.ncosD <= 0:
+            print_vector(self.w,s)
+        else:
+            vec = np.zeros((nf,MC.model.dim_w),float)
+            for i in range(len(vec)):
+                vec[i,:] = MC.model.calc_profile(self.w_coeff[i,:],MC.model.w_basis)
+            print_vector(vec,s)
+            print "===== stat w_coeff ====="
+            print_vector(self.w_coeff,s)
+
+        if MC.do_radial:
+            print "===== stat wrad ====="
+            if MC.model.ncosDrad <= 0:
+                print_vector(self.wrad,s)
+            else:
+                vec = np.zeros((nf,MC.model.dim_wrad),float)
+                for i in range(len(vec)):
+                    vec[i,:] = MC.model.calc_profile(self.wrad_coeff[i,:],MC.model.wrad_basis)
+                print_vector(vec,s)
+                print "===== stat wrad_coeff ====="
+                print_vector(self.wrad_coeff)
 
 
 def load_logger(filename):
@@ -98,5 +125,4 @@ def load_logger(filename):
     pic = pickle.load(f)
     f.close()
     return pic
-
 
