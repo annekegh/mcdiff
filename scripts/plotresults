@@ -30,6 +30,9 @@ if __name__ == '__main__':
     parser.add_option("--transparent", dest="transparent", default=False,
                       action='store_true',
                       help="whether to save a transparent plot")
+    parser.add_option("--nopbc", dest="pbc", default=True,
+                      action='store_false',
+                      help="plot the profiles only once (instead of twice when periodic boundaries are used)")
 
 
     (options, args) = parser.parse_args()
@@ -45,7 +48,6 @@ if __name__ == '__main__':
     if options.outfile is None:
         options.outfile = "all"
 
-    options.pbc = True   # TODO make this optional (whether to plot the profile twice
 
     options.grey = True   # TODO make this optional
 
@@ -64,6 +66,7 @@ if __name__ == '__main__':
         else:
            F,D,edges,Fst,Dst = read_many_profiles(list_filenames,ave=options.ave,pic=options.pic)
            Drad = None
+           Dradst = None
 
         make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
            legend=range(len(list_filenames)),

@@ -173,6 +173,8 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
     plt.savefig(filename,transparent=transparent)
 
 def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=None,error=None,
+    # assume F in units kBT
+    # assume D in units angstrom**2/ps
     transparent=False):
     outF = filename+"_F.png"
     outD = filename+"_D.png"
