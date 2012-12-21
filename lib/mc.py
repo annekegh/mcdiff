@@ -67,7 +67,7 @@ def find_parameters(filenames,pbc,dv,dw,dwrad,dtimezero,temp,temp_end,nmc,nmc_up
     if MC.do_radial:
         data = RadTransitions(filenames)
     else:
-        data = Transitions(filenames)
+        data = Transitions(filenames,reduce = True)
     MC.set_model(data,ncosF,ncosD,ncosDrad)
 
     # USE INFO from INITFILE
