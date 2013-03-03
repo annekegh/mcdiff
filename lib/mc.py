@@ -17,7 +17,8 @@ def do_mc_cycles(MC,logger):
     print "\n MC-move log-like acc(v) acc(w)"
 
     MC.init_log_like()
-    print MC.log_like
+    logger.log(0,MC)
+
 
     for imc in range(MC.nmc):  # loop over Monte Carlo moves
 
@@ -39,15 +40,15 @@ def do_mc_cycles(MC,logger):
         # print
         printfreq = 100  # TODO make this optional
         MC.print_intermediate(imc,printfreq)
-        logger.log(imc,MC)
+        logger.log(imc+1,MC)
         
         # update
         MC.update_movewidth(imc)
         MC.update_temp(imc)
-        #MC.all_log_like[MC.imc] = MC.log_like
 
 
-def find_parameters(filenames,pbc,dv,dw,dwrad,dtimezero,temp,temp_end,nmc,nmc_update,seed,outfile, ncosF,ncosD,ncosDrad,
+def find_parameters(filenames,pbc,model,
+      dv,dw,dwrad,D0,dtimezero,temp,temp_end,nmc,nmc_update,seed,outfile, ncosF,ncosD,ncosDrad,
       move_timezero,initfile,k,
       lmax): 
     print "python program to extract diffusion coefficient and free energy from transition counts"
@@ -60,7 +61,7 @@ def find_parameters(filenames,pbc,dv,dw,dwrad,dtimezero,temp,temp_end,nmc,nmc_up
     # start Monte Carlo object
     MC = MCState(pbc,lmax)
     # settings
-    MC.set_MC_params(dv,dw,dwrad,dtimezero,temp,nmc,nmc_update,move_timezero,k,temp_end=temp_end,)
+    MC.set_MC_params(dv,dw,dwrad,D0,dtimezero,temp,nmc,nmc_update,move_timezero,k,temp_end=temp_end,)
     #MC.print_MC_params()
 
     # INPUT and INITIALIZATION model/MC
@@ -68,7 +69,7 @@ def find_parameters(filenames,pbc,dv,dw,dwrad,dtimezero,temp,temp_end,nmc,nmc_up
         data = RadTransitions(filenames)
     else:
         data = Transitions(filenames,reduce = True)
-    MC.set_model(data,ncosF,ncosD,ncosDrad)
+    MC.set_model(model,data,ncosF,ncosD,ncosDrad)
 
     # USE INFO from INITFILE
     if initfile is not None:

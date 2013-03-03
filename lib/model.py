@@ -27,7 +27,7 @@ wrad[i]  --  log of diffusion coefficient in radial direction in bin i (put in m
 """
 
 class Model(object):
-    def __init__(self,trans):
+    def __init__(self,trans,D0):
         # trans is a Transitions object
         self.edges = trans.edges
         self.count = trans.count
@@ -54,23 +54,22 @@ class Model(object):
         import copy
         self.list_lt = copy.deepcopy(trans.list_lt)  # in the model we may have "effective" lagtimes
 
-        self.init_model()
+        self.init_model(D0)
 
-    def init_model(self,):
+    def init_model(self,D0):
         print "INIT MODEL"
         # initialize potential v[i] and w[i]=log(D(i))
+        # initialize F and D (v and w) to a constant value
         self.v = np.float64(np.zeros(self.dim_v))  # in kBT
         self.w = np.float64(np.zeros(self.dim_w))  # in dx**2/dt
-        # initialize w to a constant value of D = 1 angstrom**2/ps
+        # units
         dt = 1. # ps
         dx = self.edges[1]-self.edges[0]  # in angstrom
         unit = dx**2/dt            # in angstrom**2/ps
-        self.w -= np.log(unit)          # exp(w) is in units dx**2/dt
-        #print dx, 1./dx**2, unit, "D:", np.exp(self.w)*unit,"in angstrom**2/ps"
-
-        # units
         self.vunit = 1.  # in kBT
         self.wunit = np.log(unit)  # in angstrom**2/ps
+
+        self.w += (np.log(D0)-self.wunit)  # initialize to D0 in A**2/ps
 
         # timezero
         self.timezero = 0.
@@ -78,17 +77,17 @@ class Model(object):
 
 class CosinusModel(Model):
     """Derived class, making use of basis functions"""
-    def __init__(self,trans,ncosF,ncosD,ncosP):
+    def __init__(self,trans,D0,ncosF,ncosD,ncosP):
         assert ncosF >= 0 # number of basis functions
         assert ncosD >= 0 # number of basis functions
         self.ncosF = ncosF
         self.ncosD = ncosD
         self.ncosP = ncosP
-        Model.__init__(self,trans)
+        Model.__init__(self,trans,D0)
         if self.ncosF > 0:
             self.init_model_cosF()
         if self.ncosD > 0:
-            self.init_model_cosD()
+            self.init_model_cosD(D0)
         if self.ncosP > 0:
             self.init_model_cosP()
 
@@ -108,10 +107,12 @@ class CosinusModel(Model):
         self.v_basis = self.create_basis_center(self.dim_v,self.ncosF)
         self.update_v()
 
-    def init_model_cosD(self):
+    def init_model_cosD(self,D0):
         print "INIT COS MODEL D", self.ncosD
         self.w_coeff = np.zeros((self.ncosD),float)
-        self.w_coeff[0] = -self.wunit  # the constant term
+        ###
+        self.w_coeff[0] += (np.log(D0)-self.wunit)   # initialize to D = D0 A**2/ps
+
         # important: periodicity self.v_dim
         self.w_basis = self.create_basis_border(self.dim_w,self.dim_v,self.ncosD)
         self.update_w()
@@ -150,17 +151,17 @@ class CosinusModel(Model):
 #class HarrModel(Model):
 class StepModel(Model):
     """Derived class, making use of basis functions"""
-    def __init__(self,trans,ncosF,ncosD,ncosP):
+    def __init__(self,trans,D0,ncosF,ncosD,ncosP):
         assert ncosF >= 0 # number of basis functions
         assert ncosD >= 0 # number of basis functions
         self.ncosF = ncosF
         self.ncosD = ncosD
         self.ncosP = ncosP
-        Model.__init__(self,trans)
+        Model.__init__(self,trans,D0)
         if self.ncosF > 0:
             self.init_model_F()
         if self.ncosD > 0:
-            self.init_model_D()
+            self.init_model_D(D0)
         if self.ncosP > 0:
             self.init_model_P()
 
@@ -172,12 +173,13 @@ class StepModel(Model):
         self.v_basis = self.create_basis_center(self.dim_v,self.v_x0)
         self.update_v()
 
-    def init_model_D(self,):
+    def init_model_D(self,D0):
         print "INIT STEP MODEL D", self.ncosD
         self.w_coeff = np.zeros((self.ncosD),float)  # heights
         dx = self.dim_v /2. /self.ncosD   # use length of v vector 
         self.w_x0 = np.arange(0,self.ncosD*dx,dx)
         self.w_basis = self.create_basis_border(self.dim_w,self.dim_v,self.w_x0)
+        self.w_coeff += (np.log(D0)-self.wunit)   # initialize to D0 A**2/ps
         self.update_w()
 
     def create_basis_center(self,dim,allx0):
@@ -226,11 +228,11 @@ class StepModel(Model):
 
 
 class RadModel(CosinusModel):
-    def __init__(self,trans,ncosF,ncosD,ncosP):
+    def __init__(self,trans,D0,ncosF,ncosD,ncosP):
         # trans is a RadTransitions object
 
         # setting the normal Model things
-        CosinusModel.__init__(self,trans,ncosF,ncosD,ncosP)
+        CosinusModel.__init__(self,trans,D0,ncosF,ncosD,ncosP)
 
         # adding the radial model things
         self.redges = trans.redges
@@ -252,9 +254,9 @@ class RadModel(CosinusModel):
 
 class RadCosinusModel(RadModel):
     """Derived class, making use of basis functions"""
-    def __init__(self,trans,ncosF,ncosD,ncosP,ncosDrad):
+    def __init__(self,trans,D0,ncosF,ncosD,ncosP,ncosDrad):
         # usual things
-        RadModel.__init__(self,trans,ncosF,ncosD,ncosP)
+        RadModel.__init__(self,trans,D0,ncosF,ncosD,ncosP)
         # using ncosDrad basis functions
         assert ncosDrad >= 0
         self.ncosDrad = ncosDrad

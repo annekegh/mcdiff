@@ -48,6 +48,12 @@ if __name__ == '__main__':
     parser.add_option("--dwrad", dest="dwrad", default=0.5,
                       type="float",
                       help="log(diffusion) Monte Carlo move width")
+    parser.add_option("--D0", dest="D0", default="1.",
+                      type="float",
+                      help="first guess D0")
+
+    parser.add_option("--model", dest="model",default="Model",
+                      help="set model, default is individual points")
 
     parser.add_option("--nmc_update", dest="nmc_update", default=100,
                       type="float", metavar="nmc_update",
@@ -98,8 +104,8 @@ if __name__ == '__main__':
     # check arguments
     assert len(args) >= 1
     print "="*20
-    find_parameters(args, options.pbc, 
-                options.dv, options.dw, options.dwrad, options.dtimezero,
+    find_parameters(args, options.pbc, options.model,
+                options.dv, options.dw, options.dwrad, options.D0, options.dtimezero,
                 options.temp, options.temp_end,
                 options.nmc, options.nmc_update,
                 options.seed,

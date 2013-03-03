@@ -4,10 +4,9 @@ import numpy as np
 
 class Logger(object):
     def __init__(self,MC):
-        n = MC.nmc
-        self.nmc = n
+        self.nmc = MC.nmc
         self.freq = 100
-        nf = n/100+1
+        nf = MC.nmc/100+1  # if n=1000, then I want 11 stores / if n=999, then I want 10 stores
         self.nf = nf
 
         # arrays
@@ -32,8 +31,8 @@ class Logger(object):
             else:
                 self.wrad_coeff = np.zeros((nf,MC.model.ncosDrad),float)
 
-    def log(self,j,MC):
-        i = j/self.freq
+    def log(self,j,MC):  # j is counter, counting starts with 1, ends with nmc
+        i = j/self.freq   # if n=1000, freq=100, then store 0,100,...,900,1000 
         if i*self.freq == j:
             #print i,j,self.freq,self.v.shape,MC.model.v.shape
             self.log_like[i]  = MC.log_like
@@ -87,7 +86,7 @@ class Logger(object):
         if MC.model.ncosF <= 0:
             print_vector(self.v,s)
         else:
-            vec = np.zeros((nf,MC.model.dim_v),float)
+            vec = np.zeros((self.nf,MC.model.dim_v),float)
             for i in range(len(vec)):
                 vec[i,:] = MC.model.calc_profile(self.v_coeff[i,:],MC.model.v_basis)
             print_vector(vec,s)
@@ -98,7 +97,7 @@ class Logger(object):
         if MC.model.ncosD <= 0:
             print_vector(self.w,s)
         else:
-            vec = np.zeros((nf,MC.model.dim_w),float)
+            vec = np.zeros((self.nf,MC.model.dim_w),float)
             for i in range(len(vec)):
                 vec[i,:] = MC.model.calc_profile(self.w_coeff[i,:],MC.model.w_basis)
             print_vector(vec,s)
@@ -110,7 +109,7 @@ class Logger(object):
             if MC.model.ncosDrad <= 0:
                 print_vector(self.wrad,s)
             else:
-                vec = np.zeros((nf,MC.model.dim_wrad),float)
+                vec = np.zeros((self.nf,MC.model.dim_wrad),float)
                 for i in range(len(vec)):
                     vec[i,:] = MC.model.calc_profile(self.wrad_coeff[i,:],MC.model.wrad_basis)
                 print_vector(vec,s)

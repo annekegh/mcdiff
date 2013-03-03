@@ -242,7 +242,7 @@ def read_F_D_edges_logger(logger):
     F = np.mean(logger.v,0)
     W = np.mean(logger.w,0)
     wunit = logger.model.wunit
-    D = np.exp(W+wunit)
+    D = np.exp(W+wunit)   # in angstrom**2/ps
     edges = logger.model.edges
     Fst = np.std(logger.v,0)
     Wst = np.std(logger.w,0)

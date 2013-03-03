@@ -26,10 +26,11 @@ class MCState(object):
         self.lmax = lmax
         self.do_radial = (self.lmax>0)  # True or False
 
-    def set_MC_params(self,dv,dw,dwrad,dtimezero,temp,nmc,num_MC_update,move_timezero,k,temp_end=None,):
+    def set_MC_params(self,dv,dw,dwrad,D0,dtimezero,temp,nmc,num_MC_update,move_timezero,k,temp_end=None,):
         self.dv = dv
         self.dw = dw
         self.dwrad = dwrad
+        self.D0 = D0
         self.dtimezero = dtimezero
         self.temp = temp
         self.temp_start = temp
@@ -59,21 +60,33 @@ class MCState(object):
 
         self.k = k  # spring constant in function spring
 
-    def set_model(self,data,ncosF,ncosD,ncosDrad):
+    def set_model(self,model,data,ncosF,ncosD,ncosDrad):
         self.data = data   # transitions etc        
 
         ncosP = 0
+        D0 = self.D0
 
         # derive model
         if self.do_radial > 0:
-            self.model = RadCosinusModel(self.data,ncosF,ncosD,ncosP,ncosDrad)
+            if model == "RadCosinusModel":
+                self.model = RadCosinusModel(self.data,D0,ncosF,ncosD,ncosP,ncosDrad)
+            elif model == "RadModel":
+                self.model = RadModel(self.data,D0,ncosF,ncosD,ncosP)
+            else:
+                raise ValueError( "model %s not found" % model)
             bessel0_zeros,bessels = setup_bessel_functions(self.lmax,self.model.redges,)
             self.model.bessels = bessels
             self.model.bessel0_zeros = bessel0_zeros
             self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc)
         else:
-            self.model = CosinusModel(self.data,ncosF,ncosD,ncosP)  # this will default to Model(self,data) if ncosF and ncosD are both 0
-            #self.model = StepModel(self.data,ncosF,ncosD,ncosP)
+            if model == "CosinusModel":
+                self.model = CosinusModel(self.data,D0,ncosF,ncosD,ncosP)  # this will default to Model(self,data) if ncosF and ncosD are both 0
+            elif model == "StepModel":
+                self.model = StepModel(self.data,D0,ncosF,ncosD,ncosP)
+            elif model == "Model":
+                self.model = Model(self.data,D0)
+            else:
+                raise ValueError("model %s not found" % model)
         assert self.pbc == self.model.pbc  # make sure PBC for model and transition matrix are identical
 
     def init_log_like(self):
@@ -125,7 +138,7 @@ class MCState(object):
                 print "USING initfile for w_coeff",initfile,nc,"coeffs"
                 n = min(nc,self.model.ncosD)
                 self.model.w_coeff[:n] = w_coeff[:n]
-                self.model.w_coeff[0] -= self.model.wunit
+                #self.model.w_coeff[0] -= self.model.wunit
                 self.model.update_w()
 
         if self.do_radial:
@@ -136,7 +149,7 @@ class MCState(object):
                 print "USING initfile for wrad_coeff",initfile,nc,"coeffs"
                 n = min(nc,self.model.ncosDrad)
                 self.model.wrad_coeff[:n] = wrad_coeff[:n]
-                self.model.wrad_coeff[0] -= self.model.wradunit
+                #self.model.wrad_coeff[0] -= self.model.wradunit
                 self.model.update_wrad()
 
         dv,dw = read_dv_dw(initfile,final=True)
@@ -337,17 +350,17 @@ class MCState(object):
         print >>f, "acctimezero ratio", "%5.1f" %(float(self.nacctimezero)/self.nmc*100),"%"
         print >>f, "="*10
         if self.model.ncosF > 0:
-            tot = np.sum(self.naccv_coeff)
+            tot = max(1,np.sum(self.naccv_coeff))  # if all val are zero and sum is zero, then take 1
             for i,val in enumerate(self.naccv_coeff):
                 print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
         if self.model.ncosD > 0:
-            tot = np.sum(self.naccw_coeff)
+            tot = max(1,np.sum(self.naccw_coeff))
             print >>f, "naccw_coeff"
             for i,val in enumerate(self.naccw_coeff):
                 print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
         if self.do_radial:
           if self.model.ncosDrad > 0:
-            tot = np.sum(self.naccwrad_coeff)
+            tot = max(1,np.sum(self.naccwrad_coeff))
             print >>f, "naccwrad_coeff"
             for i,val in enumerate(self.naccwrad_coeff):
                 print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
