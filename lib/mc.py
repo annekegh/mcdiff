@@ -99,7 +99,7 @@ def find_parameters(filenames,pbc,model,
     if outfile is not None:
         f.close()
     logger.model = MC.model   # this is not a hard copy
-    logger.statistics(MC)  #st=1000)
     logger.dump(picfile)
+    logger.statistics(MC)  #st=1000)
     return()
 

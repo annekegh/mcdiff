@@ -114,7 +114,7 @@ class Logger(object):
                     vec[i,:] = MC.model.calc_profile(self.wrad_coeff[i,:],MC.model.wrad_basis)
                 print_vector(vec,s)
                 print "===== stat wrad_coeff ====="
-                print_vector(self.wrad_coeff)
+                print_vector(self.wrad_coeff,s)
 
 
 def load_logger(filename):
