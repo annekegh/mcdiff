@@ -6,7 +6,7 @@ class Logger(object):
     def __init__(self,MC):
         self.nmc = MC.nmc
         self.freq = 100
-        nf = MC.nmc/100+1  # if n=1000, then I want 11 stores / if n=999, then I want 10 stores
+        nf = MC.nmc/self.freq+1  # if n=1000, then I want 11 stores / if n=999, then I want 10 stores
         self.nf = nf
 
         # arrays
@@ -42,19 +42,19 @@ class Logger(object):
             self.dtimezero[i] = MC.dtimezero
             #self.Ew[i]        = MC.Ew
             if MC.model.ncosF > 0:
-                self.v_coeff[i,:] = MC.model.v_coeff
+                self.v_coeff[i,:] = MC.model.v_coeff[:]
             else:
-                self.v[i,:]       = MC.model.v
+                self.v[i,:]       = MC.model.v[:]
             if MC.model.ncosD > 0:
-                self.w_coeff[i,:] = MC.model.w_coeff
+                self.w_coeff[i,:] = MC.model.w_coeff[:]
             else:
-                self.w[i,:]       = MC.model.w
+                self.w[i,:]       = MC.model.w[:]
             if MC.do_radial:
                 self.dwrad[i] = MC.dwrad
                 if MC.model.ncosDrad > 0:
-                    self.wrad_coeff[i,:] = MC.model.wrad_coeff
+                    self.wrad_coeff[i,:] = MC.model.wrad_coeff[:]
                 else:
-                    self.wrad[i,:] = MC.model.wrad
+                    self.wrad[i,:] = MC.model.wrad[:]
 
     def prettyprint(self,f):
         #f = file(filename+"2","w+")

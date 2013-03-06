@@ -7,6 +7,7 @@
 import numpy as np
 import scipy
 import scipy.linalg
+import numpy.linalg
 
 
 #------------------------
@@ -96,7 +97,6 @@ def string_vecs(n,pbc):
     else:
         M[0,0] = 1.
         M[-1,-1] = 1.
-    import numpy.linalg
     vals,vecs = np.linalg.eigh(M)
     return vecs
 
@@ -107,11 +107,27 @@ def log_likelihood(n,ilag,transition,lagtime,rate):
     propagator = scipy.linalg.expm2(lagtime*rate)
     # sum over all transitions
     # in case of numerical issues try: np.log(np.abs(propagator[i,j]))
+    # or: use tiny
+    # or: use mask
+    # or: use reject this Monte Carlo move (presently this one)
     log_like = np.float64(0.0)
-    a = np.where(transition[ilag,:,:]>0, transition[ilag,:,:] * np.log(abs(propagator)), 0)
+    tiny=1e-10
+#    a = np.where(transition[ilag,:,:]>0, transition[ilag,:,:] * np.log(propagator), 0)
+    ##a = np.where(propagator>tiny, transition[ilag,:,:] * np.log(abs(propagator)), 0)
+    #a = np.sum(np.ma.masked_invalid(transition[ilag,:,:] * np.ma.log(abs(propagator))))
+    #TODO
+    b = np.where(transition[ilag,:,:]>0,
+            np.where(propagator>-tiny, transition[ilag,:,:] * np.log(abs(propagator)), float("Nan")),
+            0)
+    #np.seterr(invalid='raise')
+    #try:
+    #    b = np.log(propagator)
+    #except:
+    #    return None
+    a = np.sum(b,0)
     log_like += a.sum()  #use high precision
+    #print "log_like",log_like
     return log_like
-# TODO use tiny
 
 
 def log_like_lag(num_bin,num_lag, v,w,lagtimes,transition, pbc):
@@ -120,8 +136,12 @@ def log_like_lag(num_bin,num_lag, v,w,lagtimes,transition, pbc):
     rate = init_rate_matrix(num_bin,v,w,pbc)
 
     for ilag in range(num_lag):
-        # add several distributions
-        log_like += log_likelihood(num_bin,ilag,transition,lagtimes[ilag],rate)
+        # add several contributions
+        ll = log_likelihood(num_bin,ilag,transition,lagtimes[ilag],rate)
+        if ll is None:
+            return None
+        else:
+           log_like+=ll
 
     return log_like
 

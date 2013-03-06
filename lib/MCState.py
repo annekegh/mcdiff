@@ -7,13 +7,13 @@
 import numpy as np
 import copy
 
-from utils import init_rate_matrix, string_energy, string_vecs,log_likelihood, log_like_lag
+from utils import init_rate_matrix, string_energy, string_vecs, log_likelihood, log_like_lag
 from twod import rad_log_like_lag, setup_bessel_functions
 
 from model import Model, RadModel
 from model import CosinusModel, RadCosinusModel
 from model import StepModel
-from outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw
+from outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw, read_F_D_edges
 
 
 #------------------------
@@ -64,14 +64,13 @@ class MCState(object):
         self.data = data   # transitions etc        
 
         ncosP = 0
-        D0 = self.D0
 
         # derive model
         if self.do_radial > 0:
             if model == "RadCosinusModel":
-                self.model = RadCosinusModel(self.data,D0,ncosF,ncosD,ncosP,ncosDrad)
+                self.model = RadCosinusModel(self.data,self.D0,ncosF,ncosD,ncosP,ncosDrad)
             elif model == "RadModel":
-                self.model = RadModel(self.data,D0,ncosF,ncosD,ncosP)
+                self.model = RadModel(self.data,self.D0,ncosF,ncosD,ncosP)
             else:
                 raise ValueError( "model %s not found" % model)
             bessel0_zeros,bessels = setup_bessel_functions(self.lmax,self.model.redges,)
@@ -80,11 +79,12 @@ class MCState(object):
             self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc)
         else:
             if model == "CosinusModel":
-                self.model = CosinusModel(self.data,D0,ncosF,ncosD,ncosP)  # this will default to Model(self,data) if ncosF and ncosD are both 0
+                self.model = CosinusModel(self.data,self.D0,ncosF,ncosD,ncosP)
+                # this will default to Model(self,data) if ncosF and ncosD are both 0
             elif model == "StepModel":
-                self.model = StepModel(self.data,D0,ncosF,ncosD,ncosP)
+                self.model = StepModel(self.data,self.D0,ncosF,ncosD,ncosP)
             elif model == "Model":
-                self.model = Model(self.data,D0)
+                self.model = Model(self.data,self.D0)
             else:
                 raise ValueError("model %s not found" % model)
         assert self.pbc == self.model.pbc  # make sure PBC for model and transition matrix are identical
@@ -93,16 +93,22 @@ class MCState(object):
         # initialize log_like
         if self.do_radial:
             self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc)
-            log_like = rad_log_like_lag(self.model.dim_v, self.model.dim_rad, self.data.dim_lt, self.model.rate, 
-                 self.model.wrad, self.data.list_lt, self.data.list_trans, self.model.redges,self.lmax,self.model.bessel0_zeros,self.model.bessels, 0.)
+            log_like = rad_log_like_lag(self.model.dim_v, self.model.dim_rad,
+                  self.data.dim_lt, self.model.rate, self.model.wrad,
+                  self.data.list_lt, self.data.list_trans, self.model.redges,
+                  self.lmax,self.model.bessel0_zeros,self.model.bessels, 0.)
         else:
-            log_like = log_like_lag(self.model.dim_v,self.data.dim_lt,
-                    self.model.v,self.model.w,self.model.list_lt, self.data.list_trans, pbc=self.pbc )
-        if np.isnan(log_like):
+            log_like = log_like_lag(self.model.dim_v, self.data.dim_lt,
+                  self.model.v, self.model.w, self.model.list_lt,
+                  self.data.list_trans, self.pbc)
+        
+        if log_like is None:
+            raise ValueError("Initial propagator has non-positive elements")
+        elif np.isnan(log_like):
             raise ValueError("Initial likelihood diverges")
         self.log_like = log_like
 
-        # add smoothing
+        # add smoothing to diffusion profile
         if self.k > 0.:
             E_w = string_energy(self.model.w,self.k,self.pbc)
             self.string_vecs = string_vecs(len(self.model.w),self.pbc)
@@ -130,6 +136,12 @@ class MCState(object):
                 n = min(nc,self.model.ncosF)
                 self.model.v_coeff[:n] = v_coeff[:n]
                 self.model.update_v()
+        else:
+            F,D,edges = read_F_D_edges(initfile)
+            nc = len(F)
+            assert nc == len(self.model.v)
+            print "USING initfile for v",initfile,nc,"values"
+            self.model.v = F #/ TODO *self.model.vunit
 
         if self.model.ncosD > 0:
             w_coeff = read_Dcoeffs(initfile,final=True)
@@ -138,8 +150,14 @@ class MCState(object):
                 print "USING initfile for w_coeff",initfile,nc,"coeffs"
                 n = min(nc,self.model.ncosD)
                 self.model.w_coeff[:n] = w_coeff[:n]
-                #self.model.w_coeff[0] -= self.model.wunit
+                self.model.w_coeff[0] -= self.model.wunit
                 self.model.update_w()
+        else:
+            F,D,edges = read_F_D_edges(initfile)
+            nc = len(D)
+            assert nc == len(self.model.w)
+            print "USING initfile for w",initfile,nc,"values"
+            self.model.w = np.log(D)-self.model.wunit
 
         if self.do_radial:
           if self.model.ncosDrad > 0:
@@ -162,19 +180,22 @@ class MCState(object):
         timezero_try = self.model.timezero + self.dtimezero * (np.random.random()-0.5)
         if timezero_try > -0.5*self.data.min_lt:     # ensure that shortest lagtime shrinks to no less than 1/2
             lagtimes_try = self.data.list_lt + timezero_try
-            log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt, self.model.v, self.model.w, lagtimes_try, self.data.list_trans, pbc=self.pbc )
+            log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt,
+                self.model.v, self.model.w, lagtimes_try, self.data.list_trans, self.pbc)
 
             # Metropolis acceptance
-            dlog = log_like_try - self.log_like
-            r = np.random.random()
-            if ( r < np.exp(dlog/self.temp) ): # accept if dlog increases, accept maybe if decreases
-                self.model.timezero = timezero_try
-                self.model.list_lt = lagtimes_try
-                self.nacctimezero += 1.
-                self.nacctimezero_update += 1.
-                self.log_like = log_like_try
+            if log_like_try is not None and not np.isnan(log_like_try):  # propagator is well behaved
+                dlog = log_like_try - self.log_like
+                r = np.random.random()
+                if ( r < np.exp(dlog/self.temp) ): # accept if dlog increases, accept maybe if decreases
+                    self.model.timezero = timezero_try
+                    self.model.list_lt = lagtimes_try
+                    self.nacctimezero += 1.
+                    self.nacctimezero_update += 1.
+                    self.log_like = log_like_try
 
     def mcmove_potential(self):
+        # propose temporary v vector: vt
         if self.model.ncosF == 1:
             # if by accident I try to update a flat basis function
             # but this should never happen
@@ -197,23 +218,24 @@ class MCState(object):
             coefft[index] += self.dv * (np.random.random()-0.5)
             vt = self.model.calc_profile(coefft, self.model.v_basis)
 
-        log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt, vt, self.model.w, self.model.list_lt, self.data.list_trans, pbc=self.pbc )
+        log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt,
+                vt, self.model.w, self.model.list_lt, self.data.list_trans, self.pbc)
 
         # Metropolis acceptance
-        dlog = log_like_try - self.log_like
-        r = np.random.random()
-        if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
-            self.model.v = vt
-            if self.model.ncosF > 0:
-                self.model.v_coeff = coefft
-                self.naccv_coeff[index] += 1
-            self.naccv += 1
-            self.naccv_update += 1
-            self.log_like = log_like_try
-        #return vt,log_like_try
+        if log_like_try is not None and not np.isnan(log_like_try):  # propagator is well behaved
+            dlog = log_like_try - self.log_like
+            r = np.random.random()
+            if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
+                self.model.v[:] = vt[:]
+                if self.model.ncosF > 0:
+                    self.model.v_coeff[:] = coefft[:]
+                    self.naccv_coeff[index] += 1
+                self.naccv += 1
+                self.naccv_update += 1
+                self.log_like = log_like_try
 
     def mcmove_diffusion(self):
-        # propose temporary w
+        # propose temporary w vector: wt
         if self.model.ncosD <= 0:
             if self.k > 0:
                 index = np.random.randint(0,self.model.dim_w)   # TODO what if string_vecs has different dimension???
@@ -228,25 +250,27 @@ class MCState(object):
             coefft[index] += self.dw * (np.random.random()-0.5) 
             wt = self.model.calc_profile(coefft, self.model.w_basis)
 
-        log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt, self.model.v, wt, self.model.list_lt, self.data.list_trans, pbc=self.pbc )
+        log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt,
+                self.model.v, wt, self.model.list_lt, self.data.list_trans, self.pbc)
 
-        # add restraints to smoothen
-        if self.k > 0.:
-            E_wt = string_energy(wt,self.k,self.pbc)
-            log_like_try -= E_wt  # minus sign because surface=log_like
-        #print "dlog,Lold,Lnew,E_wt,loglike",log_like_try-self.log_like,self.log_like,log_like_try, E_wt, log_like_try+E_wt
-
-        # Metropolis acceptance
-        dlog = log_like_try - self.log_like
-        r = np.random.random()  #in [0,1[
-        if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
-            self.model.w = wt
-            if self.model.ncosD > 0:
-                self.model.w_coeff = coefft
-                self.naccw_coeff[index] += 1
-            self.naccw += 1
-            self.naccw_update += 1
-            self.log_like = log_like_try
+        if log_like_try is not None and not np.isnan(log_like_try):   # propagator is well behaved
+            # add restraints to smoothen
+            if self.k > 0.:
+                E_wt = string_energy(wt,self.k,self.pbc)
+                log_like_try -= E_wt  # minus sign because surface=log_like
+            #print "dlog,Lold,Lnew,E_wt,loglike",log_like_try-self.log_like,self.log_like,log_like_try, E_wt, log_like_try+E_wt
+    
+            # Metropolis acceptance
+            dlog = log_like_try - self.log_like
+            r = np.random.random()  #in [0,1[
+            if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
+                self.model.w[:] = wt[:]
+                if self.model.ncosD > 0:
+                    self.model.w_coeff[:] = coefft[:]
+                    self.naccw_coeff[index] += 1
+                self.naccw += 1
+                self.naccw_update += 1
+                self.log_like = log_like_try
 
     def mcmove_diffusion_radial(self):
         # propose temporary wrad
@@ -265,20 +289,21 @@ class MCState(object):
                  wradt, self.data.list_lt, self.data.list_trans, self.model.redges,self.lmax,self.model.bessel0_zeros,self.model.bessels, 0. )
 
         # Metropolis accpetance
-        dlog = log_like_try - self.log_like
-        r = np.random.random()  #in [0,1[
-        #if dlog > 0: print "aha",
-        #print dlog,self.log_like,log_like_try 
-        if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
-            #print "accpet"
-            self.model.wrad = wradt
-            if self.model.ncosDrad > 0:
-                #print self.model.wrad_coeff
-                self.model.wrad_coeff = coefft
-                self.naccwrad_coeff[index] += 1
-            self.naccwrad += 1
-            self.naccwrad_update += 1
-            self.log_like = log_like_try
+        if log_like_try is not None and not np.isnan(log_like_try):   # propagator is well behaved  TODO implement
+            dlog = log_like_try - self.log_like
+            r = np.random.random()  #in [0,1[
+            #if dlog > 0: print "aha",
+            #print dlog,self.log_like,log_like_try 
+            if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
+                #print "accpet"
+                self.model.wrad = wradt
+                if self.model.ncosDrad > 0:
+                    #print self.model.wrad_coeff
+                    self.model.wrad_coeff = coefft
+                    self.naccwrad_coeff[index] += 1
+                self.naccwrad += 1
+                self.naccwrad_update += 1
+                self.log_like = log_like_try
 
     #======== UPDATE MC PARAMS ========
     def update_temp(self,imc):

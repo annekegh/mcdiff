@@ -41,7 +41,7 @@ def do_mc_cycles(MC,logger):
         printfreq = 100  # TODO make this optional
         MC.print_intermediate(imc,printfreq)
         logger.log(imc+1,MC)
-        
+ 
         # update
         MC.update_movewidth(imc)
         MC.update_temp(imc)
@@ -68,7 +68,7 @@ def find_parameters(filenames,pbc,model,
     if MC.do_radial:
         data = RadTransitions(filenames)
     else:
-        data = Transitions(filenames,reduce = True)
+        data = Transitions(filenames,reduction=False)
     MC.set_model(model,data,ncosF,ncosD,ncosDrad)
 
     # USE INFO from INITFILE

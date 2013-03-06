@@ -20,7 +20,7 @@ count  --  how transitions were counted [pbc, cut, ...]
 """
 
 class Transitions(object):
-    def __init__(self,list_filenames,reduce=False):
+    def __init__(self,list_filenames,reduction=False):
         self.started = False
         self.dim_lt = len(list_filenames)  # number of lagtimes (lt)
         assert self.dim_lt > 0
@@ -31,7 +31,7 @@ class Transitions(object):
         self.list_dn = []
         self.list_trans = []
         for filename in list_filenames:
-            self.read_transition(filename,reduce=reduce)
+            self.read_transition(filename,reduction=reduction)
         # convert
         self.list_lt = np.array(self.list_lt)
         self.list_dt = np.array(self.list_dt)
@@ -39,13 +39,13 @@ class Transitions(object):
         self.list_trans = np.array(self.list_trans)
         self.min_lt = min(self.list_lt)
 
-    def read_transition(self,filename,reduce=False):
+    def read_transition(self,filename,reduction=False):
         dim_trans = guess_dim_transition_square(filename)
         header = read_transition_header(filename)
         transmatrix = read_transition_square(filename,dim_trans)
 
-        if reduce:
-            dim_trans,header,transmatrix = reduction(dim_trans,header,transmatrix)
+        if reduction:
+            dim_trans,header,transmatrix = reduce_Tmat(dim_trans,header,transmatrix)
 
         if not self.started: # initialize settings
             self.started = True
@@ -66,7 +66,7 @@ class Transitions(object):
         self.list_dn.append(header['dn'])
         self.list_trans.append(transmatrix)
 
-def reduction(dim_trans,header,transmatrix):
+def reduce_Tmat(dim_trans,header,transmatrix):
     # check for zeros
     select = []
     for i in range(len(transmatrix)):
@@ -77,7 +77,7 @@ def reduction(dim_trans,header,transmatrix):
 
     dim_trans = dim_trans-redux
     trans = np.zeros((dim_trans,dim_trans))
-    trans[:,:] = transmatrix[select,select]
+    trans[:,:] = np.take(np.take(transmatrix,select,0),select,1)
     header["edges"] = header["edges"][select+[select[-1]+1]]
     print "reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans)
     return dim_trans,header,trans
