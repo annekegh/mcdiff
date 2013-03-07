@@ -106,27 +106,43 @@ def log_likelihood(n,ilag,transition,lagtime,rate):
     # calc propagator as matrix exponential
     propagator = scipy.linalg.expm2(lagtime*rate)
     # sum over all transitions
-    # in case of numerical issues try: np.log(np.abs(propagator[i,j]))
-    # or: use tiny
-    # or: use mask
-    # or: use reject this Monte Carlo move (presently this one)
-    log_like = np.float64(0.0)
-    tiny=1e-10
-#    a = np.where(transition[ilag,:,:]>0, transition[ilag,:,:] * np.log(propagator), 0)
-    ##a = np.where(propagator>tiny, transition[ilag,:,:] * np.log(abs(propagator)), 0)
+    # GH: in case of numerical issues try: np.log(np.abs(propagator[i,j]))
+    log_like = np.float64(0.0)  # use high precision
+    tiny = 1e-10
+
+    # PUT CUT-OFF
+    b = transition[ilag,:,:]*np.log(propagator.clip(tiny))
+    val = np.sum(b)
+    #print propagator
+    #count = np.sum(propagator<tiny)
+    #vals,vecs = np.linalg.eig(propagator)
+    #line = ""
+    #for v in vals:
+    #    if v.imag < 1e-10: VAL=v.real
+    #    line += str(VAL)+" "
+    #print "val",val, count, line
+
+    # PUT NAN
+    #b = np.where(transition[ilag,:,:]>0,
+    #        np.where(propagator>-tiny, transition[ilag,:,:] * np.log(abs(propagator)), float("Nan")),
+    #        0)
+    #val = np.sum(b)
+    # only sum over non-zero transition values (kind of unuseful if using numpy arrays
+    #a = np.where(transition[ilag,:,:]>0, transition[ilag,:,:] * np.log(propagator), 0)
+    # this should work
+    #a = np.where(propagator>tiny, transition[ilag,:,:] * np.log(abs(propagator)), 0)
+    # this is not giving any warnings
     #a = np.sum(np.ma.masked_invalid(transition[ilag,:,:] * np.ma.log(abs(propagator))))
-    #TODO
-    b = np.where(transition[ilag,:,:]>0,
-            np.where(propagator>-tiny, transition[ilag,:,:] * np.log(abs(propagator)), float("Nan")),
-            0)
+
+    # INDUCE CRASH whenever propagator gets negative
     #np.seterr(invalid='raise')
     #try:
     #    b = np.log(propagator)
     #except:
     #    return None
-    a = np.sum(b,0)
-    log_like += a.sum()  #use high precision
-    #print "log_like",log_like
+    #val = np.sum(b)
+
+    log_like += val
     return log_like
 
 
