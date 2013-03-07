@@ -239,33 +239,54 @@ def read_dv_dw(filename,final=False):
     return dv,dw
 
 def read_F_D_edges_logger(logger):
-    F = np.mean(logger.v,0)
-    W = np.mean(logger.w,0)
-    wunit = logger.model.wunit
-    D = np.exp(W+wunit)   # in angstrom**2/ps
+    if logger.model.ncosF <= 0:
+        v = np.mean(logger.v,0)
+        vst = np.std(logger.v,0)
+    else:
+        a = np.zeros((logger.nf,logger.model.dim_v))
+        for i in xrange(len(a)):
+            a[i,:] = logger.model.calc_profile(logger.v_coeff[i,:],logger.model.v_basis)
+        v = np.mean(a,0)
+        vst = np.std(a,0)
+
+    if logger.model.ncosD <= 0:
+        w = np.mean(logger.w,0)
+        wst = np.std(logger.w,0)
+    else:
+        a = np.zeros((logger.nf,logger.model.dim_w))
+        for i in xrange(len(a)):
+            a[i,:] = logger.model.calc_profile(logger.w_coeff[i,:],logger.model.w_basis)
+        w = np.mean(a,0)
+        wst = np.std(a,0)
+        dst = np.std(np.exp(a),0)
+
+    F = v*logger.model.vunit
+    W = w+logger.model.wunit
+    D = np.exp(W)   # in angstrom**2/ps
     edges = logger.model.edges
-    Fst = np.std(logger.v,0)
-    Wst = np.std(logger.w,0)
-    Dst = D*(np.exp(Wst)-1)
+    Fst = vst*logger.model.vunit
+    Wst = wst+logger.model.wunit
+    #Dst = D*(np.exp(Wst)-1)
+    Dst = dst*np.exp(logger.model.wunit)
     return F,D,edges,Fst,Dst
 
 def read_Drad_logger(logger):
-    wradunit = logger.model.wradunit
-    Wrad = np.mean(logger.wrad,0)
-    Drad = np.exp(Wrad+wradunit)
+    if logger.model.ncosDrad <= 0:
+        wrad = np.mean(logger.wrad,0)
+        wradst = np.std(logger.wrad,0)
+    else:
+        a = np.zeros((logger.nf,logger.model.dim_wrad))
+        for i in xrange(len(a)):
+            a[i,:] = logger.model.calc_profile(logger.wrad_coeff[i,:],logger.model.wrad_basis)
+        wrad = np.mean(a,0)
+        wradst = np.std(a,0)
+        dradst = np.std(np.exp(a),0)
+
+    Wrad = wrad+logger.model.wradunit
+    Drad = np.exp(Wrad)   # in angstrom**2/ps
     redges = logger.model.redges
-    Wradst = np.std(logger.wrad,0)
-    Dradst = Drad*(np.exp(Wradst)-1)
-
-#  TODO  fix
-    wrad_coeff = np.mean(logger.wrad_coeff,0)
-    Wrad = logger.model.calc_profile(wrad_coeff,logger.model.wrad_basis)
-    Drad = np.exp(Wrad+wradunit)
-
-    wrad_coeffst = np.std(logger.wrad_coeff,0)
-    wradpluswradst = logger.model.calc_profile(wrad_coeff+wrad_coeffst,logger.model.wrad_basis)
-    Wradst = wradpluswradst - Wrad
-    Dradst = Drad*(np.exp(Wradst)-1)
-
+    Wradst = wradst+logger.model.wradunit
+    #Dst = D*(np.exp(Wst)-1)
+    Dradst = dradst*np.exp(logger.model.wradunit)
     return Drad,redges,Dradst
 
