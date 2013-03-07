@@ -252,6 +252,7 @@ def read_F_D_edges_logger(logger):
     if logger.model.ncosD <= 0:
         w = np.mean(logger.w,0)
         wst = np.std(logger.w,0)
+        dst = np.std(np.exp(logger.w),0)
     else:
         a = np.zeros((logger.nf,logger.model.dim_w))
         for i in xrange(len(a)):
