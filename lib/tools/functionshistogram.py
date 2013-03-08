@@ -1,0 +1,125 @@
+"""Script to plot histogram of xyz coords
+AG, August 13, 2012"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def read_coor(filename):
+    #print "Reading...", filename
+    f = file(filename)
+    data = []
+    for line in f:
+        if not line.startswith("#"):
+            data.append([float(word) for word in line.split()])
+    f.close()
+    return np.array(data)
+
+def shift_wrt_layer(data1,data2):
+    print "shifting"
+    d2 = np.array(data2)[:,0]   # format: mu sd
+
+    print "d2",d2.shape
+    print "data1",data1.shape,data2.shape
+    coor = np.zeros(data1.shape,float)
+    for i in range(data1.shape[1]):
+        coor[:,i] = data1[:,i] - d2  # shift
+    return coor
+
+def plot_histogram_pbc(coor,zpbc,figname):
+    nbins = 100
+    low = -zpbc/2
+    high = zpbc/2
+    bins = np.linspace(low,high,nbins)
+    hist, bin_edges = np.histogram(coor,bins,normed=True)
+    bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
+
+    plt.figure()
+    plt.plot(bin_midst,hist)
+    plt.bar(np.array(bin_midst)+zpbc,hist)
+    plt.savefig(figname+".png")
+
+    plt.figure()
+    maxloghist = max(np.log(hist))
+    plt.plot(bin_midst,-np.log(hist)+maxloghist)
+    plt.plot(np.array(bin_midst)+zpbc,-np.log(hist)+maxloghist,color='blue')
+    plt.ylabel("F in kBT")
+    plt.savefig(figname+".log.png")
+
+def plot_histogram(coor,figname):
+    nbins = 100
+    hist, bin_edges = np.histogram(coor, nbins, normed=True)
+    bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
+ 
+    plt.figure()
+    plt.plot(bin_midst,hist)
+    plt.savefig(figname+".png")
+
+    plt.figure()
+    maxloghist = max(np.log(hist))
+    plt.plot(bin_midst,-np.log(hist)+maxloghist)
+    plt.ylabel("F in kBT")
+    plt.savefig(figname+".log.png")
+
+def add_constant_tolist(list_vecs,list_c):
+    list_tot = [vec for vec in list_vecs]  # a copy
+    L = len(list_vecs[0])
+    for c in list_c:
+        cvec = c*np.ones(L,float)
+        list_tot.append(cvec)
+    return list_tot
+
+def add_constant_toarray(array_vecs,list_c):
+    L = len(array_vecs)
+    array_tot = np.zeros(array_vecs.shape,float)
+    array_tot[:] = array_vecs[:]
+    for c in list_c:
+        cvec = c*np.ones((L,1),float)
+        array_tot = np.append(array_tot,cvec,axis=1)        
+    return array_tot
+
+def add_vec_toarray(array_vecs,list_vecs):
+    L = len(array_vecs)
+    array_tot = np.zeros(array_vecs.shape,float)
+    array_tot[:] = array_vecs[:]
+    for vec in list_vecs:
+        array_tot = np.append(array_tot,vec.reshape(-1,1),axis=1)
+    return array_tot
+
+def plotvecs(list_vecs):
+    # for instance: 3 plots, each 1000 time steps [1000data,1000data,1000data]
+    # then this returns something of size 1000x3, which will give 3 lines when plotted
+    for i in range(len(list_vecs)):
+        assert len(list_vecs[i]) == len(list_vecs[0])
+    return np.array(list_vecs).transpose()
+
+
+def plot_crd_z(data1,data2,dtc,outdir,zpbc):
+    print "data", data1.shape, data2.shape
+    from functionsdiffusion import plot_vs_time
+
+    toplot = add_vec_toarray(data1[:,::2],[data2[:,0],data2[:,0]+zpbc/2.,data2[:,0]-zpbc/2.])
+    plot_vs_time(toplot,dtc,outdir+"/fig_crd-z.png")
+
+    coor = shift_wrt_layer(data1,data2)
+    toplot = add_constant_toarray(coor[:,::2], [zpbc/2.,-zpbc/2.])
+    plot_vs_time(toplot,dtc,outdir+"/fig_crd-z.shift.png")
+
+    coor -= zpbc*np.floor(coor/zpbc+0.5)
+    toplot = add_constant_toarray( coor[:,::2], [zpbc/2.,-zpbc/2.])
+    kwargs = {"linewidth":0,"marker":"o","markersize":1,"markeredgewidth":0}
+    plot_vs_time(toplot,dtc,outdir+"/fig_pbccrd-z.shift.png",**kwargs)
+
+def plot_crd_z_hexd(data1,dtc,outdir,zpbc):
+    from functionsdiffusion import plot_vs_time
+
+    print data1.shape
+    coor = data1[:,::2]
+    toplot = coor
+    plot_vs_time(toplot,dtc,outdir+"/fig_crd-z.png")
+
+    coor -= zpbc*np.floor(data1[:,::2]/zpbc+0.5)
+    toplot = add_constant_toarray( coor[:,::2], [zpbc/2.,-zpbc/2.])
+    kwargs = {"linewidth":0,"marker":"o","markersize":1,"markeredgewidth":0}
+    plot_vs_time(toplot,dtc,outdir+"/fig_pbccrd-z.png",**kwargs)
+
