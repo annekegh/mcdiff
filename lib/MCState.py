@@ -233,6 +233,9 @@ class MCState(object):
                 self.naccv += 1
                 self.naccv_update += 1
                 self.log_like = log_like_try
+        if False:
+            self.check_propagator(self.model.list_lt[0])
+            print "loglike",self.log_like
 
     def mcmove_diffusion(self):
         # propose temporary w vector: wt
@@ -258,7 +261,6 @@ class MCState(object):
             if self.k > 0.:
                 E_wt = string_energy(wt,self.k,self.pbc)
                 log_like_try -= E_wt  # minus sign because surface=log_like
-            #print "dlog,Lold,Lnew,E_wt,loglike",log_like_try-self.log_like,self.log_like,log_like_try, E_wt, log_like_try+E_wt
     
             # Metropolis acceptance
             dlog = log_like_try - self.log_like
@@ -271,6 +273,9 @@ class MCState(object):
                 self.naccw += 1
                 self.naccw_update += 1
                 self.log_like = log_like_try
+        if False:
+            self.check_propagator(self.model.list_lt[0])
+            print "loglike",self.log_like
 
     def mcmove_diffusion_radial(self):
         # propose temporary wrad
@@ -304,6 +309,34 @@ class MCState(object):
                 self.naccwrad += 1
                 self.naccwrad_update += 1
                 self.log_like = log_like_try
+
+
+    def check_propagator(self,lagtime):
+        import scipy
+        rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.model.pbc)
+        vals,vecs = np.linalg.eig(rate)
+        line = ""
+        for v in vals:
+            if v.imag < 1e-10: VAL=v.real
+            else: VAL = v
+            line += str(VAL)+" "
+
+        propagator = scipy.linalg.expm2(lagtime*rate)
+        vals,vecs = np.linalg.eig(propagator)
+        line2 = ""
+        for v in vals:
+            if v.imag < 1e-10: VAL=v.real
+            else: VAL = v
+            line2 += str(VAL)+" "
+        tiny = 1e-10
+        count = np.sum(propagator<tiny)
+        #log_like = np.float64(0.0)  # use high precision
+        #b = transition[ilag,:,:]*np.log(propagator.clip(tiny))
+        #log_like += np.sum(b)
+        print "count",count
+        print "ratematrix",line
+        print "propagatormatrix",line2
+
 
     #======== UPDATE MC PARAMS ========
     def update_temp(self,imc):
