@@ -82,6 +82,33 @@ def reduce_Tmat(dim_trans,header,transmatrix):
     print "reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans)
     return dim_trans,header,trans
 
+def cut_transition_square(filename,start,end,outfile,count="cut"):
+    """Read transitions from file and cut out the piece start->end,
+    so size NxN with N=end-start, row/col end is not included
+    counting starts from 0"""
+    #from mcdiff.reading import read_transition_square, read_transition_header
+    from mcdiff.tools.functionsextract import write_Tmat_square
+    dim_trans = guess_dim_transition_square(filename)
+    header = read_transition_header(filename)
+    transmatrix = read_transition_square(filename,dim_trans)
+
+    #L = end-start+1
+    if 'edges' in header:
+        edges = header['edges']
+        edges = edges[start:end+1]
+    else:
+        edges = None
+    #count = header['count']
+    lt = header['lt']
+    dt = header['dt']
+    dn = header['dn']
+
+    A = transmatrix[start:end,start:end]
+
+    assert filename != outfile  # do not overwrite
+    write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
+
+
 class RadTransitions(object):
     def __init__(self,list_filenames):
         self.started = False

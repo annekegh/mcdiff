@@ -153,18 +153,6 @@ def transition_matrix_add2(A,x,edges,shift=1):
     #if filename is not None:
     #    write_Tmat_square(A[1:-1,1:-1],filename+"."+str(shift)+".pbc.dat")
 
-def cut_transition_square(filename,dim_trans,start,end,outfile):
-    """Read transitions from file and cut out the piece start->end,
-    so size NxN with N-end-start
-    counting starts from 0"""
-    from mcdiff.reading import read_transition_square
-    transition = read_transition_square(filename,dim_trans)
-    header = read_transition_header(filename)
-
-    A = transition[start:end+1,start:end+1]
-
-    write_Tmat_square(A,filename,lt,count,edges=None,dt=None,dn=None)
-
 
 #=========== OLDER =========
 def write_Tmat_linebyline(A,filename,edges=None):

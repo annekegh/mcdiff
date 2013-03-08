@@ -29,13 +29,13 @@ plotsettings()
 def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
            error=None,transparent=False):
     # assume F in units kBT
-    dx = edges[1]-edges[0]
-    x = edges[:len(F)]+dx/2.
-    L = edges[-1]-edges[0]
     plt.figure()
 
-    if grey and len(F.shape) > 1:
-        for f in F.transpose():  #each column
+    if grey and len(F) > 1:
+        for i,f in enumerate(F):  #each column
+            dx = edges[i][1]-edges[i][0]
+            x = edges[i][:len(f)]+dx/2.
+            L = edges[i][-1]-edges[i][0]
             plt.plot(x,f,color="grey")
             if pbc:
                 plt.plot(x+L,f,color="grey")
@@ -44,12 +44,16 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
             plt.plot(x+L,f,color="black")
 
     else:
-        if error is None:
-            plt.plot(x,F)  # plot in middle of bin
-        else:
-            plt.errorbar(x,F,yerr=error)
-        if pbc:
-           plt.plot(x+L, F)
+        for i,f in enumerate(F):  #each column
+            dx = edges[i][1]-edges[i][0]
+            x = edges[i][:len(f)]+dx/2.
+            L = edges[i][-1]-edges[i][0]   ################################### TODO
+            if error is None:
+                plt.plot(x,f,"-o")  # plot in middle of bin
+            else:
+                plt.errorbar(x,f,yerr=error)
+            if pbc:
+               plt.plot(x+L,f)
     plt.xlabel("z [A]")
     plt.ylabel("F [kBT]")
     plt.title(title)
@@ -59,13 +63,13 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
 def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
            error=None,transparent=False):
     # assume D in units angstrom**2/ps
-    dx = edges[1]-edges[0]
-    x = edges[:len(D)]+dx    # if periodic, then one more than if non-periodic
-    L = edges[-1]-edges[0]
     plt.figure()
 
-    if grey and len(D.shape) > 1:
-        for d in D.transpose():  #each column
+    if grey and len(D) > 1:
+        for i,d in enumerate(D):  #each column
+            dx = edges[i][1]-edges[i][0]
+            x = edges[i][:len(d)]+dx
+            L = edges[i][-1]-edges[i][0]   ################################### TODO
             plt.plot(x,d,color="grey")
             if pbc:
                 plt.plot(x+L,d,color="grey")
@@ -73,12 +77,16 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
         if pbc:
             plt.plot(x+L,d,color="black")
     else:
-        if error is None:
-            plt.plot(x,D)
-        else:
-            plt.errorbar(x,D,yerr=error)
-        if pbc:
-            plt.plot(x+L, D)
+        for i,d in enumerate(D):
+            dx = edges[i][1]-edges[i][0]
+            x = edges[i][:len(d)]+dx
+            L = edges[i][-1]-edges[i][0]   ################################### TODO
+            if error is None:
+                plt.plot(x,d)
+            else:
+                plt.errorbar(x,d,yerr=error)
+            if pbc:
+                plt.plot(x+L,d)
     plt.xlabel("z [A]")
     plt.ylabel("D [A^2/ps]")
     plt.title(title)
@@ -118,19 +126,22 @@ def plot_Drad(D,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=F
 
 
 def plot_both(F,D,filename,edges,transparent=False):
-    dx = edges[1]-edges[0]
-    x_F = edges[:len(F)] + dx/2.  # these are the middle points of the bins
-    x_D = edges[:len(D)] + dx  # if periodic, then one more than if non-periodic
-
     plt.figure()
-    plt.subplot(2,1,1)
-    plt.plot(x_F,F)
-    plt.ylabel("F [kBT]")
-
-    plt.subplot(2,1,2)
-    plt.plot(x_D,D)
-    plt.ylabel("D [A^2/ps]")
-    plt.xlabel("z [A]")
+    for i in xrange(len(F)):
+        f = F[i]
+        d = D[i]
+        dx = edges[i][1]-edges[i][0]
+        x_F = edges[i][:len(f)]+dx/2.
+        x_D = edges[i][:len(d)]+dx
+    
+        plt.subplot(2,1,1)
+        plt.plot(x_F,f)
+        plt.ylabel("F [kBT]")
+    
+        plt.subplot(2,1,2)
+        plt.plot(x_D,d)
+        plt.ylabel("D [A^2/ps]")
+        plt.xlabel("z [A]")
 
     plt.savefig(filename,transparent=transparent)
 

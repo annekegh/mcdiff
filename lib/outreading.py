@@ -33,6 +33,7 @@ def read_F_D_edges(filename):
                 raise ValueError("error in the format line"+line)
     f.close()
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
+    # this returns three vectors: F values, D values, edges values
     return np.array(F),np.array(D),np.array(edges)
 
 def read_Drad(filename):
@@ -96,10 +97,12 @@ def read_many_profiles_Drad(list_filename,ave=False,pic=False):
     F = np.array(F).transpose()
     D = np.array(D).transpose()
     Drad = np.array(Drad).transpose()
-    for i in range(len(E)-1):
-        assert len(E[i])==len(E[i+1])  # each file has same number of bins
-        assert (E[i]==E[i+1]).all()  # check if edges are really identical
-    edges = np.array(E[0])   # and now just choose the first one
+    E = np.array(E).transpose()  ###
+    #for i in range(len(E)-1):
+    #    assert len(E[i])==len(E[i+1])  # each file has same number of bins
+    #    assert (E[i]==E[i+1]).all()  # check if edges are really identical
+    #edges = np.array(E[0])   # and now just choose the first one
+    edges = E
     if True:
         if len(F.shape) == 2:
             for i in range(F.shape[1]):
@@ -136,28 +139,35 @@ def read_many_profiles(list_filename,ave=False,pic=False):
     D = []
     E = []  # edges
     for filename in list_filename:
-        f,d,e = read_F_D_edges(filename)
+        f,d,e = read_F_D_edges(filename)  # three 1D np arrays
         F.append(f)
         D.append(d)
         E.append(e)
-    F = np.array(F).transpose()
-    D = np.array(D).transpose()
-    for i in range(len(E)-1):
-        assert len(E[i])==len(E[i+1])  # each file has same number of bins
-        assert (E[i]==E[i+1]).all()  # check if edges are really identical
-    edges = np.array(E[0])   # and now just choose the first one
-    if True:
-        if len(F.shape) == 2:
-            for i in range(F.shape[1]):
-                F[:,i] += (-min(F[:,i]) ) #+ i)
+   # F = np.array(F).transpose()
+   # D = np.array(D).transpose()
+   # E = np.array(E).transpose()
 
     if ave:   # average over the different files
-        Fst = np.std(F,-1)
-        Dst = np.std(D,-1)
-        F = np.mean(F,-1)
-        D = np.mean(D,-1)
+        for i in range(len(E)-1):
+            assert len(E[i])==len(E[i+1])  # each file has same number of bins
+            assert (E[i]==E[i+1]).all()  # check if edges are really identical
+        edges = np.array(E[0])   # and now just choose the first one
+        if False:#True:    # TODO do always?
+            if len(F.shape) == 2:
+                for i in range(F.shape[1]):
+                    F[:,i] += (-min(F[:,i]) ) #+ i)
+        farr = np.array(F).transpose()
+        darr = np.array(D).transpose()
+
+        Fst = np.std(farr,-1)
+        Dst = np.std(darr,-1)
+        F = np.mean(farr,-1)
+        D = np.mean(darr,-1)
+        # keep edges a 1D vector ?????XXXX TODO 
+        edges = E
         return F,D,edges,Fst,Dst
-    else:       
+    else: 
+        edges = E
         return F,D,edges
 
 

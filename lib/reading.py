@@ -111,7 +111,7 @@ def read_transition_square(filename,dim_trans):
     """read transition matrix line by line (whole row per line!!!)
     comment lines starting with # are skipped"""
 
-    transition = np.zeros((dim_trans,dim_trans))
+    transition = np.zeros((dim_trans,dim_trans),int)
     f = file(filename)
     row = 0
     for line in f:
