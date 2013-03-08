@@ -87,6 +87,10 @@ if __name__ == '__main__':
                       type="int", metavar="LMAX",
                       help="Solve radial diffusion equation with LMAX Bessel functions")
 
+    parser.add_option("--reduction", dest="reduction", default=False,
+                      action="store_true",
+                      help="this keyword reduces the transition matrix by deleting zero rows/columns before starting the Monte Carlo")
+
     # Monte Carlo parameters
     #dt  = 1.                      # time step in ps between snapshots, kind of unit for lag times
     #dv = 0.5                      # v=potential MC move width
@@ -114,5 +118,6 @@ if __name__ == '__main__':
                 options.move_timezero,
                 options.initfile,
                 options.k,
-                options.lmax)
+                options.lmax,
+                options.reduction)
 
