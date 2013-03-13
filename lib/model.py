@@ -204,7 +204,7 @@ class StepModel(Model):
        #         b[-bend:dim-bstart] = slope[::-1]
        #     print b
        #     basis.append(b)
-        basis = [np.where((x>=x0)& (x<=dim2-x0),1.,0.) for x0 in allx0]
+        basis = [np.where((x>=x0)& (x<=dim2-x0),1.,0.) for x0 in allx0]   # ik vermoed hier eenf fout TODO
         #basis = [np.where((x>=x0)& (x<=dim2-x0),np.minimum((x-x0)/dx,1),0.) for x0 in allx0]
         return np.array(basis).transpose()
 
@@ -225,6 +225,36 @@ class StepModel(Model):
         self.w = self.calc_profile(self.w_coeff,self.w_basis)
 
 
+class OneStepModel(StepModel):
+
+    def __init__(self,trans,D0,ncosF,ncosD,ncosP):
+        StepModel.__init__(self,trans,D0,ncosF,ncosD,ncosP)
+
+    def init_model_F(self,):
+        print "INIT ONESTEP MODEL F", self.ncosF
+        self.v_coeff = np.zeros((self.ncosF),float)  # heights
+        dx = float(self.dim_v) /self.ncosF
+        self.v_x0 = np.arange(0,self.ncosF*dx,dx)  # location
+        self.v_basis = self.create_basis_center(self.dim_v,self.v_x0)
+        self.update_v()
+
+    def init_model_D(self,D0):
+        print "INIT ONESTEP MODEL D", self.ncosD
+        self.w_coeff = np.zeros((self.ncosD),float)  # heights
+        dx = float(self.dim_v) /self.ncosD   # use length of v vector 
+        self.w_x0 = np.arange(0,self.ncosD*dx,dx)
+        self.w_basis = self.create_basis_border(self.dim_w,self.dim_v,self.w_x0)
+        self.w_coeff[0] += (np.log(D0)-self.wunit)   # initialize to D0 A**2/ps
+        self.update_w()
+
+    def create_basis_center(self,dim,allx0):
+        x = np.arange(dim)+0.5
+        basis = [np.where((x>=x0),1.,0.) for x0 in allx0]
+        return np.array(basis).transpose()
+    def create_basis_border(self,dim,dim2,allx0):
+        x = np.arange(dim)+1.
+        basis = [np.where((x>=x0),1.,0.) for x0 in allx0]
+        return np.array(basis).transpose()
 
 
 class RadModel(CosinusModel):

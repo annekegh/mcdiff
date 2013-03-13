@@ -12,7 +12,7 @@ from twod import rad_log_like_lag, setup_bessel_functions
 
 from model import Model, RadModel
 from model import CosinusModel, RadCosinusModel
-from model import StepModel
+from model import StepModel, OneStepModel
 from outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw, read_F_D_edges
 
 
@@ -83,6 +83,8 @@ class MCState(object):
                 # this will default to Model(self,data) if ncosF and ncosD are both 0
             elif model == "StepModel":
                 self.model = StepModel(self.data,self.D0,ncosF,ncosD,ncosP)
+            elif model == "OneStepModel":
+                self.model = OneStepModel(self.data,self.D0,ncosF,ncosD,ncosP)
             elif model == "Model":
                 self.model = Model(self.data,self.D0)
             else:
