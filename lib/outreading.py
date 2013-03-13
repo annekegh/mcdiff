@@ -67,7 +67,6 @@ def read_Drad(filename):
     return np.array(D),np.array(edges)
 
 def read_many_profiles_Drad(list_filename,ave=False,pic=False):
-  print "pic",pic
   if pic:
     from mcdiff.log import load_logger
     if len(list_filename) == 1:
@@ -119,56 +118,67 @@ def read_many_profiles_Drad(list_filename,ave=False,pic=False):
     else:
         return F,D,Drad,edges
 
-def read_many_profiles(list_filename,ave=False,pic=False):
-  if pic:
-    from mcdiff.log import load_logger
-    if len(list_filename) == 1:
-        logger = load_logger(list_filename[0])
+def read_many_profiles(list_filename,pic=False):
+    if pic:
+        F = []
+        D = []
+        E = []
+        Fst = []
+        Dst = []
+        from mcdiff.log import load_logger
+        for filename in list_filename:
+            logger = load_logger(filename)
+            f,d,edges,fst,dst = read_F_D_edges_logger(logger)
+            F.append(f-min(f))
+            D.append(d)
+            E.append(edges)
+            Fst.append(fst)
+            Dst.append(dst)
+        return F,D,E,Fst,Dst
+ 
     else:
-        raise ValueError("list_filename should contain one pickled object in current implementation")
-    F,D,edges,Fst,Dst = read_F_D_edges_logger(logger)
-    F -= min(F)
-    if ave:
-        print "doing average"
-        return F,D,edges,Fst,Dst
+        F = []
+        D = []
+        E = []  # edges
+        for filename in list_filename:
+            f,d,edges = read_F_D_edges(filename)  # three 1D np arrays
+            F.append(f-min(f))
+            D.append(d)
+            E.append(edges)
+        return F,D,E,None,None
+
+def average_profiles(F,D,E):
+    "average over different profiles"
+    # F, D, E are lists of profiles
+    assert type(F) is list
+    assert type(D) is list
+    assert len(F) == len(D)
+    if len(F) == 1:
+        Fst = np.zeros(len(F[0]),float)
+        Fmean = F[0]
     else:
-        return F,D,edges
+        farr  = np.array(F)
+        Fmean = np.mean(farr,0)
+        Fst   = np.std(farr,0)
+    if len(D) == 1:
+        Dmean = D[0]
+        Dst = np.zeros(len(D[0]),float)
+    else:
+        darr = np.array(D)
+        Dmean = np.mean(darr,0)
+        Dst = np.std(darr,0)
+    edges = E[0]
+    #for i in range(len(E)-1):
+    #        assert len(E[i])==len(E[i+1])  # each file has same number of bins
+    #        assert (E[i]==E[i+1]).all()  # check if edges are really identical
+    #edges = np.array(E[0])   # and now just choose the first one
+    #if False:#True:    # TODO do always?
+    #    if len(F.shape) == 2:
+    #        for i in range(F.shape[1]):
+    #            F[:,i] += (-min(F[:,i]) ) #+ i)
 
-  else:
-    F = []
-    D = []
-    E = []  # edges
-    for filename in list_filename:
-        f,d,e = read_F_D_edges(filename)  # three 1D np arrays
-        F.append(f)
-        D.append(d)
-        E.append(e)
-   # F = np.array(F).transpose()
-   # D = np.array(D).transpose()
-   # E = np.array(E).transpose()
-
-    if ave:   # average over the different files
-        for i in range(len(E)-1):
-            assert len(E[i])==len(E[i+1])  # each file has same number of bins
-            assert (E[i]==E[i+1]).all()  # check if edges are really identical
-        edges = np.array(E[0])   # and now just choose the first one
-        if False:#True:    # TODO do always?
-            if len(F.shape) == 2:
-                for i in range(F.shape[1]):
-                    F[:,i] += (-min(F[:,i]) ) #+ i)
-        farr = np.array(F).transpose()
-        darr = np.array(D).transpose()
-
-        Fst = np.std(farr,-1)
-        Dst = np.std(darr,-1)
-        F = np.mean(farr,-1)
-        D = np.mean(darr,-1)
-        # keep edges a 1D vector ?????XXXX TODO 
-        edges = E
-        return F,D,edges,Fst,Dst
-    else: 
-        edges = E
-        return F,D,edges
+    # keep edges a 1D vector ?????XXXX TODO 
+    return Fmean,Dmean,edges,Fst,Dst
 
 
 def read_Fcoeffs(filename,final=False):

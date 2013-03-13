@@ -28,14 +28,16 @@ plotsettings()
 
 def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
            error=None,transparent=False):
-    # assume F in units kBT
+    # F in units kBT
+    # F is a list of arrays, each array is a profile
+    # error is a list of arrays or just an array
     plt.figure()
 
     if grey and len(F) > 1:
         for i,f in enumerate(F):  #each column
             dx = edges[i][1]-edges[i][0]
             x = edges[i][:len(f)]+dx/2.
-            L = edges[i][-1]-edges[i][0]
+            L = edges[i][-1]-edges[i][0]    ########## TODO
             plt.plot(x,f,color="grey")
             if pbc:
                 plt.plot(x+L,f,color="grey")
@@ -48,10 +50,17 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
             dx = edges[i][1]-edges[i][0]
             x = edges[i][:len(f)]+dx/2.
             L = edges[i][-1]-edges[i][0]   ################################### TODO
+            # error bars
             if error is None:
-                plt.plot(x,f,"-o")  # plot in middle of bin
+                plt.plot(x,f)
             else:
-                plt.errorbar(x,f,yerr=error)
+                if type(error) is list:
+                    assert len(error) == len(F)
+                    std=error[i]
+                else:
+                    std=error
+                assert len(std) == len(f)
+                plt.errorbar(x,f,yerr=std)
             if pbc:
                plt.plot(x+L,f)
     plt.xlabel("z [A]")
@@ -62,10 +71,12 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
 
 def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
            error=None,transparent=False):
-    # assume D in units angstrom**2/ps
+    # D in units angstrom**2/ps
+    # D is a list of arrays, each array is a profile
+    # error is a list of arrays or an array
     plt.figure()
 
-    if grey and len(D) > 1:
+    if grey:
         for i,d in enumerate(D):  #each column
             dx = edges[i][1]-edges[i][0]
             x = edges[i][:len(d)]+dx
@@ -81,10 +92,17 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
             dx = edges[i][1]-edges[i][0]
             x = edges[i][:len(d)]+dx
             L = edges[i][-1]-edges[i][0]   ################################### TODO
+            # error bars
             if error is None:
                 plt.plot(x,d)
             else:
-                plt.errorbar(x,d,yerr=error)
+                if type(error) is list:
+                    assert len(error) == len(D)
+                    std=error[i]
+                else:
+                    std=error
+                assert len(std) == len(d)
+                plt.errorbar(x,d,yerr=std)
             if pbc:
                 plt.plot(x+L,d)
     plt.xlabel("z [A]")
@@ -96,6 +114,7 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
 
 def plot_Drad(D,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,
               error=None,transparent=False):
+    # TODO clean up
     # assume D in units angstrom**2/ps
     dx = edges[1]-edges[0]
     x = edges[:len(D)]+dx/2.    # if periodic, then one more than if non-periodic
@@ -126,6 +145,7 @@ def plot_Drad(D,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=F
 
 
 def plot_both(F,D,filename,edges,transparent=False):
+    # assume F,D,edges are lists of arrays, each list is a profile
     plt.figure()
     for i in xrange(len(F)):
         f = F[i]
@@ -146,6 +166,7 @@ def plot_both(F,D,filename,edges,transparent=False):
     plt.savefig(filename,transparent=transparent)
 
 def plot_three(F,D,Drad,filename,edges,transparent=False):
+    # TODO clean up
     dx = edges[1]-edges[0]
     x_F = edges[:len(F)] + dx/2.  # these are the middle points of the bins
     x_D = edges[:len(D)] + dx  # if periodic, then one more than if non-periodic
@@ -168,6 +189,7 @@ def plot_three(F,D,Drad,filename,edges,transparent=False):
     plt.savefig(filename,transparent=transparent)
 
 def plot_ratio(D,Drad,filename,edges,transparent=False):
+    # TODO clean up
     dx = edges[1]-edges[0]
     #x_D = edges[:len(D)] + dx  # if periodic, then one more than if non-periodic
     #x_Drad = edges[:len(Drad)] + dx/2.  # these are the middle points of the bins
@@ -183,10 +205,11 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
         # TODO
     plt.savefig(filename,transparent=transparent)
 
-def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=None,error=None,
-    # assume F in units kBT
-    # assume D in units angstrom**2/ps
-    transparent=False):
+def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
+               title=None,error=None,ave=False,transparent=False): 
+    # assume F in units kBT, is a list
+    # assume D in units angstrom**2/ps, is a list
+    # assume error is a list of [list of arrays or a list] for F and D
     outF = filename+"_F.png"
     outD = filename+"_D.png"
     outDrad = filename+"_Drad.png"
@@ -196,19 +219,27 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,title=Non
     if error is not None:
         Fst = error[0]
         Dst = error[1]
-        if Drad is not None:
-            Dradst = error[2]
+        Dradst = error[2]
     else:
         Fst = None
         Dst = None
         Dradst = None
 
-    plot_F(F,outF,edges,pbc=pbc,grey=grey,title=title,error=Fst,transparent=transparent)
-    plot_D(D,outD,edges,pbc=pbc,legend=legend,grey=grey,title=title,error=Dst,transparent=transparent)
-    if Drad is not None:
-        plot_Drad(Drad,outDrad,edges,pbc=pbc,legend=legend,grey=grey,title=title,transparent=transparent,error=Dradst)
+    if ave:
+        from mcdiff.outreading import average_profiles
+        F_ave_mean, D_ave_mean, edges_mean, F_ave_st, D_ave_st = average_profiles(F,D,edges) 
+        f,d,ed  = ([F_ave_mean],[D_ave_mean],[edges_mean],)  #make lists of these arrays
+        fst,dst = (F_ave_st,D_ave_st)
+    else:
+        f,d,drad,ed = (F,D,Drad,edges,)  # these are arrays
+        fst,dst = (Fst,Dst)      # these are lists of arrays or lists
+
+    plot_F(f,outF,ed,pbc=pbc,grey=grey,title=title,error=fst,transparent=transparent)
+    plot_D(d,outD,ed,pbc=pbc,grey=grey,title=title,error=dst,transparent=transparent,legend=legend)
+    if not None in Drad:
+        plot_Drad(Drad,outDrad,edges,pbc=pbc,grey=grey,title=title,transparent=transparent,error=Dradst,legend=legend)
         plot_three(F,D,Drad,outboth,edges,transparent=transparent)
         plot_ratio(D,Drad,outDratio,edges,transparent=transparent)
     else:
-        plot_both(F,D,outboth,edges,)
+        plot_both(f,d,outboth,edges,)
 

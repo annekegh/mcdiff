@@ -49,46 +49,24 @@ if __name__ == '__main__':
         options.outfile = "all"
 
 
-    options.grey = True   # TODO make this optional
-
-
-    if options.pic: options.ave = True
-
+    options.grey = False #True   # TODO make this optional
 
     figname = options.outfile
     if options.ave: figname += "_ave"
 
 
+    #if (len(list_filenames) > 1 and options.ave) or (len(list_filenames)==1 and options.pic):
+    if options.do_rad:
+       F,D,Drad,edges,Fst,Dst,Dradst = read_many_profiles_Drad(list_filenames,ave=options.ave,pic=options.pic)
+    else:
+       F,D,edges,Fst,Dst = read_many_profiles(list_filenames,pic=options.pic)
+       Drad = [None]
+       Dradst = [None]
 
-    if (len(list_filenames) > 1 and options.ave) or (len(list_filenames)==1 and options.pic):
-        if options.do_rad:
-           F,D,Drad,edges,Fst,Dst,Dradst = read_many_profiles_Drad(list_filenames,ave=options.ave,pic=options.pic)
-        else:
-           F,D,edges,Fst,Dst = read_many_profiles(list_filenames,ave=options.ave,pic=options.pic)
-           Drad = None
-           Dradst = None
-
-        make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
+    make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
            legend=range(len(list_filenames)),
            grey=options.grey,
            title=options.title,error=[Fst,Dst,Dradst],
+           ave=options.ave,
            transparent=options.transparent)
-
-    # NO ERROR BARS
-    elif len(list_filenames) >= 1 :
-        if options.do_rad:
-           F,D,Drad,edges = read_many_profiles_Drad(list_filenames,pic=options.pic)
-        else:
-           F,D,edges = read_many_profiles(list_filenames,pic=options.pic)
-           Drad = None
-
-        make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
-           legend=range(len(list_filenames)),
-           grey=options.grey,
-           title=options.title,
-           transparent=options.transparent)
-
-    else:
-        raise Error("No filenames in list_filenames.")
-
 
