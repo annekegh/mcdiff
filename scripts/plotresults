@@ -54,12 +54,10 @@ if __name__ == '__main__':
     figname = options.outfile
     if options.ave: figname += "_ave"
 
-
-    #if (len(list_filenames) > 1 and options.ave) or (len(list_filenames)==1 and options.pic):
+    F,D,edges,Fst,Dst = read_many_profiles(list_filenames,pic=options.pic)
     if options.do_rad:
-       F,D,Drad,edges,Fst,Dst,Dradst = read_many_profiles_Drad(list_filenames,ave=options.ave,pic=options.pic)
+       Drad,redges,Dradst = read_many_profiles_Drad(list_filenames,pic=options.pic)
     else:
-       F,D,edges,Fst,Dst = read_many_profiles(list_filenames,pic=options.pic)
        Drad = [None]
        Dradst = [None]
 

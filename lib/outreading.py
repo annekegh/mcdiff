@@ -66,58 +66,6 @@ def read_Drad(filename):
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
     return np.array(D),np.array(edges)
 
-def read_many_profiles_Drad(list_filename,ave=False,pic=False):
-  if pic:
-    from mcdiff.log import load_logger
-    if len(list_filename) == 1:
-        logger = load_logger(list_filename[0])
-    else:
-        raise ValueError("list_filename should contain one pickled object in current implementation")
-    F,D,edges,Fst,Dst = read_F_D_edges_logger(logger)
-    Drad,redges,Dradst = read_Drad_logger(logger)
-    if ave:
-        return F,D,Drad,edges,Fst,Dst,Dradst
-    else:
-        return F,D,Drad,edges
-
-  else:
- 
-    F = []
-    D = []
-    Drad = []
-    E = []  # edges
-    for filename in list_filename:
-        drad,e = read_Drad(filename)
-        f,d,e = read_F_D_edges(filename)
-        F.append(f)
-        D.append(d)
-        Drad.append(drad)
-        E.append(e)
-    F = np.array(F).transpose()
-    D = np.array(D).transpose()
-    Drad = np.array(Drad).transpose()
-    E = np.array(E).transpose()  ###
-    #for i in range(len(E)-1):
-    #    assert len(E[i])==len(E[i+1])  # each file has same number of bins
-    #    assert (E[i]==E[i+1]).all()  # check if edges are really identical
-    #edges = np.array(E[0])   # and now just choose the first one
-    edges = E
-    if True:
-        if len(F.shape) == 2:
-            for i in range(F.shape[1]):
-                F[:,i] += (-min(F[:,i]) ) #+ i)
-
-    if ave:   # average over the different files
-        Fst = np.std(F,-1)
-        Dst = np.std(D,-1)
-        Dradst = np.std(Drad,-1)
-        F = np.mean(F,-1)
-        D = np.mean(D,-1)
-        Drad = np.mean(Drad,-1)
-        return F,D,Drad,edges,Fst,Dst,Dradst
-    else:
-        return F,D,Drad,edges
-
 def read_many_profiles(list_filename,pic=False):
     if pic:
         F = []
@@ -147,7 +95,34 @@ def read_many_profiles(list_filename,pic=False):
             E.append(edges)
         return F,D,E,None,None
 
-def average_profiles(F,D,E):
+def read_many_profiles_Drad(list_filename,pic=False):
+    if pic:
+        Drad   = []
+        RE     = []
+        Dradst = []
+        from mcdiff.log import load_logger
+        for filename in list_filename:
+            logger = load_logger(filename)
+            drad,redges,dradst = read_Drad_logger(logger)
+            Drad.append(drad)
+            RE.append(redges)
+            Dradst.append(dradst)
+        return Drad,RE,Dradst
+ 
+    else:
+        Drad   = []
+        RE     = []
+        for filename in list_filename:
+            drad,redges = read_Drad(filename)
+            Drad.append(drad)
+            RE.append(redges)
+        return Drad,RE,None
+
+
+#==============================
+
+
+def average_profiles(F,D,Drad,E):
     "average over different profiles"
     # F, D, E are lists of profiles
     assert type(F) is list
@@ -167,6 +142,13 @@ def average_profiles(F,D,E):
         darr = np.array(D)
         Dmean = np.mean(darr,0)
         Dst = np.std(darr,0)
+    if len(Drad) == 1:
+        Dradmean = Drad[0]
+        Dradst = np.zeros(len(Drad[0]),float)
+    else:
+        dradarr = np.array(Drad)
+        Dradmean = np.mean(dradarr,0)
+        Dradst = np.std(dradarr,0)
     edges = E[0]
     #for i in range(len(E)-1):
     #        assert len(E[i])==len(E[i+1])  # each file has same number of bins
@@ -178,7 +160,7 @@ def average_profiles(F,D,E):
     #            F[:,i] += (-min(F[:,i]) ) #+ i)
 
     # keep edges a 1D vector ?????XXXX TODO 
-    return Fmean,Dmean,edges,Fst,Dst
+    return Fmean,Dmean,Dradmean,edges,Fst,Dst,Dradst
 
 
 def read_Fcoeffs(filename,final=False):
