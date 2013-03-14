@@ -190,8 +190,8 @@ class MCState(object):
             self.model.wrad = np.log(Drad)-self.model.wradunit
 
         dv,dw = read_dv_dw(initfile,final=True)
-        self.dv = dv
-        self.dw = dw
+        #TODO   self.dv = dv
+        #TODO   self.dw = dw
 
     #======== MONTE CARLO MOVES ========
 
