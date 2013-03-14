@@ -82,7 +82,7 @@ def reduce_Tmat(dim_trans,header,transmatrix):
     print "reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans)
     return dim_trans,header,trans
 
-def cut_transition_square(filename,start,end,outfile,count="cut"):
+def cut_transitions_square(filename,start,end,outfile,count="cut"):
     """Read transitions from file and cut out the piece start->end,
     so size NxN with N=end-start, row/col end is not included
     counting starts from 0"""
@@ -108,6 +108,25 @@ def cut_transition_square(filename,start,end,outfile,count="cut"):
     assert filename != outfile  # do not overwrite
     write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
 
+def merge_transitions(trans,outfile,):
+    """combine the different trans matrices in Transitions matrix
+
+    Function works if all trans matrices have equal lag times,
+    this can happen if Transitions object combines the trans
+    matrices of different runs of the same system."""
+
+    from mcdiff.tools.functionsextract import write_Tmat_square
+
+    # make sure to have equal lag times
+    assert (trans.list_lt-trans.list_lt[0]).all() == 0
+    dn = trans.list_dn[0]
+    dt = trans.list_dt[0]
+    lt = trans.list_lt[0]
+    # edges will be checked to be equal when trans object is created
+    edges = trans.edges
+    count = trans.count
+    A = np.sum(trans.list_trans,0)
+    write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
 
 class RadTransitions(object):
     def __init__(self,list_filenames):
