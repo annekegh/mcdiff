@@ -267,17 +267,17 @@ class RadModel(CosinusModel):
         # adding the radial model things
         self.redges = trans.redges
         self.dim_rad = trans.dim_rad  # len(redges)
-        self.init_model_rad()
+        self.init_model_rad(D0)
 
-    def init_model_rad(self,):
+    def init_model_rad(self,D0):
         print "INIT RADMODEL"
         self.wrad = np.float64(np.zeros(self.dim_v))  # one for each bin, in dx**2/dt
         self.dim_wrad = len(self.wrad)
-        # initialize wrad to a constant value of D = 1 angstrom**2/ps
+        # initialize wrad to a constant value of D = D0 angstrom**2/ps
         dt = 1. # ps
         dr = self.redges[1]-self.redges[0]  # in angstrom
         unit = dr**2/dt                     # in angstrom**2/ps
-        self.wrad -= np.log(unit)           # exp(wrad) is in units dx**2/dt
+        self.wrad += np.log(D0/unit)          # exp(wrad) is in units dx**2/dt
 
         # units
         self.wradunit = np.log(unit)    # in angstrom**2/ps
@@ -291,12 +291,12 @@ class RadCosinusModel(RadModel):
         assert ncosDrad >= 0
         self.ncosDrad = ncosDrad
         if self.ncosDrad > 0:
-            self.init_model_cosDrad()
+            self.init_model_cosDrad(D0)
 
-    def init_model_cosDrad(self):
+    def init_model_cosDrad(self,D0):
         print "INIT COS MODEL Drad", self.ncosDrad
         self.wrad_coeff = np.zeros((self.ncosDrad),float)
-        self.wrad_coeff[0] = -self.wradunit  # the constant term
+        self.wrad_coeff[0] = np.log(D0)-self.wradunit  # the constant term
 
         assert self.dim_v == self.dim_wrad
         # important: periodicity self.dim_v = self.dim_rad!!!

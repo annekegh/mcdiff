@@ -131,7 +131,7 @@ class MCState(object):
 
     def use_initfile(self,initfile,final=True):
         if self.model.ncosF > 0:
-            v_coeff = read_Fcoeffs(initfile,final=True)
+            v_coeff = read_Fcoeffs(initfile,final=True) # unit: v_coeff[0] in kBT
             nc = len(v_coeff)
             if nc > 0:
                 print "USING initfile for v_coeff",initfile,nc,"coeffs"
@@ -139,14 +139,14 @@ class MCState(object):
                 self.model.v_coeff[:n] = v_coeff[:n]
                 self.model.update_v()
         else:
-            F,D,edges = read_F_D_edges(initfile)
+            F,D,edges = read_F_D_edges(initfile) # unit: F in kBT
             nc = len(F)
             assert nc == len(self.model.v)
             print "USING initfile for v",initfile,nc,"values"
-            self.model.v = F #/ TODO *self.model.vunit
+            self.model.v = F   # unit: always in kBT
 
         if self.model.ncosD > 0:
-            w_coeff = read_Dcoeffs(initfile,final=True)
+            w_coeff = read_Dcoeffs(initfile,final=True) # unit: w_coeff[0] in angstrom**2/ps
             nc = len(w_coeff)
             if nc > 0:
                 print "USING initfile for w_coeff",initfile,nc,"coeffs"
@@ -155,7 +155,7 @@ class MCState(object):
                 self.model.w_coeff[0] -= self.model.wunit
                 self.model.update_w()
         else:
-            F,D,edges = read_F_D_edges(initfile)
+            F,D,edges = read_F_D_edges(initfile) # unit: D in angstrom**2/ps
             nc = len(D)
             assert nc == len(self.model.w)
             print "USING initfile for w",initfile,nc,"values"
@@ -163,14 +163,31 @@ class MCState(object):
 
         if self.do_radial:
           if self.model.ncosDrad > 0:
-            wrad_coeff = read_Dradcoeffs(initfile,final=True)
-            nc = len(wrad_coeff)
+            coeff = read_Dradcoeffs(initfile,final=True) # unit: wrad_coeff[0] in angstrom**2/ps
+            nc = len(coeff)
             if nc > 0:
-                print "USING initfile for wrad_coeff",initfile,nc,"coeffs"
-                n = min(nc,self.model.ncosDrad)
-                self.model.wrad_coeff[:n] = wrad_coeff[:n]
-                #self.model.wrad_coeff[0] -= self.model.wradunit
-                self.model.update_wrad()
+                    print "USING initfile for wrad_coeff",initfile,nc,"coeffs"
+                    n = min(nc,self.model.ncosDrad)
+                    self.model.wrad_coeff[:n] = coeff[:n]
+                    self.model.wrad_coeff[0] -= self.model.wradunit
+                    self.model.update_wrad()
+            else:
+                print self.model.wrad_coeff
+                coeff = read_Dcoeffs(initfile,final=True) # unit: w_coeff[0] in angstrom**2/ps
+                nc = len(coeff)
+                if nc > 0:
+                    print "USING initfile for wrad_coeff",initfile,nc,"coeffs, using w_coeff!"
+                    n = min(nc,self.model.ncosDrad)
+                    self.model.wrad_coeff[:n] = coeff[:n]
+                    self.model.wrad_coeff[0] -= self.model.wradunit
+                    self.model.update_wrad()
+                    print self.model.wrad_coeff
+          else:
+            Drad,redges = read_Drad(initfile) # unit: Drad in angstrom**2/ps
+            nc = len(Drad)
+            assert nc == len(self.model.wrad)
+            print "USING initfile for wrad",initfile,nc,"values"
+            self.model.wrad = np.log(Drad)-self.model.wradunit
 
         dv,dw = read_dv_dw(initfile,final=True)
         self.dv = dv
