@@ -115,7 +115,7 @@ def merge_transitions(trans,outfile,):
     this can happen if Transitions object combines the trans
     matrices of different runs of the same system."""
 
-    from mcdiff.tools.functionsextract import write_Tmat_square
+    from mcdiff.tools.functionsextract import write_Tmat_square,write_Tmat_cube
 
     # make sure to have equal lag times
     assert (trans.list_lt-trans.list_lt[0]).all() == 0
@@ -125,8 +125,13 @@ def merge_transitions(trans,outfile,):
     # edges will be checked to be equal when trans object is created
     edges = trans.edges
     count = trans.count
-    A = np.sum(trans.list_trans,0)
-    write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
+    A = np.rint(np.sum(trans.list_trans,0)).astype(int)
+    if len(trans.list_trans.shape) == 3:
+        write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
+    elif len(trans.list_trans.shape) == 4:
+        write_Tmat_cube(A,outfile,lt,count,edges=edges,dt=dt,dn=dn,redges=trans.redges)
+    else: raise ValueError("list_trans does not have expected dimension (3 or 4): %i" 
+                 %len(trans.list_trans.shape))
 
 class RadTransitions(object):
     def __init__(self,list_filenames):
