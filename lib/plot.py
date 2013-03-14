@@ -211,7 +211,16 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
     for i in xrange(len(D)):
         d = D[i]
         drad = Drad[i]
+        dx = edges[i][1]-edges[i][0]
+        x_D    = edges[i][:len(d)]+dx      # if periodic, then one more than if non-periodic
+        x_Drad = edges[i][:len(drad)]+dx/2.   # these are the middle points of the bins
 
+        plt.subplot(2,1,1)
+        plt.plot(x_D,d)
+        plt.plot(x_Drad,drad)
+        plt.ylabel("D,Drad [A^3/ps]")
+
+        plt.subplot(2,1,2)
         if len(d) != len(drad):  pass   # TODO XXXXXXXXXXXXXXX  ratio = Drad[-nc:]/D[-nc:]
         nc = min(len(d),len(drad))   # number of components
         x = edges[i][:nc]
@@ -220,9 +229,9 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
         x_ratio = x+3*dx/4.   # halfway
         ratio = drad[:nc]/d[:nc]
         plt.plot(x_ratio,ratio)
+        plt.ylabel("Drad/D")
+        plt.xlabel("z [A]")
 
-    plt.ylabel("Drad [A^2/ps]")
-    plt.xlabel("z [A]")
     plt.savefig(filename,transparent=transparent)
 
 

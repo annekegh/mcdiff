@@ -55,7 +55,7 @@ def setup_bessel_functions(lmax,redges,):
     for l in range(lmax):
         bessels[l,:] = 2*r*scipy.special.j0(r/rmax*bessel0_zeros[l]) / bessel1_inzeros[l]**2 /rmax**2
         # in units r [dr] / rmax**2 [dr**2], so in units [1/dr]
-    if True:
+    if False:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
