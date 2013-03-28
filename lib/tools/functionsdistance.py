@@ -214,9 +214,9 @@ def collect_dist_from3files(xfile,yfile,zfile,dtc):
 
 def collect_dist(x,y,z,dtc):
     lagtimes = []
-    dist_xy = []
-    dist_z = []
-    dist_r = []
+    dist2_xy = []
+    dist2_z = []
+    dist2_r = []
     natom = x.shape[1]
     for lt in range(1,len(x)):  # lt is lagtime   #TODO I adapted this not
         diff_xy = (x[:-lt,:] - x[lt:,:])**2 + (y[:-lt,:] - y[lt:,:])**2
@@ -317,10 +317,10 @@ def calc_timedependent_D(x,y,z,dtc,shift=1):
 
 #=========================================
 
-def calc_dist_lt_from3files(xfile,yfile,zfile,lt):
-    x = np.array(read_coor(xfile))
-    y = np.array(read_coor(yfile))
-    z = np.array(read_coor(zfile))
+def calc_dist_lt_from3files(xfile,yfile,zfile,lt,rv=False):
+    x = np.array(read_coor(xfile,rv=rv,axis=0))
+    y = np.array(read_coor(yfile,rv=rv,axis=1))
+    z = np.array(read_coor(zfile,rv=rv,axis=2))
     d2_xy,d2_z,d2_r = calc_dist_lt(x,y,z,lt)
     return d2_xy,d2_z,d2_r
 
@@ -331,7 +331,7 @@ def calc_dist_lt(x,y,z,lt):
     dist2_r = dist2_xy + dist2_z
     return dist2_xy,dist2_z,dist2_r
 
-def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname):
+def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname,rv=False):
     "Collect distances in all these files"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
@@ -342,18 +342,18 @@ def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname):
     print "="*5
     print "Results"
 
-    edges = np.arange(-26.,26.1,1)
+    edges = np.arange(-zpbc/2.,zpbc/2.+0.1,1.)
     nbins = len(edges)-1
     redges = np.arange(0,50,0.2)
 
-    alldxy = []
-    alldz = []
-    alldr = []
+    alldist2_xy = []
+    alldist2_z = []
+    alldist2_r = []
     allz_init = []
     allz_final = []
     for i in range(nfiles):
-        dist2_xy,dist2_z,dist2_r = calc_dist_lt_from3files(list_x[i],list_y[i],list_z[i],lt)
-        z = np.array(read_coor(list_z[i]))
+        dist2_xy,dist2_z,dist2_r = calc_dist_lt_from3files(list_x[i],list_y[i],list_z[i],lt,rv=rv)
+        z = np.array(read_coor(list_z[i],rv=rv))
 
         alldist2_xy.append(dist2_xy)
         alldist2_z.append(dist2_z)
@@ -363,11 +363,12 @@ def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname):
         zinit -= zpbc*np.floor(zinit/zpbc+0.5)
         allz_init.append(zinit)
 
-        zfinal = z[:-lt]    # final z
+        zfinal = z[lt:]    # final z
         zfinal -= zpbc*np.floor(zfinal/zpbc+0.5)
         allz_final.append(zfinal)
+    analyze_dist_conditionalz_essence(alldist2_xy,alldist2_z,alldist2_r,allz_init,allz_final,lt,dtc,figname)
 
-    #alldxy = np.array(alldxy)
+def analyze_dist_conditionalz_essence(alldist2_xy,alldist2_z,alldist2_r,allz_init,allz_final,lt,dtc,figname):
 
     print "XXXXXX lt*dtc",lt*dtc
     if lt*dtc < 0.6:
@@ -377,31 +378,39 @@ def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname):
     elif lt*dtc < 60.:
         distmax = 10.
     else:
-        distmax = 25.
+        distmax = 20.
 
     for c,allz in enumerate([allz_init,allz_final]):
       print "="*10
-      print ["zinit","zfinal"][c]
       labelz = ["zinit","zfinal"][c]
+      print labelz
       for i,dist2 in enumerate([alldist2_xy,alldist2_z,alldist2_r]):
         label = labelz+"-"+["xy","z","r"][i]
         factor = [np.sqrt(2),1.,np.sqrt(3)][i]
-        k,xedges,yedges = np.histogram2d(np.array(np.sqrt(dist2)).ravel(),np.array(allz).ravel(),[150,50])
-        print d_r.shape,z.shape
-        print k.shape, xedges.shape, yedges.shape
+        k,xedges,yedges = np.histogram2d(np.array(np.sqrt(dist2)).ravel(),np.array(allz).ravel(),[80,40])
+        #print dist2_r.shape,z.shape
+        print "hist,xedges,yedges",k.shape, xedges.shape, yedges.shape
         # norm
         xedges /= factor
-        k = k / np.sum(k,axis=0)   # TODO normalized make this optional
-        import matplotlib.pyplot as plt
-        plt.figure()
-        plt.contourf(xedges[:-1],yedges[:-1],k.transpose()) #locator=ticker.LogLocator()
-        plt.xlabel("distance [A]")
-        plt.xlim(xmax=distmax)
-        plt.ylabel("z [A]")
-        plt.title("root mean square distance: "+label)
-        plt.colorbar()
-        plt.savefig(figname+"_hist2d.%s.lt%i.png"%(label,lt))
-        
+        for n,donorm in enumerate([False,True]): #enumerate([1.,np.sum(k,axis=0)]):
+            Label = label+"-%s" %(["nonorm","norm"][n])
+            if i == 2:  # r
+                kk = (xedges[1:]+xedges[:-1]).reshape((-1,1))/2.*k
+            else:
+                kk = k
+            if donorm:  # normalized
+                norm = np.sum(kk,axis=0)
+                kk = kk / norm
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.contourf(xedges[:-1],yedges[:-1],kk.transpose()) #locator=ticker.LogLocator()
+            plt.xlabel("distance [A]")
+            plt.xlim(xmax=distmax)
+            plt.ylabel("z [A]")
+            plt.title("root mean square distance: "+Label)
+            plt.colorbar()
+            plt.savefig(figname+"_hist2d.%s.lt%i.png"%(Label,lt))
+
 
 #=========================================
 
@@ -413,10 +422,10 @@ def calc_dist_fromdir(dirname):
     dist2_xy,dist2_z,dist2_r,weight = calc_dist(x,y,z)
     return dist2_xy,dist2_z,dist2_r,weight
 
-def calc_dist_from3files(xfile,yfile,zfile):
-    x = np.array(read_coor(xfile))
-    y = np.array(read_coor(yfile))
-    z = np.array(read_coor(zfile))
+def calc_dist_from3files(xfile,yfile,zfile,rv=False):
+    x = np.array(read_coor(xfile,rv=rv,axis=0))
+    y = np.array(read_coor(yfile,rv=rv,axis=1))
+    z = np.array(read_coor(zfile,rv=rv,axis=2))
     dist2_xy,dist2_z,dist2_r,weight = calc_dist(x,y,z)
     return dist2_xy,dist2_z,dist2_r,weight
 

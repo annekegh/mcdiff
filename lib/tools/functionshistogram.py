@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def read_coor(filename):
+def read_coor_x_or_y_or_z(filename):
     #print "Reading...", filename
     f = file(filename)
     data = []
@@ -14,6 +14,34 @@ def read_coor(filename):
             data.append([float(word) for word in line.split()])
     f.close()
     return np.array(data)
+
+def read_data_rv(filename):
+    """Extract data from files of Rick Venable"""
+    data = []
+    f = file(filename)
+    for line in f:
+        words = line.split()
+        data.append([float(word) for word in words])
+
+    data = np.array(data)
+    #print "data",data.shape
+    #print data[:10,:10]
+    return data
+
+def read_coor(filename,rv=True,axis=2,com=False):
+    # axis: 0 (x), 1 (y), or 2 (z)
+    if rv:
+        data = read_data_rv(filename)
+        #times = data[:,0]
+        if com:
+            coms = data[:,1:4]
+            return coms[:,axis::3]
+        else:
+            coords = data[:,4:]
+            return coords[:,axis::3]
+    else:
+        data = read_coor_x_or_y_or_z(filename)
+        return data   # this is an array
 
 def shift_wrt_layer(data1,data2):
     print "shifting"
