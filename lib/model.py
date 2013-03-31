@@ -148,6 +148,58 @@ class CosinusModel(Model):
         self.p = self.calc_profile(self.p_coeff,self.p_basis)
 
 
+class SinusCosinusModel(CosinusModel):
+    """Derived class, making use of basis functions"""
+    def __init__(self,trans,D0,ncosF,ncosD,ncosP):
+        assert ncosF >= 0 # number of basis functions
+        assert ncosD >= 0 # number of basis functions
+        self.ncosF = ncosF
+        self.ncosD = ncosD
+        self.ncosP = ncosP
+        assert ncosF%2==1  #odd
+        assert ncosD%2==1  #odd
+        Model.__init__(self,trans,D0)
+        if self.ncosF > 0:
+            self.init_model_cosF()
+        if self.ncosD > 0:
+            self.init_model_cosD(D0)
+        if self.ncosP > 0:
+            self.init_model_cosP()
+
+    def create_basis_center(self,dim,ncos,):
+        x = np.arange(dim)
+        basis1 = [np.cos(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range((ncos+1)/2)]
+        basis2 = [np.sin(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range(1,(ncos+1)/2)]
+        basis = basis1 + basis2
+        print "basis SIN center",len(basis)
+        return np.array(basis).transpose()
+    def create_basis_border(self,dim,dim2,ncos):
+        x = np.arange(dim)
+        basis1 = [np.cos(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range((ncos+1)/2)]
+        basis2 = [np.sin(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range(1,(ncos+1)/2)]
+        basis = basis1 + basis2
+        #print "basis",basis
+        print "basis SIN border",len(basis)
+        basis = basis1 + basis2
+        return np.array(basis).transpose()
+
+    def init_model_cosF(self):
+        print "INIT SINCOS MODEL F", self.ncosF
+        self.v_coeff = np.zeros((self.ncosF),float)
+        self.v_basis = self.create_basis_center(self.dim_v,self.ncosF)
+        CosinusModel.update_v(self)
+
+    def init_model_cosD(self,D0):
+        print "INIT SINCOS MODEL D", self.ncosD
+        self.w_coeff = np.zeros((self.ncosD),float)
+        ###
+        self.w_coeff[0] += (np.log(D0)-self.wunit)   # initialize to D = D0 A**2/ps
+
+        # important: periodicity self.v_dim
+        self.w_basis = self.create_basis_border(self.dim_w,self.dim_v,self.ncosD)
+        CosinusModel.update_w(self)
+
+
 #class HarrModel(Model):
 class StepModel(Model):
     """Derived class, making use of basis functions"""

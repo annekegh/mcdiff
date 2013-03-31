@@ -11,7 +11,7 @@ from utils import init_rate_matrix, string_energy, string_vecs, log_likelihood, 
 from twod import rad_log_like_lag, setup_bessel_functions
 
 from model import Model, RadModel
-from model import CosinusModel, RadCosinusModel
+from model import SinusCosinusModel,CosinusModel, RadCosinusModel
 from model import StepModel, OneStepModel
 from outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw, read_F_D_edges
 
@@ -81,6 +81,8 @@ class MCState(object):
             if model == "CosinusModel":
                 self.model = CosinusModel(self.data,self.D0,ncosF,ncosD,ncosP)
                 # this will default to Model(self,data) if ncosF and ncosD are both 0
+            elif model == "SinusCosinusModel":
+                self.model = SinusCosinusModel(self.data,self.D0,ncosF,ncosD,ncosP)
             elif model == "StepModel":
                 self.model = StepModel(self.data,self.D0,ncosF,ncosD,ncosP)
             elif model == "OneStepModel":
