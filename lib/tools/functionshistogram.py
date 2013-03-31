@@ -28,7 +28,7 @@ def read_data_rv(filename):
     #print data[:10,:10]
     return data
 
-def read_coor(filename,rv=True,axis=2,com=False):
+def read_coor(filename,rv=False,axis=2,com=False):
     # axis: 0 (x), 1 (y), or 2 (z)
     if rv:
         data = read_data_rv(filename)

@@ -342,10 +342,6 @@ def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname,rv=False)
     print "="*5
     print "Results"
 
-    edges = np.arange(-zpbc/2.,zpbc/2.+0.1,1.)
-    nbins = len(edges)-1
-    redges = np.arange(0,50,0.2)
-
     alldist2_xy = []
     alldist2_z = []
     alldist2_r = []
@@ -390,20 +386,27 @@ def analyze_dist_conditionalz_essence(alldist2_xy,alldist2_z,alldist2_r,allz_ini
         k,xedges,yedges = np.histogram2d(np.array(np.sqrt(dist2)).ravel(),np.array(allz).ravel(),[80,40])
         #print dist2_r.shape,z.shape
         print "hist,xedges,yedges",k.shape, xedges.shape, yedges.shape
-        # norm
-        xedges /= factor
         for n,donorm in enumerate([False,True]): #enumerate([1.,np.sum(k,axis=0)]):
             Label = label+"-%s" %(["nonorm","norm"][n])
             if i == 2:  # r
                 kk = (xedges[1:]+xedges[:-1]).reshape((-1,1))/2.*k
             else:
-                kk = k
+                import copy
+                kk = copy.deepcopy(k)
             if donorm:  # normalized
                 norm = np.sum(kk,axis=0)
                 kk = kk / norm
             import matplotlib.pyplot as plt
             plt.figure()
+            # factor rescaling xedges/factor
             plt.contourf(xedges[:-1],yedges[:-1],kk.transpose()) #locator=ticker.LogLocator()
+
+            # expectation value
+            E = np.sum((xedges[1:]+xedges[:-1]).reshape((-1,1))/2.*kk,axis=0)/np.sum(kk,axis=0)
+            plt.plot(E,yedges[:-1],color="k")
+            #D = E**2 / 2. /factor**2/lt*10 ########################################################3
+            #plt.plot(D,yedges[:-1],color="grey",lw=2)
+
             plt.xlabel("distance [A]")
             plt.xlim(xmax=distmax)
             plt.ylabel("z [A]")
