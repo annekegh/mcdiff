@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 def plotsettings():
     plt.rc(('xtick','ytick','axes'), labelsize=24.0)
-    plt.rcParams['lines.linewidth'] = 2
+    plt.rcParams['lines.linewidth'] = 3
     plt.rcParams['axes.linewidth'] = 2
     plt.rcParams['axes.titlesize'] = 16
     plt.rcParams['xtick.major.size'] = 10
@@ -217,8 +217,8 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
 
         plt.subplot(2,1,1)
         plt.plot(x_D,d)
-        plt.plot(x_Drad,drad)
-        plt.ylabel("D,Drad [A^3/ps]")
+        plt.plot(x_Drad,drad,'o-')
+        plt.ylabel("D,Drad [A^2/ps]")
 
         plt.subplot(2,1,2)
         if len(d) != len(drad):  pass   # TODO XXXXXXXXXXXXXXX  ratio = Drad[-nc:]/D[-nc:]
@@ -227,10 +227,20 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
 
         dx = x[1]-x[0]
         x_ratio = x+3*dx/4.   # halfway
-        ratio = drad[:nc]/d[:nc]
-        plt.plot(x_ratio,ratio)
+        dave = (d[:-1]+d[1:])/2.  # interpolate between points
+        dave = np.array([(d[0]+d[-1])/2.]+dave.tolist())
+        #ratio = drad[:nc]/d[:nc]
+        #plt.plot(x_ratio,ratio)
+        ratio = drad[:nc]/dave[:nc]
+        plt.plot(x,ratio)
+        plt.plot([x[0],x[-1]],[1.,1.],color='k',lw=1)
         plt.ylabel("Drad/D")
-        plt.xlabel("z [A]")
+
+        #plt.subplot(3,1,3)
+        #plt.plot(x,drad[:nc]-dave[:nc])
+        #plt.plot([x[0],x[-1]],[0.,0.],color='k',lw=1)
+        #plt.ylabel("Drad-D")
+        #plt.xlabel("z [A]")
 
     plt.savefig(filename,transparent=transparent)
 
