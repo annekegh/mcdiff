@@ -71,8 +71,18 @@ def plot_histogram_pbc(coor,zpbc,figname):
     maxloghist = max(np.log(hist))
     plt.plot(bin_midst,-np.log(hist)+maxloghist)
     plt.plot(np.array(bin_midst)+zpbc,-np.log(hist)+maxloghist,color='blue')
+    plt.ylim(0,5)   # hard coded ########### TODO
     plt.ylabel("F in kBT")
     plt.savefig(figname+".log.png")
+
+    # print to a file for later use
+    f = file(figname+".log.txt","w+")
+    print >> f, "#freeenergy: binmidst F"
+    print >> f, "#zpbc", zpbc
+    for i in range(len(bin_midst)):
+        print >> f, bin_midst[i], -np.log(hist[i])+maxloghist 
+    f.close()
+
 
 def plot_histogram(coor,figname):
     nbins = 100
