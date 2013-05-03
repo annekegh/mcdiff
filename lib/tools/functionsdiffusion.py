@@ -476,8 +476,8 @@ def plot_vs_time(x,dt,filename,**kwargs):
     plt.xlabel("t [ps]")
     plt.savefig(filename)
 
-def fit_sqrt_vs_time(r,dt,figname,title=None,verbose=False):
-    t = np.arange(len(r))*dt
+def fit_sqrt_vs_time(r,dt,figname,title=None,verbose=False,t0=0.,std=None):
+    t = np.arange(len(r))*dt+t0
 
     # fit distance
     p = np.polyfit(t[:50],r[:50],1)
@@ -504,11 +504,14 @@ def fit_sqrt_vs_time(r,dt,figname,title=None,verbose=False):
     a_2 = outputs[0]
 
     plt.figure()
-    plt.plot(t,r**2)
+    if std == None:
+        plt.plot(t,r**2)
+    else:
+        plt.errorbar(t,r**2,yerr=std**2)
     plt.plot(t,fitted_1)
     plt.plot(t,fitted_2)
     plt.xlabel("t [ps]")
-    plt.ylabel("distance**2 [A]")
+    plt.ylabel("MSD [A^2]")
     plt.legend(["data","a*t+b","a*t"])
     if title is None: title = ""
     title += ", a=%f [e-4cm**2/s]  b=%f" %(a_1,b_1)
