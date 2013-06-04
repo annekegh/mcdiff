@@ -37,101 +37,14 @@ plotsettings()
 
 
 
-def analyze_dist_cond_traditional_2(list_x,list_y,list_z,dn,dtc,zpbc,figname):
-    lt = dn*dtc
-
-    nfiles = len(list_x)
-    ntime = list_x[0].shape[0]
-    natom = list_x[0].shape[1]
-
-    # construct bins - I can play here with resolution
-    nbins = 50
-    bins = np.arange(-zpbc/2.,zpbc/2.+0.0001,zpbc/nbins)
-    print "bins",bins
-    dz = [[[[] for i in range(nbins)] for i in range(3)] for i in range(nfiles)]
-    # fill up count and dz arrays
-    for n in range(nfiles):
-        x = list_x[n]   # ntime x natom
-        y = list_y[n]
-        z = list_z[n]
-        lt = dn
-        dist_x = calc_onedist_lt(x,lt)  # (ntime-lt) x natom
-        dist_y = calc_onedist_lt(y,lt)  # (ntime-lt) x natom
-        dist_z = calc_onedist_lt(z,lt)  # (ntime-lt) x natom
- 
-        # (ntime-lt) x natom    initial z
-        zinit = z[:-lt,:]-zpbc*np.floor(z[:-lt,:]/zpbc+0.5)
-
-        for at in range(natom):
-            zinit_digi = np.digitize(zinit[:,at],bins)  # (ntime-lt) x natom
-            for i,digi in enumerate(zinit_digi):
-                for j,dist in enumerate([dist_x,dist_y,dist_z]):
-                    dz[n][j][digi-1].append(dist[i,at])
-
-    #f = file("test.txt","w+")
-    #for i in range(len(z)):
-    #    print >> f, i,z[i,0],z[i,1],z[i,2],z[i,3],z[i,4],z[i,5],z[i,6],z[i,7],z[i,8],z[i,9]
-    #f.close()
-    #f = file("test.distz.txt","w+")
-    #for i in range(len(dist_z)):
-    #    print >> f, i,dist_z[i,:]
-    #f.close()
-
-    # FIT  <r^2> = 2 dim D lt
-    lt = dn*dtc
-    allD = np.zeros((nfiles,3,nbins),float)
-    for j in range(3):
-        for n in range(nfiles):
-            for i in range(nbins):
-                a = dz[n][j][i]
-                m = np.mean(a)
-                s = np.std(a)
-                b2 = (a-m)**2
-                M = np.mean(b2)
-                allD[n,j,i] = M/2./lt # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
-                                # = 1e-8 meter**2/second = 1e-4 cm**2/s
-
-    print "===== Results ====="
-    print "allD",allD.shape
-    print allD
- 
-    mean = np.mean(allD,axis=0)
-    std = np.std(allD,axis=0)
-    print "mean D"
-    print mean
-    print "std D"
-    print std
-
-    x = bins[:-1] + zpbc/(2.*nbins)
-    import matplotlib.pyplot as plt
-    plt.figure()
-    for j in range(3):
-        for n in range(nfiles):
-            plt.plot(x,allD[n,j,:],color='grey')
-    plt.errorbar(x,mean[0,:],yerr=std[0,:],color='red',lw='3',label="x")
-    plt.errorbar(x,mean[1,:],yerr=std[1,:],color='green',lw='3',label="y")
-    plt.errorbar(x,mean[2,:],yerr=std[2,:],color='k',lw='3',label="z")
-    plt.ylabel("D [A^2/ps]")
-    #plt.ylim(0.1,1)
-    plt.legend()
-    plt.savefig(figname)
-
-    # print to a file for later use
-    f = file(figname+".txt","w+")
-    print >> f, "#diffusion xy z r"
-    print >> f, "#nfiles",nfiles
-    print >> f, "#zpbc", zpbc
-    for i in range(nbins):
-        print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
-    f.close()
 
 
 #=====================
 # ANALYZE
 #=====================
 
-def analyze_dist_multi_1D(list_x,nstep,outdir,dtc):
-    """Take the average over the D estimates in each of these files"""
+def analyze_dist_1D(list_x,nstep,outdir,dtc):
+    """Take the average over the D estimates in each of these x-arrays"""
     assert len(list_x) > 0
     nfiles = len(list_x)
     t = np.arange(0,nstep*dtc,dtc)
@@ -144,7 +57,7 @@ def analyze_dist_multi_1D(list_x,nstep,outdir,dtc):
     print "making %i fits" %nfiles
     print "fit from %i steps, i.e. time %f ps, actually time %f ps" %(nstep,nstep*dtc,(nstep-1)*dtc)
     for i in range(nfiles):
-        dist2 = calc_dist_1D(np.array(read_coor(list_x[i])))
+        dist2 = calc_dist_1D(np.array(list_x[i]))
         # only fit the first nstep time steps (use all atoms)
         average = np.mean(dist2[:nstep,:],1)  # average over the atoms
         alldist2[:,i] = average
@@ -166,31 +79,48 @@ def analyze_dist_multi_1D(list_x,nstep,outdir,dtc):
 
 
 
-def analyze_dist_multi(list_x,list_y,list_z,nstep,outdir,dtc):
-    "Take the average over the D estimates in each of these files"""
+def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
+    "Take the average over the D estimates in each of these xyz trajectories"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
     assert len(list_x) == len(list_z)
     nfiles = len(list_x)
-    t = np.arange(0,nstep*dtc,dtc)
+    """Conditional Mean Square Distance
+    dn1  --  start shift
+    dn2  --  end shift
+    ddn  --  range(dn1,dn2,ddn)
+    """
+    if dn2 is None:
+        dn2 = dn1
+    assert dn2 >= dn1
+    lt1 = dn1*dtc
+    lt2 = dn2*dtc  # I will fit in region lagtime1 to lagtime2
+    dns = np.arange(dn1,dn2+1,ddn)
+    lagtimes = dns*dtc
+    nlags = len(lagtimes)
 
-    alldist2 = np.zeros((nstep,nfiles,3),float)
+    ntime = list_x[0].shape[0]
+    natom = list_x[0].shape[1]
+
+    #t = np.arange(0,nstep*dtc,dtc)
+
+    alldist2 = np.zeros((nlags,nfiles,3),float)
     allD = np.zeros((nfiles,3),float)
 
     print "="*5
     print "Results"
     print "making %i fits" %nfiles
-    print "fit from %i steps, i.e. time %f ps, actually time %f ps" %(nstep,nstep*dtc,(nstep-1)*dtc)
+    print "fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
+             nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc)
     for i in range(nfiles):
-        dist2_xy,dist2_z,dist2_r,weight = calc_dist_from3files(list_x[i],list_y[i],list_z[i])
-        for it,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
-            # only fit the first nstep time steps (use all atoms)
-            average = np.mean(dist2[:nstep,:],1)  # average over the atoms
-            alldist2[:,i,it] = average
+        dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
+        for k,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
+            average = np.mean(dist2,1)  # average over the atoms
+            alldist2[:,i,k] = average
             #print i,list_x[i],it,average[:10]
 
-            p = np.polyfit(t,average,1)
-            allD[i,it] = p[0]   # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
+            p = np.polyfit(lagtimes,average,1)
+            allD[i,k] = p[0]   # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
                                 # = 1e-8 meter**2/second = 1e-4 cm**2/s
         # if I want many figures:
         #fit_sqrt_vs_time(np.mean(dist_xy,1),dtc,outdir+"/fig_dist.xy.%i.png"%i,title=str(i))
@@ -199,14 +129,20 @@ def analyze_dist_multi(list_x,list_y,list_z,nstep,outdir,dtc):
 
     # extra figures
     m2_xy = np.mean(alldist2[:,:,0],1)
-    #s_xy = np.std(tot_xy,1)
+    s_xy = np.std(alldist2[:,:,0],1)
     m2_z  = np.mean(alldist2[:,:,1],1)
-    #s_z  = np.std(tot_z,1)
+    s_z  = np.std(alldist2[:,:,1],1)
     m2_r  = np.mean(alldist2[:,:,2],1)
-    #s_r  = np.std(tot_r,1)
-    fit_sqrt_vs_time(np.sqrt(m2_xy),dtc,outdir+"/fig_dist.xy.average.png",title="average of %i"%nfiles)
-    fit_sqrt_vs_time(np.sqrt(m2_z), dtc,outdir+"/fig_dist.z.average.png",title="average of %i"%nfiles)
-    fit_sqrt_vs_time(np.sqrt(m2_r), dtc,outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles)
+    s_r  = np.std(alldist2[:,:,1],1)
+    fit_sqrt_vs_time(np.sqrt(m2_xy),dtc*ddn,
+            outdir+"/fig_dist.xy.average.png",title="average of %i"%nfiles,
+            t0=lagtimes[0],std=np.sqrt(s_xy))
+    fit_sqrt_vs_time(np.sqrt(m2_z), dtc*ddn,
+            outdir+"/fig_dist.z.average.png",title="average of %i"%nfiles,
+            t0=lagtimes[0],std=np.sqrt(s_z))
+    fit_sqrt_vs_time(np.sqrt(m2_r), dtc*ddn,
+            outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles,
+            t0=lagtimes[0],std=np.sqrt(s_r))
 
     print_output_D_ave(allD)
 
@@ -214,8 +150,8 @@ def analyze_dist_multi(list_x,list_y,list_z,nstep,outdir,dtc):
 #=========================================
 
 
-def analyze_dist_multi_BIS1(list_x,list_y,list_z,dtc):
-    "Collect distances in all these files"""
+def analyze_dist_BIS1(list_x,list_y,list_z,dtc):
+    "Collect distances in all these xyz trajectories"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
     assert len(list_x) == len(list_z)
@@ -231,7 +167,7 @@ def analyze_dist_multi_BIS1(list_x,list_y,list_z,dtc):
     allD = np.zeros((nfiles,3),float)
 
     for i in range(nfiles):
-        lagtimes,dist2_xy,dist2_z,dist2_r = collect_dist_from3files(list_x[i],list_y[i],list_z[i],dtc)
+        lagtimes,dist2_xy,dist2_z,dist2_r = collect_dist(list_x[i],list_y[i],list_z[i],dtc)
         print "file",i,"shape",dist2_xy.shape
         for it,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
 
@@ -247,15 +183,7 @@ def analyze_dist_multi_BIS1(list_x,list_y,list_z,dtc):
     #dist_xy = np.array(alldist_xy).ravel()
     #dist_z = np.array(alldist_z).ravel()
     #dist_r = np.array(alldist_r).ravel()
-
     print_output_D_ave(allD)
-
-    #import matplotlib.cm as cm
-    #plt.figure()
-    #plt.hexbin(lagtimes,dist_r,bins='log', cmap=cm.jet)
-    #cb = plt.colorbar()
-    #cb.set_label('log10(N)')
-    #plt.savefig("lag_vs_r.png")
 
 
 #=========================================
@@ -263,7 +191,7 @@ def analyze_dist_multi_BIS1(list_x,list_y,list_z,dtc):
 #=========================================
 
 def analyze_dist_timedependent(list_x,list_y,list_z,dtc,nstep,figname,zoom=50,shift=1):
-    "Collect distances in all these files"""
+    "Collect distances in all these xyz trajectories"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
     assert len(list_x) == len(list_z)
@@ -275,7 +203,7 @@ def analyze_dist_timedependent(list_x,list_y,list_z,dtc,nstep,figname,zoom=50,sh
 
     allddr = np.zeros((nstep,nfiles,6),float)  # six of those    
     for i in range(nfiles):
-        ddr,weight = calc_timedependent_D_from3files(list_x[i],list_y[i],list_z[i],dtc,shift=shift)
+        ddr,weight = calc_timedependent_D(list_x[i],list_y[i],list_z[i],dtc,shift=shift)
         for it,ddist in enumerate(ddr):
             allddr[:,i,it] = np.mean(ddr[it],axis=1)
             print "file",i,"type",it,"ddr",ddr[it].shape
@@ -348,44 +276,51 @@ def calc_timedependent_D(x,y,z,dtc,shift=1):
 #=========================================
 
 
-def analyze_dist_cond_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2=None,plain=True):
+def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2=None,ddn=1,plain=True,nbins=50):
+    """Conditional Mean Square Distance
+    dn1  --  start shift
+    dn2  --  end shift
+    ddn  --  range(dn1,dn2,ddn)
+    """
     if dn2 is None:
         dn2 = dn1
     assert dn2 >= dn1
     lt1 = dn1*dtc
     lt2 = dn2*dtc  # I will fit in region lagtime1 to lagtime2
-    lagtimes = np.arange(dn1,dn2+1)*dtc
+    lagtimes = np.arange(dn1,dn2+1,ddn)*dtc
+    nlags = len(lagtimes)
 
     nfiles = len(list_x)
-    natom = list_x[0].shape[1]
     ntime = list_x[0].shape[0]
-    nlags = dn2-dn1+1
+    natom = list_x[0].shape[1]
 
     # construct bins - I can play here with resolution
-    nbins = 50
     bins = np.arange(-zpbc/2.,zpbc/2.+0.0001,zpbc/nbins)
     print "bins",bins
+
+    # fill up count and dz arrays
     count = np.zeros((nfiles,3,nbins,nlags),int)
     dz = np.zeros((nfiles,3,nbins,nlags),float)
-    # fill up count and dz arrays
     for n in range(nfiles):
         x = list_x[n]   # ntime x natom
         y = list_y[n]
         z = list_z[n]
-        for k,lt in enumerate(np.arange(dn1,dn2+1)):
-            dist2_xy,dist2_z,dist2_r = calc_dist_lt(x,y,z,lt)  # (ntime-lt) x natom
+        for k,dn in enumerate(np.arange(dn1,dn2+1,ddn)):
+            dist2_xy,dist2_z,dist2_r = calc_dist_lt(x,y,z,dn)  # (ntime-dn) x natom
 
-            # (ntime-lt) x natom    initial z
-            zinit = z[:-lt,:]-zpbc*np.floor(z[:-lt,:]/zpbc+0.5)
+            # (ntime-dn) x natom    initial z
+            zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
     
             for at in range(natom):
-                zinit_digi = np.digitize(zinit[:,at],bins)  # (ntime-lt)
+                zinit_digi = np.digitize(zinit[:,at],bins)  # (ntime-dn)
                 for i,digi in enumerate(zinit_digi):
                     for j,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
                         count[n,j,digi-1,k]+=1   # do -1
                         dz[n,j,digi-1,k]+=dist2[i,at]
+    #print "count",count
+    #print "dz",dz
     DD = dz/count
-    # FIT  <r^2> = 2 dim D lt
+    # FIT  <r^2> = 2 dim D dn dtc
     if plain:  #use the last lagtime (endpoint)
         allD = DD[:,:,:,-1]/2./lagtimes[-1]
     else:
@@ -443,12 +378,89 @@ def analyze_dist_cond_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2=
 
 
 
+def analyze_dist_condz_traditional_2(list_x,list_y,list_z,dn,dtc,zpbc,figname,nbins=50):
+    lt = dn*dtc
+
+    nfiles = len(list_x)
+    ntime = list_x[0].shape[0]
+    natom = list_x[0].shape[1]
+
+    # construct bins - I can play here with resolution
+    bins = np.arange(-zpbc/2.,zpbc/2.+0.0001,zpbc/nbins)
+    print "bins",bins
+    dz = [[[[] for i in range(nbins)] for i in range(3)] for i in range(nfiles)]
+    # fill up count and dz arrays
+    for n in range(nfiles):
+        x = list_x[n]   # ntime x natom
+        y = list_y[n]
+        z = list_z[n]
+        dist_x = calc_onedist_lt(x,dn)  # (ntime-dn) x natom
+        dist_y = calc_onedist_lt(y,dn)  # (ntime-dn) x natom
+        dist_z = calc_onedist_lt(z,dn)  # (ntime-dn) x natom
+ 
+        # (ntime-dn) x natom    initial z
+        zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
+
+        for at in range(natom):
+            zinit_digi = np.digitize(zinit[:,at],bins)  # (ntime-dn) x natom
+            for i,digi in enumerate(zinit_digi):
+                for j,dist in enumerate([dist_x,dist_y,dist_z]):
+                    dz[n][j][digi-1].append(dist[i,at])
+
+    # FIT  <r^2> = 2 dim D lt
+    allD = np.zeros((nfiles,3,nbins),float)
+    for j in range(3):
+        for n in range(nfiles):
+            for i in range(nbins):
+                a = dz[n][j][i]
+                m = np.mean(a)
+                s = np.std(a)
+                b2 = (a-m)**2
+                M = np.mean(b2)
+                allD[n,j,i] = M/2./lt # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
+                                # = 1e-8 meter**2/second = 1e-4 cm**2/s
+
+    print "===== Results ====="
+    print "allD",allD.shape
+    print allD
+ 
+    mean = np.mean(allD,axis=0)
+    std = np.std(allD,axis=0)
+    print "mean D"
+    print mean
+    print "std D"
+    print std
+
+    x = bins[:-1] + zpbc/(2.*nbins)
+    import matplotlib.pyplot as plt
+    plt.figure()
+    for j in range(3):
+        for n in range(nfiles):
+            plt.plot(x,allD[n,j,:],color='grey')
+    plt.errorbar(x,mean[0,:],yerr=std[0,:],color='red',lw='3',label="x")
+    plt.errorbar(x,mean[1,:],yerr=std[1,:],color='green',lw='3',label="y")
+    plt.errorbar(x,mean[2,:],yerr=std[2,:],color='k',lw='3',label="z")
+    plt.ylabel("D [A^2/ps]")
+    #plt.ylim(0.1,1)
+    plt.legend()
+    plt.savefig(figname)
+
+    # print to a file for later use
+    f = file(figname+".txt","w+")
+    print >> f, "#diffusion xy z r"
+    print >> f, "#nfiles",nfiles
+    print >> f, "#zpbc", zpbc
+    for i in range(nbins):
+        print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
+    f.close()
+
+
 #=========================================
 # CONDITIONAL Z
 #=========================================
 
-def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname,nbins,rv=False,tradition=False):
-    "Collect distances in all these files"""
+def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=False):
+    "Collect distances in all these three trajectories"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
     assert len(list_x) == len(list_z)
@@ -463,10 +475,9 @@ def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname,nbins,rv=
     allz_init = []
     allz_final = []
     for i in range(nfiles):
-        dist2_xy,dist2_z,dist2_r = calc_dist_lt_from3files(list_x[i],list_y[i],list_z[i],lt,rv=rv)
-        z = np.array(read_coor(list_z[i],rv=rv))
-
-        print "z.shape",z.shape
+        dist2_xy,dist2_z,dist2_r = calc_dist_lt(list_x[i],list_y[i],list_z[i],dn)
+        z = np.array(list_z[i])
+        #print "z.shape",z.shape
         ntime = z.shape[0]
         natom = z.shape[1]
 
@@ -475,68 +486,61 @@ def analyze_dist_conditionalz(list_x,list_y,list_z,dtc,zpbc,lt,figname,nbins,rv=
         alldist2_r.append(dist2_r)
 
         # initial z
-        zinit = z[:-lt,:]-zpbc*np.floor(z[:-lt,:]/zpbc+0.5)
+        zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
         allz_init.append(zinit)
 
         # final z
-        zfinal = z[lt:,:]-zpbc*np.floor(z[lt:,:]/zpbc+0.5)
+        zfinal = z[dn:,:]-zpbc*np.floor(z[dn:,:]/zpbc+0.5)
         allz_final.append(zfinal)
-
-    print "z",z.shape
-    for i in range(natom-lt):
-        print i, z[i,0],z[i,0]-z[i+lt],(z[i,0]-z[i+lt])**2,dist2_z[i]
 
     zbins = np.arange(nbins+1)*zpbc/float(nbins) -zpbc/2.
     print "zbins",zbins
     rbins = np.arange(0,50.1,0.5)  ################ hard coded TODO
 
-    if not tradition:
-        analyze_dist_conditionalz_essence(alldist2_xy,
-            alldist2_z,alldist2_r,allz_init,allz_final,lt,dtc,figname,zbins,rbins)
+    #if not tradition:
+    #    analyze_dist_condz_essence(alldist2_xy,
+    #        alldist2_z,alldist2_r,allz_init,allz_final,dn,dtc,figname,zbins,rbins)
+    #else:  # NOOOOO not tested TODO
+    #    print "Not tested yet."
+    #    pass
+#def analyze_dist_condz_essence(alldist2_xy,alldist2_z,alldist2_r,allz_init,allz_final,dn,dtc,figname,zbins,rbins):
+#    nfiles = len(alldist2_xy)
+#    zpbc = zbins[-1]-zbins[0]
 
-    else:  # NOOOOO not tested TODO
-        print "Not tested yet."
-        pass
-
-
-def analyze_dist_conditionalz_essence(alldist2_xy,alldist2_z,alldist2_r,allz_init,allz_final,lt,dtc,figname,zbins,rbins):
-    nfiles = len(alldist2_xy)
-    zpbc = zbins[-1]-zbins[0]
-
-    print "lt*dtc",lt*dtc
-    if lt*dtc < 0.6:
-        distmax = 2.**2
-    elif lt*dtc < 6.:  #ps
-        distmax = 4.**2
-    elif lt*dtc < 60.:
-        distmax = 9.**2
+    lt = dn*dtc
+    print "dn*dtc",lt
+    if lt < 0.6:
+        distmax = 2.
+    elif lt < 6.:  #ps
+        distmax = 4.
+    elif lt < 60.:
+        distmax = 9.
     else:
-        distmax = 15.**2
-
-    distmax = None
-    #print allz_init, allz_final
+        distmax = 15.
+    #distmax = None
 
     for c,allz in enumerate([allz_init]): #,allz_final]):
-      mean = np.zeros((3,len(zbins)),float)
-      std = np.zeros((3,len(zbins)),float)
+      mean = np.zeros((3,len(zbins)-1),float)
+      std = np.zeros((3,len(zbins)-1),float)
       print "="*10
       labelz = ["zinit","zfinal"][c]
       print "labelz",labelz
+
       for i,dist2 in enumerate([alldist2_xy,alldist2_z,alldist2_r]):
-        print "i",i
-        print dist2
         label = labelz+"-"+["xy","z","r"][i]
-        factor = [np.sqrt(2),1.,np.sqrt(3)][i]  # rescaling
+        #factor = [np.sqrt(2),1.,np.sqrt(3)][i]  # rescaling
+
         # 2D bins x=axis0, y=axis1
         #k, xedges,yedges = np.histogram2d(np.sqrt(np.array(dist2)).ravel(),np.array(allz).ravel(),[rbins,zbins],normed=True)
-        if i in [0,2]:
-            k2,xedges,yedges = np.histogram2d(np.array(dist2).ravel(),np.array(allz).ravel(),[len(zbins),len(zbins)],normed=True)
-        else:
+        k2, xedges,yedges = np.histogram2d(np.array(dist2).ravel(),np.array(allz).ravel(),[rbins,zbins],normed=True)
+        #if i in [0,2]:
+        #    k2,xedges,yedges = np.histogram2d(np.array(dist2).ravel(),np.array(allz).ravel(),[len(zbins),len(zbins)],normed=True)
+        #else:
             #bins = zbins[len(zbins)/2:]
-            k2,xedges,yedges = np.histogram2d(np.array(dist2).ravel(),np.array(allz).ravel(),[len(zbins),len(zbins)],normed=True)
+        #    k2,xedges,yedges = np.histogram2d(np.array(dist2).ravel(),np.array(allz).ravel(),[len(zbins),len(zbins)],normed=True)
         #print dist2_r.shape,z.shape
         print "hist,xedges,yedges",k2.shape, xedges.shape, yedges.shape
-        for n,donorm in enumerate([False,True]): #enumerate([1.,np.sum(k,axis=0)]):
+        for n,donorm in enumerate([False,True]):
             Label = label+"-%s" %(["nonorm","norm"][n])
             print "Label",Label
             import copy
@@ -546,34 +550,37 @@ def analyze_dist_conditionalz_essence(alldist2_xy,alldist2_z,alldist2_r,allz_ini
                 kk = kk / norm
 
             # expectation value
-            d2 = ((xedges[1:]+xedges[:-1]).reshape((-1,1))/2.)   # these are rbins**2
-            xmiddle = (xedges[1:]+xedges[:-1])/2.    # these are rbins**2
-            ymiddle = (yedges[1:]+yedges[:-1])/2.    # these are zbins
-            mean[i,:] = np.sum(d2*k2,axis=0)/np.sum(k2,axis=0)
+            d2 = ((xedges[1:]+xedges[:-1]).reshape((-1,1))/2.)   # these are rbins**2 in middle
+            xmiddle = (xedges[1:]+xedges[:-1])/2.    # these are rbins**2 in middle
+            ymiddle = (yedges[1:]+yedges[:-1])/2.    # these are zbins in middle
+            print "d2",d2.shape, "k2",k2.shape, "mean",mean.shape, "x",xmiddle.shape
+            mean[i,:] = np.sum(d2*k2,axis=0)/np.sum(k2,axis=0)    # <r^2> is independent of "norm/nornorm"  ######
             std[i,:] = np.sum((d2-mean[i,:])**2*k2,axis=0)/np.sum(k2,axis=0)
 
             import matplotlib.pyplot as plt
             plt.figure()
-            plt.contourf(xmiddle,ymiddle,kk.transpose()) #locator=ticker.LogLocator()
+            plt.contourf(np.sqrt(xmiddle),ymiddle,kk.transpose()) #locator=ticker.LogLocator()
 
-            plt.plot(mean[i,:],ymiddle,color="k")
-            #D = E**2 / 2. /factor**2/lt*10 ########################################################3
+            plt.plot(np.sqrt(mean[i,:]),ymiddle,color="k")
+            #D = E**2 / 2. /factor**2/dn*10 ########################################################3
             #plt.plot(D,yedges[:-1],color="grey",lw=2)
 
-            plt.xlabel("distance^2 [A^2]")
+            plt.xlabel("distance [A]")
             plt.xlim(xmax=distmax)
             plt.ylabel("z [A]")
-            plt.title("root mean square distance: "+Label)
+            plt.title("MSD: "+Label)
             plt.colorbar()
-            plt.savefig(figname+"_hist2d.%s.lt%i.png"%(Label,lt))
+            plt.savefig(figname+"_hist2d.%s.dn%i.png"%(Label,dn))
 
       # print to a file for later use
-      f = file(figname+"_hist2d.%s.lt%i.txt"%(labelz,lt),"w+")
+      f = file(figname+"_hist2d.%s.dn%i.txt"%(labelz,dn),"w+")
       print >> f, "#diffusion xy z r"
       print >> f, "#nfiles",nfiles
       print >> f, "#zpbc", zpbc
+      print >> f, "#dn", dn
       for i in range(len(zbins)-1):
-        print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
+        # mean = <r**2> = 6*D*lt, so D = <r**2>/2/dim/lt
+        print >> f, mean[0,i]/4./lt,mean[1,i]/2./lt,mean[2,i]/6./lt,std[0,i],std[1,i],std[2,i]
       f.close()
 
 #=========================================
@@ -635,11 +642,11 @@ def calc_dist_from3files(xfile,yfile,zfile,rv=False):
     dist2_xy,dist2_z,dist2_r,weight = calc_dist(x,y,z)
     return dist2_xy,dist2_z,dist2_r,weight
 
-def calc_dist_lt_from3files(xfile,yfile,zfile,lt,rv=False):
+def calc_dist_lt_from3files(xfile,yfile,zfile,dn,rv=False):
     x = np.array(read_coor(xfile,rv=rv,axis=0))
     y = np.array(read_coor(yfile,rv=rv,axis=1))
     z = np.array(read_coor(zfile,rv=rv,axis=2))
-    d2_xy,d2_z,d2_r = calc_dist_lt(x,y,z,lt)
+    d2_xy,d2_z,d2_r = calc_dist_lt(x,y,z,dn)
     return d2_xy,d2_z,d2_r
 
 def collect_dist_from3files(xfile,yfile,zfile,dtc):
@@ -651,49 +658,56 @@ def collect_dist_from3files(xfile,yfile,zfile,dtc):
 
 #=========================================
 
-def calc_dist_lt(x,y,z,lt):
-    dist2_xy = (x[:-lt,:] - x[lt:,:])**2 + (y[:-lt,:] - y[lt:,:])**2
-    dist2_z  = (z[:-lt,:] - z[lt:,:])**2
+def calc_dist_lt(x,y,z,dn):
+    dist2_xy = (x[:-dn,:] - x[dn:,:])**2 + (y[:-dn,:] - y[dn:,:])**2
+    dist2_z  = (z[:-dn,:] - z[dn:,:])**2
     dist2_r = dist2_xy + dist2_z
     return dist2_xy,dist2_z,dist2_r
 
-def calc_onedist_lt(x,lt):
-    dist  = x[lt:,:] - x[:-lt,:]  # end-start
+def calc_onedist_lt(x,dn):
+    dist  = x[dn:,:] - x[:-dn,:]  # end-start
     return dist
 
-def calc_dist_1D(x,):
+def calc_dist_1D(x,shifts=None):
     # kind of oversampling!
     # Use ALL data in the files !!!
     # coor format: x[timestemp,atom]
     # returns: dist2: nstep x natom
-    nstep = x.shape[0]  # number of time steps
+    # I already average over the shifted time origin
+    if shifts is None:
+        nstep = x.shape[0]  # number of time steps
+        shifts = np.arange(nstep)
+    nlags = len(shifts)
     natom = x.shape[1]  # number of atoms
-    dist2  = np.zeros((nstep,natom),float)
-
-    for lt in range(1,nstep):  # lt is lagtime
-        # fill in alldist[i]
-        diff  = (x[:-lt,:] - x[lt:,:])**2
-        dist2[lt,:]  = np.mean(diff,axis=0)   #z/(self.nstep-lt)
-
+    dist2  = np.zeros((nlags,natom),float)
+    # fill up
+    for i,dn in enumerate(shifts):  # dn is shift (lagtime)
+        if dn > 0:
+            diff  = (x[:-dn,:] - x[dn:,:])**2
+            dist2[i,:]  = np.mean(diff,axis=0)   #z/(self.nstep-dn)
     return dist2
 
-def calc_dist(x,y,z):
+def calc_dist(x,y,z,shifts=None):
     # kind of oversampling!
     # Use ALL data in the files !!!
     # coor format: x[timestemp,atom]
     # I already average over the shifted time origin
-    nstep = x.shape[0]  # number of time steps
+    if shifts is None:
+        nstep = x.shape[0]  # number of time steps
+        shifts = np.arange(nstep)
+    nlags = len(shifts)
     natom = x.shape[1]  # number of atoms
-    dist2_xy = np.zeros((nstep,natom,),float)
-    dist2_z  = np.zeros((nstep,natom,),float)
-    weight  = np.zeros((nstep),float)
-
-    for lt in range(1,nstep):  # lt is lagtime
-        diff2_xy = (x[:-lt,:] - x[lt:,:])**2 + (y[:-lt,:] - y[lt:,:])**2
-        diff2_z  = (z[:-lt,:] - z[lt:,:])**2
-        dist2_xy[lt,:] = np.mean(diff2_xy,axis=0)  # xy2/(self.nstep-lt)
-        dist2_z[lt,:]  = np.mean(diff2_z,axis=0)   #z/(self.nstep-lt)
-        weight[lt] = len(diff2_xy)
+    dist2_xy = np.zeros((nlags,natom,),float)
+    dist2_z  = np.zeros((nlags,natom,),float)
+    weight  = np.zeros((nlags),float)
+    # fill up
+    for i,dn in enumerate(shifts):  # dn is shift (lagtime)
+        if dn > 0:
+            diff2_xy = (x[:-dn,:] - x[dn:,:])**2 + (y[:-dn,:] - y[dn:,:])**2
+            diff2_z  = (z[:-dn,:] - z[dn:,:])**2
+            dist2_xy[i,:] = np.mean(diff2_xy,axis=0)  # xy2/(self.nstep-lt)
+            dist2_z[i,:]  = np.mean(diff2_z,axis=0)   #z/(self.nstep-lt)
+            weight[i] = len(diff2_xy)
 
     dist2_r = dist2_xy+dist2_z
     return dist2_xy,dist2_z,dist2_r,weight
@@ -706,10 +720,10 @@ def collect_dist(x,y,z,dtc):
     dist2_z = []
     dist2_r = []
     natom = x.shape[1]
-    for lt in range(1,len(x)):  # lt is lagtime
-        diff_xy = (x[:-lt,:] - x[lt:,:])**2 + (y[:-lt,:] - y[lt:,:])**2
-        diff_z  = (z[:-lt,:] - z[lt:,:])**2
-        lagtimes.extend(lt*np.ones(len(diff_xy)*natom)*dtc)
+    for dn in range(1,len(x)):  # dn is shift, dn*dtc is lagtime
+        diff_xy = (x[:-dn,:] - x[dn:,:])**2 + (y[:-dn,:] - y[dn:,:])**2
+        diff_z  = (z[:-dn,:] - z[dn:,:])**2
+        lagtimes.extend(dn*np.ones(len(diff_xy)*natom)*dtc)
         dist2_xy.extend(diff_xy.ravel().tolist())
         dist2_z.extend(diff_z.ravel().tolist())
     lagtimes = np.array(lagtimes)
