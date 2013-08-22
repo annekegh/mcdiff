@@ -276,12 +276,18 @@ def calc_timedependent_D(x,y,z,dtc,shift=1):
 #=========================================
 
 
-def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2=None,ddn=1,plain=True,nbins=50):
+def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2=None,ddn=1,plain=True,nbins=50,surv=False):
     """Conditional Mean Square Distance
     dn1  --  start shift
     dn2  --  end shift
     ddn  --  range(dn1,dn2,ddn)
+    surv  --  whether to use survival probability
     """
+
+    if surv:
+         from mcdiff.tools.functionsextract import indices_survived, calc_survival_probability
+         from mcdiff.tools.functionsextract import calc_survival_probability_add
+
     if dn2 is None:
         dn2 = dn1
     assert dn2 >= dn1
@@ -301,6 +307,10 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     # fill up count and dz arrays
     count = np.zeros((nfiles,3,nbins,nlags),int)
     dz = np.zeros((nfiles,3,nbins,nlags),float)
+    if surv:
+        #survivals = np.zeros((nfiles,nbins+2,nlags),float)
+        initials = np.zeros((nbins+2,nlags),float)
+        surviveds = np.zeros((nbins+2,nlags),float)
     for n in range(nfiles):
         x = list_x[n]   # ntime x natom
         y = list_y[n]
@@ -310,18 +320,45 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
 
             # (ntime-dn) x natom    initial z
             zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
-    
+
             for at in range(natom):
                 zinit_digi = np.digitize(zinit[:,at],bins)  # (ntime-dn)
-                for i,digi in enumerate(zinit_digi):
+
+                if surv:
+                    indices = indices_survived(z[:,at],bins,shift=dn)
+                else:
+                    indices = range(len(zinit_digi))
+#                for i,digi in enumerate(zinit_digi):
+                for i in indices:
+                    digi = zinit_digi[i]
                     for j,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
                         count[n,j,digi-1,k]+=1   # do -1
                         dz[n,j,digi-1,k]+=dist2[i,at]
+                if surv:
+                    dezez = z[:,at]-zpbc*np.floor(z[:,at]/zpbc+0.5)
+                    s1,s2,s3 = calc_survival_probability_add(initials[:,k],surviveds[:,k],dezez,bins,shift=dn)
+            #if surv:
+            #    survival,initial,survived = calc_survival_probability(z.transpose(),bins,shift=dn)
+            #    survivals[n,:,k] = survival[:]
     #print "count",count
     #print "dz",dz
     DD = dz/count
+    #print DD
+
+    if surv:
+        # FIT <r^2> = 2 dim D dn dtc P(t)
+        allDD = np.sum(DD,0)/len(DD)
+        #print "allDD",allDD.shape,allDD
+        #print "survivals",survivals
+        #print "rat",surviveds/initials
+        allD = np.zeros((nlags,3,nbins),float)     # XXXXX dimensions have different meaning TODO XXXXXX
+        for k in range(nlags):
+            allD[k,0,:] = allDD[0,:,k]/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
+            allD[k,1,:] = allDD[1,:,k]/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
+            allD[k,2,:] = allDD[2,:,k]/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
+
     # FIT  <r^2> = 2 dim D dn dtc
-    if plain:  #use the last lagtime (endpoint)
+    elif plain:  #use the last lagtime (endpoint)
         allD = DD[:,:,:,-1]/2./lagtimes[-1]
     else:
       allD = np.zeros((nfiles,3,nbins),float)
@@ -336,6 +373,7 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     print "count",count.shape
     print "dz",dz.shape
     print "allD",allD.shape
+    #print "D", allD
 
     # factor 2???
 
@@ -356,7 +394,8 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     import matplotlib.pyplot as plt
     plt.figure()
     for j in range(3):
-        for n in range(nfiles):
+        #for n in range(nfiles):
+        for n in range(len(allD)):
             plt.plot(x,allD[n,j,:],color='grey')
     plt.errorbar(x,mean[0,:],yerr=std[0,:],color='red',lw='3',label='xy')
     plt.errorbar(x,mean[1,:],yerr=std[1,:],color='green',lw='3',label='z')
