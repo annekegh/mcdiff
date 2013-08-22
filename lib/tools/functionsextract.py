@@ -1,5 +1,8 @@
 """Take trajectory and create transition matrix
-AG, August 19, 2012"""
+AG, August 19, 2012
+
+Get survival probability
+AG, August 21, 2013"""
 
 import numpy as np
 
@@ -153,6 +156,45 @@ def transition_matrix_add2(A,x,edges,shift=1):
     #if filename is not None:
     #    write_Tmat_square(A[1:-1,1:-1],filename+"."+str(shift)+".pbc.dat")
 
+
+def calc_survival_probability(list_coor,edges,shift=1):
+    """Calculate the survival probability
+    without counting particles that left a bin during the lag time"""
+    initial = np.zeros(len(edges)+1,float)
+    survived = np.zeros(len(edges)+1,float)
+    for x in list_coor:
+        calc_survival_probability_add(initial,survived,x,edges,shift=shift) 
+    return survived/initial, initial, survived
+
+def calc_survival_probability_add(initial,survived,x,edges,shift=1):
+    assert len(x.shape)==1
+    assert shift < len(x)
+    assert len(initial)==len(survived)
+    assert len(initial)==len(edges)+1
+
+    digitized = np.digitize(x,edges)
+    for i in range(len(digitized)-shift):
+        start = digitized[i]
+        same = (digitized[i:i+shift+1]==start).all()
+        #print start,same,int(same),digitized[i:i+shift+1]
+        initial[start] += 1.    # should be float
+        survived[start] += float(same)   # should be float
+
+    return survived/initial, initial, survived
+
+def indices_survived(x,edges,shift=1):
+    """check whether a coordinate is still in the same bin after the lag time"""
+    assert len(x.shape) == 1
+    assert shift < len(x)
+
+    indices = []
+    digitized = np.digitize(x,edges)
+    for i in range(len(digitized)-shift):
+        start = digitized[i]
+        same = (digitized[i:i+shift+1]==start).all()
+        if same:
+            indices.append(i)
+    return indices
 
 #=========== OLDER =========
 def write_Tmat_linebyline(A,filename,edges=None):
