@@ -301,105 +301,131 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     natom = list_x[0].shape[1]
 
     # construct bins - I can play here with resolution
-    bins = np.arange(-zpbc/2.,zpbc/2.+0.0001,zpbc/nbins)
-    print "bins",bins
+    edges = (np.arange(nbins+1)/float(nbins)-0.5)*zpbc
+    print "edges",edges
+    assert len(edges)==nbins+1
 
     # fill up count and dz arrays
     count = np.zeros((nfiles,3,nbins,nlags),int)
     dz = np.zeros((nfiles,3,nbins,nlags),float)
     if surv:
-        #survivals = np.zeros((nfiles,nbins+2,nlags),float)
         initials = np.zeros((nbins+2,nlags),float)
         surviveds = np.zeros((nbins+2,nlags),float)
     for n in range(nfiles):
         x = list_x[n]   # ntime x natom
         y = list_y[n]
         z = list_z[n]
+        pbccrd_z = z[:,:]-zpbc*np.floor(z[:,:]/zpbc+0.5)
+
         for k,dn in enumerate(np.arange(dn1,dn2+1,ddn)):
             dist2_xy,dist2_z,dist2_r = calc_dist_lt(x,y,z,dn)  # (ntime-dn) x natom
-
-            # (ntime-dn) x natom    initial z
-            zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
+            print "file,dn",n,dn
 
             for at in range(natom):
-                zinit_digi = np.digitize(zinit[:,at],bins)  # (ntime-dn)
+                # (ntime-dn) x natom    initial z
+                #zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
+                zinit_digi = np.digitize(pbccrd_z[:-dn,at],edges)  # (ntime-dn)
 
                 if surv:
-                    indices = indices_survived(z[:,at],bins,shift=dn)
+                    indices = indices_survived(pbccrd_z[:,at],edges,shift=dn)
                 else:
                     indices = range(len(zinit_digi))
-#                for i,digi in enumerate(zinit_digi):
                 for i in indices:
                     digi = zinit_digi[i]
                     for j,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
-                        count[n,j,digi-1,k]+=1   # do -1
+                        count[n,j,digi-1,k]+=1.   # do -1
                         dz[n,j,digi-1,k]+=dist2[i,at]
                 if surv:
-                    dezez = z[:,at]-zpbc*np.floor(z[:,at]/zpbc+0.5)
-                    s1,s2,s3 = calc_survival_probability_add(initials[:,k],surviveds[:,k],dezez,bins,shift=dn)
+                    s1,s2,s3 = calc_survival_probability_add(initials[:,k],surviveds[:,k],pbccrd_z[:,at],edges,shift=dn)
             #if surv:
-            #    survival,initial,survived = calc_survival_probability(z.transpose(),bins,shift=dn)
+            #    survival,initial,survived = calc_survival_probability(z.transpose(),edges,shift=dn)
             #    survivals[n,:,k] = survival[:]
-    #print "count",count
-    #print "dz",dz
     DD = dz/count
     #print DD
 
-    if surv:
-        # FIT <r^2> = 2 dim D dn dtc P(t)
-        allDD = np.sum(DD,0)/len(DD)
-        #print "allDD",allDD.shape,allDD
-        #print "survivals",survivals
-        #print "rat",surviveds/initials
-        allD = np.zeros((nlags,3,nbins),float)     # XXXXX dimensions have different meaning TODO XXXXXX
-        for k in range(nlags):
-            allD[k,0,:] = allDD[0,:,k]/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
-            allD[k,1,:] = allDD[1,:,k]/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
-            allD[k,2,:] = allDD[2,:,k]/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
+  #  if False: #surv:
+  #      # FIT <r^2> = 2 dim D dn dtc P(t)
+  #      allDD = np.sum(DD,0)/len(DD)
+  #      #print "allDD",allDD.shape,allDD
+  #      #print "survivals",survivals
+  #      #print "rat",surviveds/initials
+  #      allD = np.zeros((nlags,3,nbins),float)     # XXXXX dimensions have different meaning TODO XXXXXX
+  #      for k in range(nlags):
+  #          allD[k,0,:] = allDD[0,:,k]/lagtimes[k]/2. #/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
+  #          allD[k,1,:] = allDD[1,:,k]/lagtimes[k]/2. #/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
+  #          allD[k,2,:] = allDD[2,:,k]/lagtimes[k]/2. #/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
 
     # FIT  <r^2> = 2 dim D dn dtc
-    elif plain:  #use the last lagtime (endpoint)
+    if plain:  #use the last lagtime (endpoint)
+        # simple
         allD = DD[:,:,:,-1]/2./lagtimes[-1]
+        allD[:,0,:] /= 2.   # dimension adapt
+        allD[:,2,:] /= 3.
+    
+        mean = np.mean(allD,axis=0)
+        std = np.std(allD,axis=0)
+
+        # less sensitive to nans
+        mean_dzcount = np.sum(dz,axis=0)/np.sum(count,axis=0)
+        mean = mean_dzcount[:,:,-1]/2./lagtimes[-1]
+        mean[0,:]/=2.
+        mean[2,:]/=3.
+
     else:
-      allD = np.zeros((nfiles,3,nbins),float)
-      for j in range(3):
-        for n in range(nfiles):
-            for i in range(nbins):
-                p = np.polyfit(lagtimes,DD[n,j,i,:],1)
-                allD[n,j,i] = p[0]/2. # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
+        allD = np.zeros((nfiles,3,nbins),float)
+        for j in range(3):
+            for n in range(nfiles):
+                for i in range(nbins):
+                    p = np.polyfit(lagtimes,DD[n,j,i,:],1)
+                    allD[n,j,i] = p[0]/2. # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
                                 # = 1e-8 meter**2/second = 1e-4 cm**2/s
 
+        allD[:,0,:] /= 2.   # dimension adapt
+        allD[:,2,:] /= 3.
+        mean = np.mean(allD,axis=0)
+        std = np.std(allD,axis=0)
+
+        # less sensitive to nans
+        mean = np.zeros((3,nbins),float)
+        mean_dzcount = np.sum(dz,axis=0)/np.sum(count,axis=0)
+        for j in range(3):
+            for i in range(nbins):
+                p = np.polyfit(lagtimes,mean_dzcount[j,i,:],1)
+                mean[j,i] = p[0]/2. # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
+                                # = 1e-8 meter**2/second = 1e-4 cm**2/s
+        mean[0,:]/=2.
+        mean[2,:]/=3.
+
+    print "===== Results ====="
     print "lagtimes",lagtimes
     print "count",count.shape
     print "dz",dz.shape
     print "allD",allD.shape
-    #print "D", allD
-
-    # factor 2???
-
-    allD[:,0,:] /= 2.   # dimension adapt
-    allD[:,2,:] /= 3.
-    print "===== Results ====="
+    print "====="
     #print "count",count
     #print "dz",dz
     #print "ratio",dz/count
     #print "allD",allD
 
-    mean = np.mean(allD,axis=0)
-    std = np.std(allD,axis=0)
-    print "mean D",mean
-    print "std D",std
+    print "surviveds",surviveds
+    print "initials",initials
+    print "survival probability",surviveds/initials
+    if True:   #################### TODO
+        print "===== Results - Corrected ====="
+        mean[0,:] = mean[0,:]/(surviveds/initials)[1:-1,-1]
+        std[0,:]  = std[0,:]/(surviveds/initials)[1:-1,-1]
+        print "mean D",mean
 
-    x = bins[:-1] + zpbc/(2.*nbins)
+    X = edges[:-1] + zpbc/(2.*nbins)
     import matplotlib.pyplot as plt
     plt.figure()
     for j in range(3):
-        #for n in range(nfiles):
-        for n in range(len(allD)):
-            plt.plot(x,allD[n,j,:],color='grey')
-    plt.errorbar(x,mean[0,:],yerr=std[0,:],color='red',lw='3',label='xy')
-    plt.errorbar(x,mean[1,:],yerr=std[1,:],color='green',lw='3',label='z')
-    plt.errorbar(x,mean[2,:],yerr=std[2,:],color='k',lw='3',label='r')
+        for n in range(len(allD)): #range(nfiles):
+            plt.plot(X,allD[n,j,:],color='grey')
+    plt.errorbar(X,mean[0,:],yerr=std[0,:],color='red',lw='3',label='xy')
+    plt.errorbar(X,mean[1,:],yerr=std[1,:],color='green',lw='3',label='z')
+    plt.errorbar(X,mean[2,:],yerr=std[2,:],color='k',lw='3',label='r')
+    plt.legend()
     plt.ylabel("D [A^2/ps]")
     #plt.ylim(0.1,1)
     
