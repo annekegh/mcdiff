@@ -102,7 +102,7 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
     ntime = list_x[0].shape[0]
     natom = list_x[0].shape[1]
 
-    #t = np.arange(0,nstep*dtc,dtc)
+    #if nstep: lagtimes = np.arange(0,nstep*dtc,dtc)
 
     alldist2 = np.zeros((nlags,nfiles,3),float)
     allD = np.zeros((nfiles,3),float)
@@ -117,7 +117,6 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
         for k,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
             average = np.mean(dist2,1)  # average over the atoms
             alldist2[:,i,k] = average
-            #print i,list_x[i],it,average[:10]
 
             p = np.polyfit(lagtimes,average,1)
             allD[i,k] = p[0]   # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
@@ -281,12 +280,12 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     dn1  --  start shift
     dn2  --  end shift
     ddn  --  range(dn1,dn2,ddn)
-    surv  --  whether to use survival probability
+    surv  --  whether to use survival probability:
+              False or True (divide MSD by P(t))
     """
-
-    if surv:
-         from mcdiff.tools.functionsextract import indices_survived, calc_survival_probability
-         from mcdiff.tools.functionsextract import calc_survival_probability_add
+    if surv: # True or divide # for survival probability
+        from mcdiff.tools.functionsextract import indices_survived, calc_survival_probability
+        from mcdiff.tools.functionsextract import calc_survival_probability_add
 
     if dn2 is None:
         dn2 = dn1
@@ -302,8 +301,8 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
 
     # construct bins - I can play here with resolution
     edges = (np.arange(nbins+1)/float(nbins)-0.5)*zpbc
-    print "edges",edges
-    assert len(edges)==nbins+1
+    mids = ((np.arange(nbins)+0.5)/float(nbins)-0.5)*zpbc
+    print "edges condz",edges
 
     # fill up count and dz arrays
     count = np.zeros((nfiles,3,nbins,nlags),int)
@@ -319,11 +318,11 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
 
         for k,dn in enumerate(np.arange(dn1,dn2+1,ddn)):
             dist2_xy,dist2_z,dist2_r = calc_dist_lt(x,y,z,dn)  # (ntime-dn) x natom
-            print "file,dn",n,dn
+            #print "file,dn",n,dn
 
             for at in range(natom):
-                # (ntime-dn) x natom    initial z
-                #zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)
+                # initial z
+                #zinit = z[:-dn,:]-zpbc*np.floor(z[:-dn,:]/zpbc+0.5)  # (ntime-dn) x natom
                 zinit_digi = np.digitize(pbccrd_z[:-dn,at],edges)  # (ntime-dn)
 
                 if surv:
@@ -339,25 +338,12 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
                     s1,s2,s3 = calc_survival_probability_add(initials[:,k],surviveds[:,k],pbccrd_z[:,at],edges,shift=dn)
             #if surv:
             #    survival,initial,survived = calc_survival_probability(z.transpose(),edges,shift=dn)
-            #    survivals[n,:,k] = survival[:]
-    DD = dz/count
-    #print DD
-
-  #  if False: #surv:
-  #      # FIT <r^2> = 2 dim D dn dtc P(t)
-  #      allDD = np.sum(DD,0)/len(DD)
-  #      #print "allDD",allDD.shape,allDD
-  #      #print "survivals",survivals
-  #      #print "rat",surviveds/initials
-  #      allD = np.zeros((nlags,3,nbins),float)     # XXXXX dimensions have different meaning TODO XXXXXX
-  #      for k in range(nlags):
-  #          allD[k,0,:] = allDD[0,:,k]/lagtimes[k]/2. #/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
-  #          allD[k,1,:] = allDD[1,:,k]/lagtimes[k]/2. #/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
-  #          allD[k,2,:] = allDD[2,:,k]/lagtimes[k]/2. #/(2*surviveds/initials)[1:-1,k]/lagtimes[k]
 
     # FIT  <r^2> = 2 dim D dn dtc
+
     if plain:  #use the last lagtime (endpoint)
-        # simple
+        print "plain condz: use the last lagtime"
+        DD = dz/count
         allD = DD[:,:,:,-1]/2./lagtimes[-1]
         allD[:,0,:] /= 2.   # dimension adapt
         allD[:,2,:] /= 3.
@@ -372,6 +358,8 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
         mean[2,:]/=3.
 
     else:
+        print "fit condz: using multiple lagtimes"
+        DD = dz/count
         allD = np.zeros((nfiles,3,nbins),float)
         for j in range(3):
             for n in range(nfiles):
@@ -379,9 +367,9 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
                     p = np.polyfit(lagtimes,DD[n,j,i,:],1)
                     allD[n,j,i] = p[0]/2. # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
                                 # = 1e-8 meter**2/second = 1e-4 cm**2/s
-
         allD[:,0,:] /= 2.   # dimension adapt
         allD[:,2,:] /= 3.
+
         mean = np.mean(allD,axis=0)
         std = np.std(allD,axis=0)
 
@@ -401,30 +389,31 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     print "count",count.shape
     print "dz",dz.shape
     print "allD",allD.shape
-    print "====="
+    #print "====="
     #print "count",count
     #print "dz",dz
     #print "ratio",dz/count
     #print "allD",allD
+    print "====="
+    if surv:
+        survivalprob = surviveds[1:-1,:]/initials[1:-1,:]
+        print "surviveds",surviveds
+        print "initials",initials
+        print "survival probability",survivalprob
+    if surv == "divide":
+        print "===== MSD is divided by survival probability ====="
+        mean[0,:] = mean[0,:]/survivalprob[:,-1]
+        std[0,:]  = std[0,:]/survivalprob[:,-1]
+    print "mean D",mean
 
-    print "surviveds",surviveds
-    print "initials",initials
-    print "survival probability",surviveds/initials
-    if True:   #################### TODO
-        print "===== Results - Corrected ====="
-        mean[0,:] = mean[0,:]/(surviveds/initials)[1:-1,-1]
-        std[0,:]  = std[0,:]/(surviveds/initials)[1:-1,-1]
-        print "mean D",mean
-
-    X = edges[:-1] + zpbc/(2.*nbins)
     import matplotlib.pyplot as plt
     plt.figure()
     for j in range(3):
         for n in range(len(allD)): #range(nfiles):
-            plt.plot(X,allD[n,j,:],color='grey')
-    plt.errorbar(X,mean[0,:],yerr=std[0,:],color='red',lw='3',label='xy')
-    plt.errorbar(X,mean[1,:],yerr=std[1,:],color='green',lw='3',label='z')
-    plt.errorbar(X,mean[2,:],yerr=std[2,:],color='k',lw='3',label='r')
+            plt.plot(mids,allD[n,j,:],color='grey')
+    plt.errorbar(mids,mean[0,:],yerr=std[0,:],color='red',lw='3',label='xy')
+    plt.errorbar(mids,mean[1,:],yerr=std[1,:],color='green',lw='3',label='z')
+    plt.errorbar(mids,mean[2,:],yerr=std[2,:],color='k',lw='3',label='r')
     plt.legend()
     plt.ylabel("D [A^2/ps]")
     #plt.ylim(0.1,1)
@@ -437,8 +426,13 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     print >> f, "#lagtimes",lagtimes
     print >> f, "#nfiles",nfiles
     print >> f, "#zpbc", zpbc
+    #print >> f, "#edges", edges  #### TODO does not fit on one line
+    print >> f, "#nbins", nbins
     for i in range(nbins):
-        print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
+        if surv:
+            print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i],survivalprob[i]
+        else:
+            print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
     f.close()
 
 
