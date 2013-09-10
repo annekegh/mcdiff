@@ -2,8 +2,6 @@
 AG, July 15, 2012"""
 
 import numpy as np
-import pychm.future.io.charmm as iocharmm
-import pychm.scripts.getprop as getprop
 import matplotlib.pyplot as plt
 import pickle
 import struct
@@ -36,6 +34,8 @@ class RunData():
         
     def read_charmm_traj(self,filename,dtc=None):
         """Read rom CHARMM trajectory"""
+        import pychm.future.io.charmm as iocharmm
+        import pychm.scripts.getprop as getprop
         taco = iocharmm.open_dcd(filename)
 
         data = taco.get_massive_dump()
