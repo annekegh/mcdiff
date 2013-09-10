@@ -73,13 +73,18 @@ def reduce_Tmat(dim_trans,header,transmatrix):
         if sum(transmatrix[i,:]) != 0 and sum(transmatrix[:,i]) != 0:
             select.append(i)
     select = range(min(select),max(select)+1)
-    redux = len(transmatrix)-len(select)
-
-    dim_trans = dim_trans-redux
-    trans = np.zeros((dim_trans,dim_trans))
-    trans[:,:] = np.take(np.take(transmatrix,select,0),select,1)
-    header["edges"] = header["edges"][select+[select[-1]+1]]
-    print "reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans)
+    if select[0]==0 or select[-1]==len(transmatrix):    # what if I cut off zeros???  TODO
+       print "reduction transition matrix: dim_trans from %i to %i, nothing happened" %(dim_trans+redux,dim_trans)
+       return dim_trans,header,transmatrix
+    else: 
+       redux = len(transmatrix)-len(select)
+ 
+       dim_trans = dim_trans-redux
+       trans = np.zeros((dim_trans,dim_trans))
+       trans[:,:] = np.take(np.take(transmatrix,select,0),select,1)
+       header["count"] = "cut"   # TODO this is necessary!!!
+       header["edges"] = header["edges"][select+[select[-1]+1]]
+       print "reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans)
     return dim_trans,header,trans
 
 def cut_transitions_square(filename,start,end,outfile,count="cut"):
