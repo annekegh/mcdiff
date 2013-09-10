@@ -36,7 +36,13 @@ plotsettings()
 #=====================
 
 
-
+##### EXTRA #####
+def store_msd(t,msd,filename):
+    assert len(t) == len(msd)
+    f = open(filename,"w+")
+    for t1,msd1 in zip(t,msd):
+        print >> f, t1, msd1
+    f.close()
 
 
 #=====================
@@ -78,8 +84,7 @@ def analyze_dist_1D(list_x,nstep,outdir,dtc):
     print_output_D_ave_1D(allD)
 
 
-
-def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
+def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=None):
     "Take the average over the D estimates in each of these xyz trajectories"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
@@ -93,6 +98,7 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
     if dn2 is None:
         dn2 = dn1
     assert dn2 >= dn1
+    assert ddn > 0
     lt1 = dn1*dtc
     lt2 = dn2*dtc  # I will fit in region lagtime1 to lagtime2
     dns = np.arange(dn1,dn2+1,ddn)
@@ -101,6 +107,8 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
 
     ntime = list_x[0].shape[0]
     natom = list_x[0].shape[1]
+    if dns[-1]>ntime:
+        raise ValueError("asking for too many shifts, max dn > ntime: %i,%i"%(dns[-1],ntime))
 
     #if nstep: lagtimes = np.arange(0,nstep*dtc,dtc)
 
@@ -112,11 +120,15 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
     print "making %i fits" %nfiles
     print "fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
              nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc)
+    print "calculating..."
     for i in range(nfiles):
-        dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
+        print "file",i
+        #dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
+        dist2_xy,dist2_z,dist2_r,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,)
         for k,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
             average = np.mean(dist2,1)  # average over the atoms
             alldist2[:,i,k] = average
+            #print i,list_x[i],it,average[:10]
 
             p = np.polyfit(lagtimes,average,1)
             allD[i,k] = p[0]   # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
@@ -142,6 +154,10 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1):
     fit_sqrt_vs_time(np.sqrt(m2_r), dtc*ddn,
             outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles,
             t0=lagtimes[0],std=np.sqrt(s_r))
+
+    store_msd(lagtimes,m2_xy,outdir+"/fig_dist.xy.average.txt")
+    store_msd(lagtimes,m2_z ,outdir+"/fig_dist.z.average.txt")
+    store_msd(lagtimes,m2_r ,outdir+"/fig_dist.r.average.txt")
 
     print_output_D_ave(allD)
 
@@ -791,4 +807,63 @@ def collect_dist(x,y,z,dtc):
     dist2_r = dist2_xy+dist2_z
     return lagtimes,dist2_xy,dist2_z,dist2_r
 
+def calc_dist_folded(x,y,z,unitcells,shifts=None):
+    """New: take into account pbc
+    danger of accumulative error
+
+    x -- x-coordinates of positions, ntime x natom
+    y -- y-coordinates of positions, ntime x natom
+    z -- z-coordinates of positions, ntime x natom
+    unitcells -- array with unit cells of each time step, should
+                 be the same for every time step, ntime x 3 x 3
+    with
+    ntime -- number of time steps
+    natom -- number of atoms
+    """
+    # kind of oversampling!
+    # Use ALL data in the files !!!
+    # coor format: x[timestep,atom]
+    # I already average over the shifted time origin
+    ntime = x.shape[0]  # number of time steps
+    natom = x.shape[1]  # number of atoms
+    if shifts is None:
+        shifts = np.arange(ntime)
+    nlags = len(shifts)
+    dist2_xy = np.zeros((nlags,natom,),float)
+    dist2_z  = np.zeros((nlags,natom,),float)
+    weight  = np.zeros((nlags),float)
+
+    # pbc manipulations
+    for i in range(len(unitcells)):
+        assert unitcells[i,0,0] == unitcells[0,0,0]
+    invunitcell = np.linalg.inv(unitcells[0,:,:])
+    #print "x,unitcell",x.shape,unitcells.shape
+    #print "x,invunitcell",x.shape,invunitcell.shape
+    pos = np.array([x,y,z]).transpose()   # natom x ntime x 3
+    poss = np.dot(pos,invunitcell)
+    # construct differences, all of them
+    dposs = poss[:,1:,:]-poss[:,:-1,:]  # natom x (ntime-1) x 3
+    dposs -= np.round(dposs)
+    dposs = np.dot(dposs,unitcells[0,:,:])
+
+    for i,dn in enumerate(shifts):  # dn is shift (lagtime)
+        assert dn >= 0
+        assert dn < poss.shape[1]
+        if dn > 0:
+            ndiff = dposs.shape[1]-dn
+            # assert ndiff == ntime-dn+1
+            diff2 = np.zeros((natom,ndiff,3))
+            #print "pos,dposs,dn,ndiff,diff2",pos.shape,dposs.shape,dn,ndiff,diff2.shape
+            for st in range(ndiff):
+                end = st+dn
+                diff2[:,st,:] = np.sum(dposs[:,st:end,:],axis=1)
+                #print "dn,st,end,dpossslice",dn,st,end, dposs[:,st:end,:].shape
+
+            # average over time origin shifting 
+            dist2_xy[i,:] = np.mean(diff2[:,:,0]**2+diff2[:,:,1]**2,axis=1)  # /(ntime-dn)
+            dist2_z[i,:] = np.mean(diff2[:,:,2]**2,axis=1)  # /(ntime-dn)
+            weight[i] = ntime-dn  # TODO checkkkkkkkkkkkkk
+
+    dist2_r = dist2_xy+dist2_z
+    return dist2_xy,dist2_z,dist2_r,weight
 
