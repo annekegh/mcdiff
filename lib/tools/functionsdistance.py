@@ -123,8 +123,10 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
     print "calculating..."
     for i in range(nfiles):
         print "file",i
-        #dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
-        dist2_xy,dist2_z,dist2_r,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,)
+        if unitcell is None:
+            dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
+        else:
+            dist2_xy,dist2_z,dist2_r,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,)
         for k,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
             average = np.mean(dist2,1)  # average over the atoms
             alldist2[:,i,k] = average
@@ -833,35 +835,37 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None):
     dist2_z  = np.zeros((nlags,natom,),float)
     weight  = np.zeros((nlags),float)
 
+    # construct differences, all of them
+    pos = np.array([x,y,z]).transpose()   # natom x ntime x 3
+    dpos0 = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
+
     # pbc manipulations
     for i in range(len(unitcells)):
         assert unitcells[i,0,0] == unitcells[0,0,0]
-    invunitcell = np.linalg.inv(unitcells[0,:,:])
-    #print "x,unitcell",x.shape,unitcells.shape
-    #print "x,invunitcell",x.shape,invunitcell.shape
-    pos = np.array([x,y,z]).transpose()   # natom x ntime x 3
-    poss = np.dot(pos,invunitcell)
-    # construct differences, all of them
-    dposs = poss[:,1:,:]-poss[:,:-1,:]  # natom x (ntime-1) x 3
-    dposs -= np.round(dposs)
-    dposs = np.dot(dposs,unitcells[0,:,:])
+    reciproc = np.linalg.inv(unitcells[0,:,:]).transpose()
+
+    # direct coordinates
+    dpos0D = np.dot(dpos0,reciproc)   # direct coordinates
+    dpos0D -= np.round(dpos0D)
+    dpos = np.dot(dpos0D,unitcells[0,:,:].transpose())
+    assert (dpos0D<0.5).all()
 
     for i,dn in enumerate(shifts):  # dn is shift (lagtime)
         assert dn >= 0
-        assert dn < poss.shape[1]
+        assert dn < pos.shape[1]
         if dn > 0:
-            ndiff = dposs.shape[1]-dn
+            ndiff = dpos.shape[1]-dn
             # assert ndiff == ntime-dn+1
             diff2 = np.zeros((natom,ndiff,3))
-            #print "pos,dposs,dn,ndiff,diff2",pos.shape,dposs.shape,dn,ndiff,diff2.shape
+            #print "pos,dpos,dn,ndiff,diff2",pos.shape,dpos.shape,dn,ndiff,diff2.shape
             for st in range(ndiff):
                 end = st+dn
-                diff2[:,st,:] = np.sum(dposs[:,st:end,:],axis=1)
-                #print "dn,st,end,dpossslice",dn,st,end, dposs[:,st:end,:].shape
+                diff2[:,st,:] = np.sum(dpos[:,st:end,:],axis=1)
+                #print "dn,st,end,dposslice",dn,st,end, dpos[:,st:end,:].shape
 
             # average over time origin shifting 
-            dist2_xy[i,:] = np.mean(diff2[:,:,0]**2+diff2[:,:,1]**2,axis=1)  # /(ntime-dn)
-            dist2_z[i,:] = np.mean(diff2[:,:,2]**2,axis=1)  # /(ntime-dn)
+            dist2_xy[i,:] = np.mean(diff2[:,:,0]**2+diff2[:,:,1]**2,axis=1)
+            dist2_z[i,:] = np.mean(diff2[:,:,2]**2,axis=1)
             weight[i] = ntime-dn  # TODO checkkkkkkkkkkkkk
 
     dist2_r = dist2_xy+dist2_z
