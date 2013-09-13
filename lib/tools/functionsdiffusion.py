@@ -25,7 +25,7 @@ def plotsettingsax(ax):
         line.set_markeredgewidth(2) 
 plotsettings()
 
-class RunData():
+class RunData(object):
     akma_time = 48.8882143060371e-3  # in ps
     def __init__(self):
         self.started = False
