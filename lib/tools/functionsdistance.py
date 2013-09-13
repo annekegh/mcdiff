@@ -147,9 +147,10 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
     s_z  = np.std(alldist2[:,:,1],1)
     m2_r  = np.mean(alldist2[:,:,2],1)
     s_r  = np.std(alldist2[:,:,1],1)
+    verbose=True
     fit_sqrt_vs_time(np.sqrt(m2_xy),dtc*ddn,
             outdir+"/fig_dist.xy.average.png",title="average of %i"%nfiles,
-            t0=lagtimes[0],std=np.sqrt(s_xy))
+            t0=lagtimes[0],std=np.sqrt(s_xy),verbose=verbose)
     fit_sqrt_vs_time(np.sqrt(m2_z), dtc*ddn,
             outdir+"/fig_dist.z.average.png",title="average of %i"%nfiles,
             t0=lagtimes[0],std=np.sqrt(s_z))
