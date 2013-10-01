@@ -94,11 +94,15 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
     dn1  --  start shift
     dn2  --  end shift
     ddn  --  range(dn1,dn2,ddn)
+
+    Example
+      dn1=3, dn2=7, ddn=2
+      then dns=[3,5,7], nlags=3, ntime should be 8 or more
     """
     if dn2 is None:
         dn2 = dn1
     assert dn2 >= dn1
-    assert ddn > 0
+    assert ddn >= 1
     lt1 = dn1*dtc
     lt2 = dn2*dtc  # I will fit in region lagtime1 to lagtime2
     dns = np.arange(dn1,dn2+1,ddn)
@@ -107,7 +111,7 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
 
     ntime = list_x[0].shape[0]
     natom = list_x[0].shape[1]
-    if dns[-1]>ntime:
+    if dns[-1]>=ntime:
         raise ValueError("asking for too many shifts, max dn > ntime: %i,%i"%(dns[-1],ntime))
 
     #if nstep: lagtimes = np.arange(0,nstep*dtc,dtc)
@@ -117,7 +121,7 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
 
     print "="*5
     print "Results"
-    print "making %i fits" %nfiles
+    print "making %i fits" %nfiles, "(number of trajectories)"
     print "fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
              nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc)
     print "calculating..."
@@ -831,6 +835,8 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None):
     natom = x.shape[1]  # number of atoms
     if shifts is None:
         shifts = np.arange(ntime)
+    assert ntime>1    # not useful if not enough frames
+    assert shifts[-1]<ntime
     nlags = len(shifts)
     dist2_xy = np.zeros((nlags,natom,),float)
     dist2_z  = np.zeros((nlags,natom,),float)
@@ -839,35 +845,49 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None):
     # construct differences, all of them
     pos = np.array([x,y,z]).transpose()   # natom x ntime x 3
     dpos0 = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
+    if len(dpos0.shape) < 3:
+        # in case I have just one atom, ore only 2 time steps
+        print "WARNING, RESHAPING dpos0 IN FUNCTION calc_dist_folded"
+        dpos0 = np.reshape(dpos0,(natom,ntime-1,3))
 
     # pbc manipulations
-    for i in range(len(unitcells)):
+    for i in range(len(unitcells)):  # consistency check
         assert unitcells[i,0,0] == unitcells[0,0,0]
-    reciproc = np.linalg.inv(unitcells[0,:,:]).transpose()
+    reciproc = np.linalg.inv(unitcells[0,:,:]).transpose()  # (unitcell^T)^(-1)
 
     # direct coordinates
-    dpos0D = np.dot(dpos0,reciproc)   # direct coordinates
+    dpos0D = np.dot(dpos0,reciproc)   # direct coordinates = cartesian . reciproc
     dpos0D -= np.round(dpos0D)
-    dpos = np.dot(dpos0D,unitcells[0,:,:].transpose())
-    assert (dpos0D<0.5).all()
+    dpos = np.dot(dpos0D,unitcells[0,:,:].transpose())  # cartesian = direct coordinates . unitcell^T
+
+    # save distribution of differences
+    if False:
+        dpos0DDD = np.dot(dpos0,reciproc)   # direct coordinates
+        f = file("differences.dat","w+")
+        g = file("differencesD.dat","w+")
+        for i in xrange(len(dpos)):
+          for j in xrange(dpos.shape[1]):
+            print >> f, dpos0[i,j,0],dpos0[i,j,1],dpos0[i,j,2],dpos[i,j,0],dpos[i,j,1],dpos[i,j,2]
+            print >> g, dpos0DDD[i,j,0],dpos0DDD[i,j,1],dpos0DDD[i,j,2],dpos0D[i,j,0],dpos0D[i,j,1],dpos0D[i,j,2]
+        f.close()
+        g.close()
 
     for i,dn in enumerate(shifts):  # dn is shift (lagtime)
         assert dn >= 0
-        assert dn < pos.shape[1]
+        assert dn < ntime # should be the case already
         if dn > 0:
-            ndiff = dpos.shape[1]-dn
-            # assert ndiff == ntime-dn+1
+            ndiff = ntime-dn
             diff2 = np.zeros((natom,ndiff,3))
             #print "pos,dpos,dn,ndiff,diff2",pos.shape,dpos.shape,dn,ndiff,diff2.shape
+            # time origin shifting
             for st in range(ndiff):
                 end = st+dn
                 diff2[:,st,:] = np.sum(dpos[:,st:end,:],axis=1)
-                #print "dn,st,end,dposslice",dn,st,end, dpos[:,st:end,:].shape
 
             # average over time origin shifting 
             dist2_xy[i,:] = np.mean(diff2[:,:,0]**2+diff2[:,:,1]**2,axis=1)
             dist2_z[i,:] = np.mean(diff2[:,:,2]**2,axis=1)
-            weight[i] = ntime-dn  # TODO checkkkkkkkkkkkkk
+            weight[i] = ndiff
 
     dist2_r = dist2_xy+dist2_z
     return dist2_xy,dist2_z,dist2_r,weight
