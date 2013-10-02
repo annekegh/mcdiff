@@ -37,11 +37,15 @@ plotsettings()
 
 
 ##### EXTRA #####
-def store_msd(t,msd,filename):
+def store_msd(t,msd,filename,error=None):
     assert len(t) == len(msd)
+    if error is None:
+        error = np.zeros(msd.shape)
+    else:
+        assert len(t) == len(error)
     f = open(filename,"w+")
-    for t1,msd1 in zip(t,msd):
-        print >> f, t1, msd1
+    for t1,msd1,error1 in zip(t,msd,error):
+        print >> f, t1, msd1, error1
     f.close()
 
 
@@ -162,9 +166,9 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
             outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles,
             t0=lagtimes[0],std=np.sqrt(s_r))
 
-    store_msd(lagtimes,m2_xy,outdir+"/fig_dist.xy.average.txt")
-    store_msd(lagtimes,m2_z ,outdir+"/fig_dist.z.average.txt")
-    store_msd(lagtimes,m2_r ,outdir+"/fig_dist.r.average.txt")
+    store_msd(lagtimes,m2_xy,outdir+"/fig_dist.xy.average.txt",error=s_xy)
+    store_msd(lagtimes,m2_z ,outdir+"/fig_dist.z.average.txt", error=s_z)
+    store_msd(lagtimes,m2_r ,outdir+"/fig_dist.r.average.txt", error=s_r)
 
     print_output_D_ave(allD)
 
@@ -178,7 +182,6 @@ def analyze_dist_BIS1(list_x,list_y,list_z,dtc):
     assert len(list_x) == len(list_y)
     assert len(list_x) == len(list_z)
     nfiles = len(list_x)
-    #nfiles = 4
 
     print "="*5
     print "Results"
