@@ -173,6 +173,87 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
     print_output_D_ave(allD)
 
 
+def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=None):
+    "Take the average over the D estimates in each of these xyz trajectories"""
+    assert len(list_x) > 0
+    assert len(list_x) == len(list_y)
+    assert len(list_x) == len(list_z)
+    nfiles = len(list_x)
+    """Conditional Mean Square Distance
+    dn1  --  start shift
+    dn2  --  end shift
+    ddn  --  range(dn1,dn2,ddn)
+
+    Example
+      dn1=3, dn2=7, ddn=2
+      then dns=[3,5,7], nlags=3, ntime should be 8 or more
+    """
+    if dn2 is None:
+        dn2 = dn1
+    assert dn2 >= dn1
+    assert ddn >= 1
+    lt1 = dn1*dtc
+    lt2 = dn2*dtc  # I will fit in region lagtime1 to lagtime2
+    dns = np.arange(dn1,dn2+1,ddn)
+    lagtimes = dns*dtc
+    nlags = len(lagtimes)
+
+    ntime = list_x[0].shape[0]
+    natom = list_x[0].shape[1]
+    if dns[-1]>=ntime:
+        raise ValueError("asking for too many shifts, max dn > ntime: %i,%i"%(dns[-1],ntime))
+
+    #if nstep: lagtimes = np.arange(0,nstep*dtc,dtc)
+
+    alldist2 = np.zeros((nlags,nfiles,6),float)
+    allD = np.zeros((nfiles,6),float)
+
+    print "="*5
+    print "Results"
+    print "making %i fits" %nfiles, "(number of trajectories)"
+    print "fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
+             nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc)
+    print "calculating..."
+    for i in range(nfiles):
+        print "file",i
+        # matrix A contains 6 components of correlation matrix
+        if unitcell is None:
+            # TODO
+            dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
+        else:
+            A,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,matrix=True)
+        for k,dist2 in enumerate(A):
+            average = np.mean(dist2,1)  # average over the atoms
+            alldist2[:,i,k] = average
+            #print i,list_x[i],it,average[:10]
+
+            p = np.polyfit(lagtimes,average,1)
+            allD[i,k] = p[0]   # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
+                                # = 1e-8 meter**2/second = 1e-4 cm**2/s
+        # if I want many figures:
+        #fit_sqrt_vs_time(np.mean(dist_xy,1),dtc,outdir+"/fig_dist.xy.%i.png"%i,title=str(i))
+        #fit_sqrt_vs_time(np.mean(dist_z,1), dtc,outdir+"/fig_dist.z.%i.png"%i,title=str(i))
+        #fit_sqrt_vs_time(np.mean(dist_r,1), dtc,outdir+"/fig_dist.r.%i.png"%i,title=str(i))
+
+    # extra figures
+    means = np.mean(alldist2,axis=1)   # nlags x 6
+    stds = np.std(alldist2,axis=1)     # nlags x 6
+
+    verbose=False
+    for i in range(3):
+        fit_sqrt_vs_time(np.sqrt(means[:,i]),dtc*ddn,
+            outdir+"/fig_dist.%i.average.png"%i,title="average of %i"%nfiles,
+            t0=lagtimes[0],std=stds[:,i],verbose=verbose)
+    fit_sqrt_vs_time(np.sqrt(means[:,0]+means[:,1]+means[:,2]),dtc*ddn,
+            outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles,
+            t0=lagtimes[0],std=stds[:,i],verbose=verbose)
+
+    for i in range(6):
+        store_msd(lagtimes,means[:,i],outdir+"/fig_dist.%i.average.txt"%i,error=stds[:,i])    
+
+    print_output_matrixD_ave(allD)
+
+
 #=========================================
 
 
@@ -696,6 +777,103 @@ def print_output_D_ave(allD):
     print "r  %20.10f   %20.10f" %(np.mean(allD[:,2])/6., np.std(allD[:,2])/6.)
     print "="*5
 
+def print_output_matrixD_ave(allD):
+    print "="*20
+    print "Diffusion estimates"
+    print allD.shape
+
+    print "="*5
+    print "xx"
+    print allD[:,0]/2.  # 2D
+    print "yy"
+    print allD[:,1]/2.  # 2D
+    print "zz"
+    print allD[:,2]/2.  # 2D
+    print "xy"
+    print allD[:,3]/2.  # 2D
+    print "xz"
+    print allD[:,4]/2.  # 2D
+    print "yz"
+    print allD[:,5]/2.  # 2D
+    print "="*5
+    print "yzplane"
+    print (allD[:,0]+allD[:,1])/4.  # 2D
+    print "r-3D"
+    print (allD[:,0]+allD[:,1]+allD[:,2])/6.  # 3D
+
+    print "="*5
+    print "Diffusion constant"
+    print "   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd")
+    print "xx %20.10f   %20.10f" %(np.mean(allD[:,0])/2., np.std(allD[:,0])/2.)
+    print "yy %20.10f   %20.10f" %(np.mean(allD[:,1])/2., np.std(allD[:,1])/2.)
+    print "zz %20.10f   %20.10f" %(np.mean(allD[:,2])/2., np.std(allD[:,2])/2.)
+    print "xy %20.10f   %20.10f" %(np.mean(allD[:,3])/2., np.std(allD[:,3])/2.)
+    print "xz %20.10f   %20.10f" %(np.mean(allD[:,4])/2., np.std(allD[:,4])/2.)
+    print "yz %20.10f   %20.10f" %(np.mean(allD[:,5])/2., np.std(allD[:,5])/2.)
+    print "="*5
+    print "XY %20.10f   %20.10f" %(np.mean(allD[:,0]+allD[:,1])/4., np.std(allD[:,0]+allD[:,1])/4.)
+    print "Z  %20.10f   %20.10f" %(np.mean(allD[:,2])/2., np.std(allD[:,2])/2.)
+    print "R  %20.10f   %20.10f" %(np.mean(allD[:,0]+allD[:,1]+allD[:,2])/6., np.std(allD[:,0]+allD[:,1]+allD[:,2])/6.)
+    print "="*5
+    analyze_as_tensor(allD)
+
+# to convert
+    #B = np.empty([3,3])   # I should do a hard copy?
+    #for i in range(3):
+    #    B[i,i] = A[:,i]
+    #B[0,1]=A[:,3]; B[0,2]=A[:,4]; B[1,2]=A[:,5]
+    #B[1,0]=A[:,3]; B[2,0]=A[:,4]; B[2,1]=A[:,5]
+    #D = np.array([A[0],A[3],A[4],A[3],A[1],A[5],A[4],A[5],A[2]])
+
+def tensor_list_to_matrix_2D(A):
+    B = np.array([A[:,0],A[:,3],A[:,4],A[:,3],A[:,1],A[:,5],A[:,4],A[:,5],A[:,2]])
+    C = np.reshape(B,(3,-1,len(A)))
+    print "list",A.shape
+    print "matrix",C.shape
+    #aveC = np.mean(C,axis=-1)
+    #print "matrix-average",aveC.shape
+    #print aveC
+    return C
+
+def tensor_list_to_matrix_1D(A):
+    B = np.zeros((3,3))    # I should do a hard copy?
+    for i in range(3):
+        B[i,i] = A[i]
+    B[0,1]=A[3]; B[0,2]=A[4]; B[1,2]=A[5]
+    B[1,0]=A[3]; B[2,0]=A[4]; B[2,1]=A[5]
+    print "list",A.shape
+    print "matrix",B.shape
+    return B
+
+def analyze_as_tensor(allD):
+    print "="*5
+    print "Diffusion tensor - eigenvalues"
+    H = tensor_list_to_matrix_2D(allD/2.)
+    nruns = H.shape[-1]
+    print "="*5
+    print "1. average over eigenvalues"
+    vals0 = []
+    for i in range(nruns):
+        vals,vecs = np.linalg.eigh(H[:,:,i])
+        vals0.append(vals)
+    vals0 = np.array(vals0)
+    mean = np.mean(vals0,axis=0)
+    std = np.std(vals0,axis=0)
+    print "mean vals"
+    print mean
+    print "std vals"
+    print std
+
+    print "="*5
+    print "2. average matrices, then take eigenvalues"
+    means = np.mean(allD,axis=0)
+    A = tensor_list_to_matrix_1D(means/2.)
+    vals,vecs = np.linalg.eigh(A)
+    print "vals mean"
+    print vals
+    print "vecs mean"
+    print vecs
+
 def print_output_D_ave_1D(allD):
     print "="*20
     print "Diffusion estimates"
@@ -749,6 +927,13 @@ def calc_dist_lt(x,y,z,dn):
     dist2_r = dist2_xy + dist2_z
     return dist2_xy,dist2_z,dist2_r
 
+def calc_matrixdist_lt(x,y,z,dn):
+    dx = x[dn:,:]-x[:-dn,:]
+    dy = y[dn:,:]-y[:-dn,:]
+    dz = z[dn:,:]-z[:-dn,:]
+    A = [dx**2,dy**2,dz**2,dx*dy,dx*dz,dy*dz]
+    return A
+
 def calc_onedist_lt(x,dn):
     dist  = x[dn:,:] - x[:-dn,:]  # end-start
     return dist
@@ -797,6 +982,27 @@ def calc_dist(x,y,z,shifts=None):
     dist2_r = dist2_xy+dist2_z
     return dist2_xy,dist2_z,dist2_r,weight
 
+def calc_matrixdist(x,y,z,shifts=None):
+    # kind of oversampling!
+    # Use ALL data in the files !!!
+    # coor format: x[timestemp,atom]
+    # I already average over the shifted time origin
+    if shifts is None:
+        nstep = x.shape[0]  # number of time steps
+        shifts = np.arange(nstep)
+    nlags = len(shifts)
+    natom = x.shape[1]  # number of atoms
+    alldist = [np.zeros((nlags,natom),float) for i in range(6)]
+    weight  = np.zeros((nlags),float)
+    # fill up
+    for i,dn in enumerate(shifts):  # dn is shift (lagtime)
+        if dn > 0:
+            A = calc_matrixdist_lt(x,y,z,dn)
+            for j in range(6):
+                alldist[j][i,:] = np.mean(A[j],axis=0)
+            weight[i] = len(A[0])
+    return alldist,weight
+
 def collect_dist(x,y,z,dtc):
     # without averaging over the shifted time origin
     # returns: XXXX
@@ -817,7 +1023,7 @@ def collect_dist(x,y,z,dtc):
     dist2_r = dist2_xy+dist2_z
     return lagtimes,dist2_xy,dist2_z,dist2_r
 
-def calc_dist_folded(x,y,z,unitcells,shifts=None):
+def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False):
     """New: take into account pbc
     danger of accumulative error
 
@@ -841,8 +1047,11 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None):
     assert ntime>1    # not useful if not enough frames
     assert shifts[-1]<ntime
     nlags = len(shifts)
-    dist2_xy = np.zeros((nlags,natom,),float)
-    dist2_z  = np.zeros((nlags,natom,),float)
+    if not matrix:
+        dist2_xy = np.zeros((nlags,natom,),float)
+        dist2_z  = np.zeros((nlags,natom,),float)
+    else:
+        alldist = [np.zeros((nlags,natom),float) for i in range(6)]
     weight  = np.zeros((nlags),float)
 
     # construct differences, all of them
@@ -888,10 +1097,19 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None):
                 diff2[:,st,:] = np.sum(dpos[:,st:end,:],axis=1)
 
             # average over time origin shifting 
-            dist2_xy[i,:] = np.mean(diff2[:,:,0]**2+diff2[:,:,1]**2,axis=1)
-            dist2_z[i,:] = np.mean(diff2[:,:,2]**2,axis=1)
+            if not matrix:
+                dist2_xy[i,:] = np.mean(diff2[:,:,0]**2+diff2[:,:,1]**2,axis=1)
+                dist2_z[i,:] = np.mean(diff2[:,:,2]**2,axis=1)
+            else:
+                for k in range(3):
+                    alldist[k][i,:] = np.mean(diff2[:,:,k]**2,axis=1)
+                alldist[3][i,:] = np.mean(diff2[:,:,0]*diff2[:,:,1],axis=1)
+                alldist[4][i,:] = np.mean(diff2[:,:,0]*diff2[:,:,2],axis=1)
+                alldist[5][i,:] = np.mean(diff2[:,:,1]*diff2[:,:,2],axis=1)
             weight[i] = ndiff
 
-    dist2_r = dist2_xy+dist2_z
-    return dist2_xy,dist2_z,dist2_r,weight
-
+    if not matrix:
+        dist2_r = dist2_xy+dist2_z
+        return dist2_xy,dist2_z,dist2_r,weight
+    else:
+        return alldist,weight
