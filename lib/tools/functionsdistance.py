@@ -218,8 +218,7 @@ def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitce
         print "file",i
         # matrix A contains 6 components of correlation matrix
         if unitcell is None:
-            # TODO
-            dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
+            A,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns,matrix=True)
         else:
             A,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,matrix=True)
         for k,dist2 in enumerate(A):
@@ -957,7 +956,7 @@ def calc_dist_1D(x,shifts=None):
             dist2[i,:]  = np.mean(diff,axis=0)   #z/(self.nstep-dn)
     return dist2
 
-def calc_dist(x,y,z,shifts=None):
+def calc_dist(x,y,z,shifts=None,matrix=False):
     # kind of oversampling!
     # Use ALL data in the files !!!
     # coor format: x[timestemp,atom]
@@ -967,41 +966,32 @@ def calc_dist(x,y,z,shifts=None):
         shifts = np.arange(nstep)
     nlags = len(shifts)
     natom = x.shape[1]  # number of atoms
-    dist2_xy = np.zeros((nlags,natom,),float)
-    dist2_z  = np.zeros((nlags,natom,),float)
     weight  = np.zeros((nlags),float)
-    # fill up
-    for i,dn in enumerate(shifts):  # dn is shift (lagtime)
-        if dn > 0:
-            diff2_xy = (x[:-dn,:] - x[dn:,:])**2 + (y[:-dn,:] - y[dn:,:])**2
-            diff2_z  = (z[:-dn,:] - z[dn:,:])**2
-            dist2_xy[i,:] = np.mean(diff2_xy,axis=0)  # xy2/(self.nstep-lt)
-            dist2_z[i,:]  = np.mean(diff2_z,axis=0)   #z/(self.nstep-lt)
-            weight[i] = len(diff2_xy)
+    if not matrix:
+        dist2_xy = np.zeros((nlags,natom,),float)
+        dist2_z  = np.zeros((nlags,natom,),float) 
+        # fill up
+        for i,dn in enumerate(shifts):  # dn is shift (lagtime)
+            if dn > 0:
+                diff2_xy = (x[:-dn,:] - x[dn:,:])**2 + (y[:-dn,:] - y[dn:,:])**2
+                diff2_z  = (z[:-dn,:] - z[dn:,:])**2
+                dist2_xy[i,:] = np.mean(diff2_xy,axis=0)  # xy2/(self.nstep-lt)
+                dist2_z[i,:]  = np.mean(diff2_z,axis=0)   #z/(self.nstep-lt)
+                weight[i] = len(diff2_xy)
 
-    dist2_r = dist2_xy+dist2_z
-    return dist2_xy,dist2_z,dist2_r,weight
+        dist2_r = dist2_xy+dist2_z
+        return dist2_xy,dist2_z,dist2_r,weight
 
-def calc_matrixdist(x,y,z,shifts=None):
-    # kind of oversampling!
-    # Use ALL data in the files !!!
-    # coor format: x[timestemp,atom]
-    # I already average over the shifted time origin
-    if shifts is None:
-        nstep = x.shape[0]  # number of time steps
-        shifts = np.arange(nstep)
-    nlags = len(shifts)
-    natom = x.shape[1]  # number of atoms
-    alldist = [np.zeros((nlags,natom),float) for i in range(6)]
-    weight  = np.zeros((nlags),float)
-    # fill up
-    for i,dn in enumerate(shifts):  # dn is shift (lagtime)
-        if dn > 0:
-            A = calc_matrixdist_lt(x,y,z,dn)
-            for j in range(6):
-                alldist[j][i,:] = np.mean(A[j],axis=0)
-            weight[i] = len(A[0])
-    return alldist,weight
+    else:
+        alldist = [np.zeros((nlags,natom),float) for i in range(6)]
+        # fill up
+        for i,dn in enumerate(shifts):  # dn is shift (lagtime)
+            if dn > 0:
+                A = calc_matrixdist_lt(x,y,z,dn)
+                for j in range(6):
+                    alldist[j][i,:] = np.mean(A[j],axis=0)
+                weight[i] = len(A[0])
+        return alldist,weight
 
 def collect_dist(x,y,z,dtc):
     # without averaging over the shifted time origin
