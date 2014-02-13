@@ -476,7 +476,20 @@ def plot_vs_time(x,dt,filename,**kwargs):
     plt.xlabel("t [ps]")
     plt.savefig(filename)
 
-def fit_sqrt_vs_time(r,dt,figname,title=None,verbose=False,t0=0.,std=None):
+def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sqrt=True):
+    # use input data correctly
+    if sqrt:
+        r = rdata
+        r2 = rdata**2
+    else:
+        r = np.sqrt(abs(rdata))
+        r2 = rdata
+    if std == None:
+        std2 = None
+    else:
+        if sqrt: std2 = std**2
+        else: std2 = std
+
     t = np.arange(len(r))*dt+t0
 
     # fit distance
@@ -485,7 +498,7 @@ def fit_sqrt_vs_time(r,dt,figname,title=None,verbose=False,t0=0.,std=None):
         print "linear fit (50)"
         print p
 
-    p = np.polyfit(t,r**2,1)
+    p = np.polyfit(t,r2,1)   # this fit is plotted
     if verbose:
         print "linear fit square dist"
         print p
@@ -505,9 +518,9 @@ def fit_sqrt_vs_time(r,dt,figname,title=None,verbose=False,t0=0.,std=None):
 
     plt.figure()
     if std == None:
-        plt.plot(t,r**2)
+        plt.plot(t,r2)
     else:
-        plt.errorbar(t,r**2,yerr=std**2)
+        plt.errorbar(t,r2,yerr=std2)
     plt.plot(t,fitted_1)
     plt.plot(t,fitted_2)
     plt.xlabel("t [ps]")
