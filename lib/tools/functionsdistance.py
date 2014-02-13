@@ -236,19 +236,22 @@ def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitce
 
     # extra figures
     means = np.mean(alldist2,axis=1)   # nlags x 6
-    stds = np.std(alldist2,axis=1)     # nlags x 6
+    stds  = np.std(alldist2,axis=1)     # nlags x 6
+    mean_r = np.mean(alldist2[:,:,0]+alldist2[:,:,1]+alldist2[:,:,2],axis=1)
+    std_r  = np.std(alldist2[:,:,0]+alldist2[:,:,1]+alldist2[:,:,2],axis=1)
 
     verbose=False
-    for i in range(3):
-        fit_sqrt_vs_time(np.sqrt(means[:,i]),dtc*ddn,
-            outdir+"/fig_dist.%i.average.png"%i,title="average of %i"%nfiles,
-            t0=lagtimes[0],std=stds[:,i],verbose=verbose)
-    fit_sqrt_vs_time(np.sqrt(means[:,0]+means[:,1]+means[:,2]),dtc*ddn,
-            outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles,
-            t0=lagtimes[0],std=stds[:,i],verbose=verbose)
-
+    labs = ["xx","yy","zz","xy","xz","yz"]
     for i in range(6):
-        store_msd(lagtimes,means[:,i],outdir+"/fig_dist.%i.average.txt"%i,error=stds[:,i])    
+        fit_sqrt_vs_time(means[:,i],dtc*ddn,
+            outdir+"/fig_dist.%s.average.png"%(labs[i]),title="average of %i"%nfiles,
+            t0=lagtimes[0],std=stds[:,i],verbose=verbose,sqrt=False)
+    fit_sqrt_vs_time(mean_r,dtc*ddn,
+            outdir+"/fig_dist.r.average.png",title="average of %i"%nfiles,
+            t0=lagtimes[0],std=std_r,verbose=verbose,sqrt=False)
+    # write files
+    for i in range(6):
+        store_msd(lagtimes,means[:,i],outdir+"/fig_dist.%s.average.txt"%(labs[i]),error=stds[:,i])
 
     print_output_matrixD_ave(allD)
 
@@ -782,18 +785,10 @@ def print_output_matrixD_ave(allD):
     print allD.shape
 
     print "="*5
-    print "xx"
-    print allD[:,0]/2.  # 2D
-    print "yy"
-    print allD[:,1]/2.  # 2D
-    print "zz"
-    print allD[:,2]/2.  # 2D
-    print "xy"
-    print allD[:,3]/2.  # 2D
-    print "xz"
-    print allD[:,4]/2.  # 2D
-    print "yz"
-    print allD[:,5]/2.  # 2D
+    labs = ["xx","yy","zz","xy","xz","yz"]
+    for i in range(6):
+        print labs[i]
+        print allD[:,i]/2.  # 2D
     print "="*5
     print "yzplane"
     print (allD[:,0]+allD[:,1])/4.  # 2D
@@ -859,9 +854,9 @@ def analyze_as_tensor(allD):
     mean = np.mean(vals0,axis=0)
     std = np.std(vals0,axis=0)
     print "mean vals"
-    print mean
+    for i in range(3): print mean[i]
     print "std vals"
-    print std
+    for i in range(3): print std[i]
 
     print "="*5
     print "2. average matrices, then take eigenvalues"
@@ -869,9 +864,10 @@ def analyze_as_tensor(allD):
     A = tensor_list_to_matrix_1D(means/2.)
     vals,vecs = np.linalg.eigh(A)
     print "vals mean"
-    print vals
+    for i in range(3): print vals[i]
     print "vecs mean"
-    print vecs
+    for i in range(3):
+        print vecs[i,0],vecs[i,1],vecs[i,2]
 
 def print_output_D_ave_1D(allD):
     print "="*20
