@@ -1017,7 +1017,8 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False):
     y -- y-coordinates of positions, ntime x natom
     z -- z-coordinates of positions, ntime x natom
     unitcells -- array with unit cells of each time step, should
-                 be the same for every time step, ntime x 3 x 3
+                 be the same for every time step, ntime x 3 x 3,
+                 columns are the cell vectors
     with
     ntime -- number of time steps
     natom -- number of atoms
@@ -1040,13 +1041,13 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False):
         alldist = [np.zeros((nlags,natom),float) for i in range(6)]
     weight  = np.zeros((nlags),float)
 
-    # construct differences, all of them
+    # construct differences dpos, all of them
     pos = np.array([x,y,z]).transpose()   # natom x ntime x 3
-    dpos0 = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
-    if len(dpos0.shape) < 3:
+    dpos = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
+    if len(dpos.shape) < 3:
         # in case I have just one atom, ore only 2 time steps
-        print "WARNING, RESHAPING dpos0 IN FUNCTION calc_dist_folded"
-        dpos0 = np.reshape(dpos0,(natom,ntime-1,3))
+        print "WARNING, RESHAPING dpos IN FUNCTION calc_dist_folded"
+        dpos = np.reshape(dpos,(natom,ntime-1,3))
 
     # pbc manipulations
     for i in range(len(unitcells)):  # consistency check
@@ -1054,19 +1055,21 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False):
     reciproc = np.linalg.inv(unitcells[0,:,:]).transpose()  # (unitcell^T)^(-1)
 
     # direct coordinates
-    dpos0D = np.dot(dpos0,reciproc)   # direct coordinates = cartesian . reciproc
-    dpos0D -= np.round(dpos0D)
-    dpos = np.dot(dpos0D,unitcells[0,:,:].transpose())  # cartesian = direct coordinates . unitcell^T
+    dpos_direct = np.dot(dpos,reciproc)   # direct coordinates = cartesian . reciproc
+    dpos_direct -= np.round(dpos_direct)
+    # overwrite differences dpos (cartesian)
+    dpos = np.dot(dpos_direct,unitcells[0,:,:].transpose())  # cartesian = direct coordinates . unitcell^T
 
     # save distribution of differences
     if False:
-        dpos0DDD = np.dot(dpos0,reciproc)   # direct coordinates
-        f = file("differences.dat","w+")
-        g = file("differencesD.dat","w+")
+        dpos_direct = np.dot(dpos,reciproc)   # direct coordinates
+        # put back or not: dpos = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
+        f = file("differences_cart.dat","w+")
+        g = file("differences_direct.dat","w+")
         for i in xrange(len(dpos)):
           for j in xrange(dpos.shape[1]):
-            print >> f, dpos0[i,j,0],dpos0[i,j,1],dpos0[i,j,2],dpos[i,j,0],dpos[i,j,1],dpos[i,j,2]
-            print >> g, dpos0DDD[i,j,0],dpos0DDD[i,j,1],dpos0DDD[i,j,2],dpos0D[i,j,0],dpos0D[i,j,1],dpos0D[i,j,2]
+            print >> f, dpos[i,j,0],dpos[i,j,1],dpos[i,j,2],dpos[i,j,0],dpos[i,j,1],dpos[i,j,2]
+            print >> g, dpos_direct[i,j,0],dpos_direct[i,j,1],dpos_direct[i,j,2],dpos_direct[i,j,0],dpos_direct[i,j,1],dpos_direct[i,j,2]
         f.close()
         g.close()
 
