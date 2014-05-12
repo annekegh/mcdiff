@@ -252,6 +252,7 @@ def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitce
     # write files
     for i in range(6):
         store_msd(lagtimes,means[:,i],outdir+"/fig_dist.%s.average.txt"%(labs[i]),error=stds[:,i])
+    store_msd(lagtimes,mean_r,outdir+"/fig_dist.%s.average.txt"%("r"),error=std_r)
 
     print_output_matrixD_ave(allD)
 

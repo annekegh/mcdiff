@@ -84,7 +84,7 @@ def plot_histogram_pbc(coor,zpbc,figname):
     f.close()
 
 
-def plot_histogram(coor,figname):
+def plot_histogram(coor,figname,ymin=None,ymax=None):
     nbins = 100
     hist, bin_edges = np.histogram(coor, nbins, normed=True)
     bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
@@ -96,6 +96,7 @@ def plot_histogram(coor,figname):
     plt.figure()
     maxloghist = max(np.log(hist))
     plt.plot(bin_midst,-np.log(hist)+maxloghist)
+    plt.ylim(ymin,ymax)
     plt.ylabel("F in kBT")
     plt.savefig(figname+".log.png")
 
