@@ -173,7 +173,7 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
     print_output_D_ave(allD)
 
 
-def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=None):
+def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=None,npt=False):
     "Take the average over the D estimates in each of these xyz trajectories"""
     assert len(list_x) > 0
     assert len(list_x) == len(list_y)
@@ -220,7 +220,7 @@ def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitce
         if unitcell is None:
             A,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns,matrix=True)
         else:
-            A,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,matrix=True)
+            A,weight = calc_dist_folded(list_x[i],list_y[i],list_z[i],unitcell,shifts=dns,matrix=True,npt=npt)
         for k,dist2 in enumerate(A):
             average = np.mean(dist2,1)  # average over the atoms
             alldist2[:,i,k] = average
@@ -1010,7 +1010,7 @@ def collect_dist(x,y,z,dtc):
     dist2_r = dist2_xy+dist2_z
     return lagtimes,dist2_xy,dist2_z,dist2_r
 
-def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False):
+def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False,npt=False):
     """New: take into account pbc
     danger of accumulative error
 
@@ -1051,15 +1051,33 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False):
         dpos = np.reshape(dpos,(natom,ntime-1,3))
 
     # pbc manipulations
-    for i in range(len(unitcells)):  # consistency check
-        assert unitcells[i,0,0] == unitcells[0,0,0]
-    reciproc = np.linalg.inv(unitcells[0,:,:]).transpose()  # (unitcell^T)^(-1)
+    if not npt:
+        for i in range(len(unitcells)):  # consistency check
+            assert unitcells[i,0,0] == unitcells[0,0,0]
+        reciproc = np.linalg.inv(unitcells[0,:,:]).transpose()  # (unitcell^T)^(-1)
 
-    # direct coordinates
-    dpos_direct = np.dot(dpos,reciproc)   # direct coordinates = cartesian . reciproc
-    dpos_direct -= np.round(dpos_direct)
-    # overwrite differences dpos (cartesian)
-    dpos = np.dot(dpos_direct,unitcells[0,:,:].transpose())  # cartesian = direct coordinates . unitcell^T
+        # direct coordinates
+        dpos_direct = np.dot(dpos,reciproc)   # direct coordinates = cartesian . reciproc
+        dpos_direct -= np.round(dpos_direct)
+        # overwrite differences dpos (cartesian)
+        dpos = np.dot(dpos_direct,unitcells[0,:,:].transpose())  # cartesian = direct coordinates . unitcell^T
+    else:  # unitcell not constant in time
+        reciproc = np.zeros(unitcells.shape,float)
+        for i in range(len(unitcells)):
+            reciproc[i,:,:] = np.linalg.inv(unitcells[i,:,:]).transpose()  # (unitcell^T)^(-1)
+        reciproc = reciproc[:-1,:,:]
+
+        # direct coordinates
+        dpos_direct = np.einsum('ijk,jkm->ijm',dpos,reciproc)
+        #dpos_direct = np.zeros(dpos.shape,float)
+        #for i in range(len(unitcells)-1):
+        #    dpos_direct[:,i,:] = np.dot(dpos[:,i,:],reciproc[i,:,:])   # direct coordinates = cartesian . reciproc
+        dpos_direct -= np.round(dpos_direct)
+        # overwrite differences dpos (cartesian)
+        dpos = np.einsum('ijk,jkm->ijm',dpos_direct,unitcells[:-1,:,:])
+        #for i in range(len(unitcells)-1):
+        #    dpos[:,i,:] = np.dot(dpos_direct[:,i,:],unitcells[i,:,:].transpose())  # cartesian = direct coordinates . unitcell^T
+
 
     # save distribution of differences
     if False:
