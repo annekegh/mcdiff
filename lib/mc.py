@@ -77,7 +77,7 @@ def find_parameters(filenames,pbc,model,
         f = sys.stdout
         MC.use_initfile(initfile)
         MC.print_MC_params(f)
-        MC.print_coeffs(f)
+        MC.print_coeffs_laststate(f)
 
     logger = Logger(MC)
 
@@ -85,9 +85,8 @@ def find_parameters(filenames,pbc,model,
     do_mc_cycles(MC,logger)
 
     # print final results (potential and diffusion coefficient)
-    #MC.print_log_like()
-    MC.print_statistics()
-
+    #----------------------------------------------------------
+    # choose filename for pickle object
     if outfile is None:
         import sys
         f = sys.stdout
@@ -95,9 +94,15 @@ def find_parameters(filenames,pbc,model,
     else:
         f = file(outfile,"w+")  # print final model to a file
         picfile = outfile+".pic"
-    MC.print_final(f)
+
+    # print to screen
+    #MC.print_log_like()
+    MC.print_statistics()
+
+    MC.print_laststate(f,final=True)  # print model, coeffs
     if outfile is not None:
         f.close()
+
     logger.model = MC.model   # this is not a hard copy
     logger.dump(picfile)
     logger.statistics(MC)  #st=1000)

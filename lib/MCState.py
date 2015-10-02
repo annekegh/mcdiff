@@ -430,6 +430,7 @@ class MCState(object):
         print >>f, "="*10
         if self.model.ncosF > 0:
             tot = max(1,np.sum(self.naccv_coeff))  # if all val are zero and sum is zero, then take 1
+            print >>f, "naccv_coeff"
             for i,val in enumerate(self.naccv_coeff):
                 print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
         if self.model.ncosD > 0:
@@ -444,69 +445,39 @@ class MCState(object):
             for i,val in enumerate(self.naccwrad_coeff):
                 print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
 
-    def print_coeffs(self,f,final=False):
+    def print_coeffs_laststate(self,f,final=False):
         """print basis functions and other model parameters"""
-        if self.model.ncosF>0:
-            if final: print >>f,"===== final v_coeff ====="
-            else:     print >>f,"===== v_coeff ====="
-            for i,val in enumerate(self.model.v_coeff):
-                print >>f, "%8d %13.5e" %(i,val)
-        if self.model.ncosD>0:
-            if final: print >>f,"===== final w_coeff ====="
-            else:     print >>f,"===== w_coeff ====="
-            print >>f, "%8d %13.5e" %(0,self.model.w_coeff[0]+self.model.wunit)  # only the first needs to be shifted
-            for i,val in enumerate(self.model.w_coeff[1:]):
-                print >>f, "%8d %13.5e" %(i+1,val)
-        if self.move_timezero>0:
-            if final: print >>f,"===== final timezero ====="
-            else:     print >>f,"===== timezero ====="
-            print >>f, "%13.5e" %(self.model.timezero)
+
+        from mcdiff.log import print_coeffs
+        v_coeff = None
+        w_coeff = None
+        wrad_coeff = None
+        timezero = None
+
+        if self.model.ncosF>0: v_coeff = self.model.v_coeff
+        if self.model.ncosD>0: w_coeff = self.model.w_coeff
         if self.do_radial:
-          if self.model.ncosDrad > 0:
-            if final: print >>f,"===== final wrad_coeff ====="
-            else:     print >>f,"===== wrad_coeff ====="
-            print >>f, "%8d %13.5e" %(0,self.model.wrad_coeff[0]+self.model.wradunit)  # only the first needs to be shifted
-            for i,val in enumerate(self.model.wrad_coeff[1:]):
-                print >>f, "%8d %13.5e" %(i+1,val)
-        print >>f, "="*10
+            if self.model.ncosDrad>0: wrad_coeff = self.model.wrad_coeff        
+        if self.move_timezero>0: timezero = self.model.timezero
 
-    def print_radial(self,f,final=False): 
-        """print final results (radial diffusion coefficient)
-        f is a writable object"""
-        if final: print >>f,"===== final Drad ====="
-        else:     print >>f,"===== Drad ====="
-        D = np.exp(self.model.wrad+self.model.wradunit)  # in angstrom**2 per [unit-lag-times]   # TODO what with 2 pi r
-        edges = self.model.edges   # same as bins in 1-D z-direction
-        f.write("%8s %8s %8s  %s" % ("index","bin-str","bin-end","diffusion-coefficient-at[i]\n"))
-        for i in range(self.model.dim_wrad):
-            #print "i,dim_wrad,len(edges)",i, self.model.dim_wrad, len(edges)
-            f.write("%8d %8.3f %8.3f  %13.5e\n" %(i,edges[i],edges[i+1],D[i] ) )
-        f.write("#Done\n")
+        print_coeffs(f,self.model,v_coeff,w_coeff,wrad_coeff,timezero,final=final)
 
-    def print_final(self,f): 
+
+    def print_laststate(self,f,final=False): 
         """print final results (potential and diffusion coefficient)
         f is a writable object"""
 
-        self.print_MC_params(f,final=True)
-        self.print_statistics(f)
-        self.print_coeffs(f,final=True)
+        self.print_MC_params(f,final=final)
+        self.print_coeffs_laststate(f,final=final)
 
-        # print profiles themselves
-        # units:
-        F = self.model.v  # in kBT
-        D = np.exp(self.model.w+self.model.wunit)  # in angstrom**2 per [unit-lag-times]
-        edges = self.model.edges
-        f.write("%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)\n"))
-        if self.pbc:
-            for i in range(self.model.dim_v):
-                f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i] ) )
-        else:
-            for i in range(self.model.dim_v-1):
-                f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i] ) )
-            f.write("%8d %8.3f %8.3f  %13.5e\n" %(self.model.dim_v-1,edges[-2],edges[-1],F[-1] ) )
+        from mcdiff.log import print_profiles
 
-        f.write("#Done\n")
+        v = self.model.v
+        w = self.model.w
+        if self.do_radial: wrad = self.model.wrad
+        else: wrad = None
+        if self.move_timezero: timezero = self.model.timezero
+        else: timezero = None
 
-        if self.do_radial:
-            self.print_radial(f,final=True)
+        print_profiles(f,self.model,v,w,wrad=wrad,final=final)
 
