@@ -406,9 +406,11 @@ def fill_transition_matrix(A,x,bins,shift=1):
 
     start = digitized[0]
     for i,val in enumerate(digitized[shift:]):
+        start = digitized[i]
         end = val
+        #print i,start,end
         A[start,end] += 1
-        start = end
+        #start = end
 
 def fill_transition_matrix2(A,cor,bins,shift=1):
     """This method is equivalent but much too slow,
