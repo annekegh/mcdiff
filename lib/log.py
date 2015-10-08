@@ -14,6 +14,7 @@ class Logger(object):
         self.timezero  = np.zeros((nf),float)
         self.dv        = np.zeros((nf),float)
         self.dw        = np.zeros((nf),float)
+        self.dwrad     = np.zeros((nf),float)
         self.dtimezero = np.zeros((nf),float)
         #self.Ew        = np.zeros((nf),float)
         if MC.model.ncosF <= 0:
@@ -25,7 +26,6 @@ class Logger(object):
         else:
             self.w_coeff = np.zeros((nf,MC.model.ncosD),float)
         if MC.do_radial:
-            self.dwrad = np.zeros((nf),float)
             if MC.model.ncosDrad <= 0:
                 self.wrad = np.zeros((nf,MC.model.dim_wrad),float)
             else:
@@ -39,6 +39,7 @@ class Logger(object):
             self.timezero[i]  = MC.model.timezero
             self.dv[i]        = MC.dv
             self.dw[i]        = MC.dw
+            self.dwrad[i]     = MC.dwrad
             self.dtimezero[i] = MC.dtimezero
             #self.Ew[i]        = MC.Ew
             if MC.model.ncosF > 0:
@@ -50,7 +51,6 @@ class Logger(object):
             else:
                 self.w[i,:]       = MC.model.w[:]
             if MC.do_radial:
-                self.dwrad[i] = MC.dwrad
                 if MC.model.ncosDrad > 0:
                     self.wrad_coeff[i,:] = MC.model.wrad_coeff[:]
                 else:
@@ -70,8 +70,23 @@ class Logger(object):
         pickle.dump(self,f)
         f.close()
 
-    #def gather_averages(self,MC,st=0):
-    def print_average(self,model,st=0):
+    def print_MC_params(self,f=None,final=False):
+        if f is None:
+            import sys
+            f = sys.stdout
+        if final: print >>f, "----- final Settings MC -----"
+        else:     print >>f, "----- Settings MC -----"
+        print >>f, "dv(MC-potential)=", self.dv
+        print >>f, "dw(MC-logD)=", self.dw
+        if hasattr(self,"dwrad"):   # for older versions
+            print >>f, "dwrad(MC-logDrad)=", self.dwrad
+        #print >>f, "temp=", self.temp
+        print >>f, "n(MC)=", self.nmc
+        #print >>f, "n(update)=", self.num_MC_update
+        #print >>f, "k=", self.k
+        print >>f, "-"*20
+
+    def get_profiles_average(self,model,st=0):
         # st  --  start (cutting out the first MC steps)
         s = st/self.freq
         if s >= self.nf:
@@ -119,10 +134,19 @@ class Logger(object):
 
         if hasattr(model,"timezero"): timezero = model.timezero
         else: timezero = None
+        return v,w,wrad, v_coeff,w_coeff,wrad_coeff, timezero
+
+    def print_average(self,model,st=0):
+
+        v,w,wrad, v_coeff,w_coeff,wrad_coeff, timezero = self.get_profiles_average(model,st=st)
+
+        print self.__dict__
+        v = np.mean(self.v,0)
 
         import sys
-        print_coeffs(sys.stdout,model,v_coeff,w_coeff,wrad_coeff,timezero,final=False)
-        print_profiles(sys.stdout,model,v,w,wrad,final=False)
+        self.print_MC_params(f=sys.stdout,final=True)
+        print_coeffs(sys.stdout,model,v_coeff,w_coeff,wrad_coeff,timezero,final=True)
+        print_profiles(sys.stdout,model,v,w,wrad,final=True)
 
 
     def statistics(self,MC,st=0):
@@ -176,6 +200,8 @@ class Logger(object):
                 print_vector(self.wrad_coeff,s)
 
 
+#================================================
+
 def load_logger(filename):
     """Load an object that I dumped before"""
     f = open(filename)
@@ -184,68 +210,71 @@ def load_logger(filename):
     f.close()
     return pic
 
+#================================================
 
 def print_coeffs(f,model,v_coeff=None,w_coeff=None,wrad_coeff=None,timezero=None,final=False):
-        """print basis functions and other model parameters"""
-        if model.ncosF>0:
-            if final: print >>f,"===== final v_coeff ====="
-            else:     print >>f,"===== v_coeff ====="
-            for i,val in enumerate(v_coeff):
-                print >>f, "%8d %13.5e" %(i,val)
-        if model.ncosD>0:
-            if final: print >>f,"===== final w_coeff ====="
-            else:     print >>f,"===== w_coeff ====="
-            print >>f, "%8d %13.5e" %(0,w_coeff[0]+model.wunit)  # only the first needs to be shifted
-            for i,val in enumerate(w_coeff[1:]):
-                print >>f, "%8d %13.5e" %(i+1,val)
-        if timezero is not None:
-            if final: print >>f,"===== final timezero ====="
-            else:     print >>f,"===== timezero ====="
-            print >>f, "%13.5e" %(timezero)
-        if wrad_coeff is not None:
-          if model.ncosDrad > 0:
-            if final: print >>f,"===== final wrad_coeff ====="
-            else:     print >>f,"===== wrad_coeff ====="
-            print >>f, "%8d %13.5e" %(0,wrad_coeff[0]+model.wradunit)  # only the first needs to be shifted
-            for i,val in enumerate(wrad_coeff[1:]):
-                print >>f, "%8d %13.5e" %(i+1,val)
-        print >>f, "="*10
+    """print basis functions and other model parameters"""
+    if model.ncosF>0:
+        if final: print >>f,"===== final v_coeff ====="
+        else:     print >>f,"===== v_coeff ====="
+        for i,val in enumerate(v_coeff):
+            print >>f, "%8d %13.5e" %(i,val)
+    if model.ncosD>0:
+        if final: print >>f,"===== final w_coeff ====="
+        else:     print >>f,"===== w_coeff ====="
+        print >>f, "%8d %13.5e" %(0,w_coeff[0]+model.wunit)  # only the first needs to be shifted
+        for i,val in enumerate(w_coeff[1:]):
+            print >>f, "%8d %13.5e" %(i+1,val)
+    if timezero is not None:
+        if final: print >>f,"===== final timezero ====="
+        else:     print >>f,"===== timezero ====="
+        print >>f, "%13.5e" %(timezero)
+    if wrad_coeff is not None:
+      if model.ncosDrad > 0:
+        if final: print >>f,"===== final wrad_coeff ====="
+        else:     print >>f,"===== wrad_coeff ====="
+        print >>f, "%8d %13.5e" %(0,wrad_coeff[0]+model.wradunit)  # only the first needs to be shifted
+        for i,val in enumerate(wrad_coeff[1:]):
+            print >>f, "%8d %13.5e" %(i+1,val)
+    print >>f, "="*10
 
 
 
 def print_profiles(f,model,v,w,wrad=None,final=False): 
-        """print profiles (potential and diffusion coefficients)
+    """print profiles (potential and diffusion coefficients)
+    f is a writable object"""
+
+    if final: print >>f,"===== final F D ====="
+    else:     print >>f,"===== F D ====="
+
+    # units:
+    F = v  # in kBT
+    D = np.exp(w+model.wunit)  # in angstrom**2 per [unit-lag-times]
+    edges = model.edges
+    f.write("%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)\n"))
+    if model.pbc:
+        for i in range(model.dim_v):
+            f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i] ) )
+    else:
+        for i in range(model.dim_v-1):
+            f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i] ) )
+        f.write("%8d %8.3f %8.3f  %13.5e\n" %(model.dim_v-1,edges[-2],edges[-1],F[-1] ) )
+    f.write("#Done\n")
+
+    if wrad is not None:
+        """print final results (radial diffusion coefficient)
         f is a writable object"""
-
-        if final: print >>f,"===== final F D ====="
-        else:     print >>f,"===== F D ====="
-
-        # units:
-        F = v  # in kBT
-        D = np.exp(w+model.wunit)  # in angstrom**2 per [unit-lag-times]
-        edges = model.edges
-        f.write("%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)\n"))
-        if model.pbc:
-            for i in range(model.dim_v):
-                f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i] ) )
-        else:
-            for i in range(model.dim_v-1):
-                f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i] ) )
-            f.write("%8d %8.3f %8.3f  %13.5e\n" %(model.dim_v-1,edges[-2],edges[-1],F[-1] ) )
+        if final: print >>f,"===== final Drad ====="
+        else:     print >>f,"===== Drad ====="
+        D = np.exp(wrad+model.wradunit)  # in angstrom**2 per [unit-lag-times]   # TODO what with 2 pi r
+        edges = model.edges   # same as bins in 1-D z-direction
+        f.write("%8s %8s %8s  %s" % ("index","bin-str","bin-end","diffusion-coefficient-at[i]\n"))
+        for i in range(model.dim_wrad):
+            #print "i,dim_wrad,len(edges)",i, self.model.dim_wrad, len(edges)
+            f.write("%8d %8.3f %8.3f  %13.5e\n" %(i,edges[i],edges[i+1],D[i] ) )
         f.write("#Done\n")
 
-        if wrad is not None:
-            """print final results (radial diffusion coefficient)
-            f is a writable object"""
-            if final: print >>f,"===== final Drad ====="
-            else:     print >>f,"===== Drad ====="
-            D = np.exp(wrad+model.wradunit)  # in angstrom**2 per [unit-lag-times]   # TODO what with 2 pi r
-            edges = model.edges   # same as bins in 1-D z-direction
-            f.write("%8s %8s %8s  %s" % ("index","bin-str","bin-end","diffusion-coefficient-at[i]\n"))
-            for i in range(model.dim_wrad):
-                #print "i,dim_wrad,len(edges)",i, self.model.dim_wrad, len(edges)
-                f.write("%8d %8.3f %8.3f  %13.5e\n" %(i,edges[i],edges[i+1],D[i] ) )
-            f.write("#Done\n")
+#================================================
 
 def write_average_from_pic(picfilename,datfilename):
     from outreading import read_F_D_edges_logger
