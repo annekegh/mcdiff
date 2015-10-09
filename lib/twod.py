@@ -39,17 +39,17 @@ def setup_bessel_functions(lmax,redges,):
     lmax  --  number of Bessel functions taken into account, each labeled by the zero by which the argument is rescaled"""
 
     # first lmax zeros of 0th order Bessel first type
-    bessel0_zeros = scipy.special.jn_zeros(0,lmax)
+    bessel0_zeros = scipy.special.jn_zeros(0,lmax)   # no unit
     # 1st order Bessel first type in those zeros
-    bessel1_inzeros = scipy.special.j1(bessel0_zeros)
+    bessel1_inzeros = scipy.special.j1(bessel0_zeros)   # no unit
 
     dim_rad = len(redges)  # transitions between radial bins
     rmax = np.float64(dim_rad)  # in units [dr]   # TODO dimensions!!!!!!!!
     bessels = np.zeros((lmax,dim_rad),dtype=np.float64)
 
     r = np.arange(dim_rad,dtype=np.float64)+0.5   # in units [dr]
-    print "r",r
-    print "rmax",rmax
+    #print "r",r
+    #print "rmax",rmax
 
     # set up Bessel functions
     for l in range(lmax):
@@ -68,10 +68,12 @@ def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
            lmax,bessel0_zeros,bessels,):
     """calculate propagator for radial diffusion as matrix exponential
     rate  --  rate matrix for 1-D diffusion in z-direction, in [1/dt]
-    wrad  --  ln Drad, radial diffusion coefficient
+    wrad  --  ln Drad, radial diffusion coefficient, dimension n
               Drad = exp(wrad), in [dr**2/dt]
     n  --  dim_trans, dimension transition matrix, usually number of bins in z-direction
     dim_rad  --  dimension transition matrix, always equal to len(redges)
+    bessels0_zeros  --  first lmax zeros, no unit
+    bessels  --  dimension lmax x dim_rad, in units [1/dr]
 
     rate_l  --  rate matrix including sink equation, in [1/dt]"""
 

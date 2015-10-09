@@ -314,7 +314,7 @@ class MCState(object):
         log_like_try = rad_log_like_lag(self.model.dim_v, self.model.dim_rad, self.data.dim_lt, self.model.rate, 
                  wradt, self.data.list_lt, self.data.list_trans, self.model.redges,self.lmax,self.model.bessel0_zeros,self.model.bessels, 0. )
 
-        # Metropolis accpetance
+        # Metropolis acceptance
         if log_like_try is not None and not np.isnan(log_like_try):   # propagator is well behaved  TODO implement
             dlog = log_like_try - self.log_like
             r = np.random.random()  #in [0,1[
