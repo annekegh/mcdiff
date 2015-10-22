@@ -76,10 +76,10 @@ class Logger(object):
             f = sys.stdout
         if final: print >>f, "----- final Settings MC -----"
         else:     print >>f, "----- Settings MC -----"
-        print >>f, "dv(MC-potential)=", self.dv
-        print >>f, "dw(MC-logD)=", self.dw
+        print >>f, "dv(MC-potential)=", self.dv[-1]
+        print >>f, "dw(MC-logD)=", self.dw[-1]
         if hasattr(self,"dwrad"):   # for older versions
-            print >>f, "dwrad(MC-logDrad)=", self.dwrad
+            print >>f, "dwrad(MC-logDrad)=", self.dwrad[-1]
         #print >>f, "temp=", self.temp
         print >>f, "n(MC)=", self.nmc
         #print >>f, "n(update)=", self.num_MC_update
@@ -140,8 +140,8 @@ class Logger(object):
 
         v,w,wrad, v_coeff,w_coeff,wrad_coeff, timezero = self.get_profiles_average(model,st=st)
 
-        print self.__dict__
-        v = np.mean(self.v,0)
+        #print self.__dict__
+        #v = np.mean(self.v,0)
 
         import sys
         self.print_MC_params(f=sys.stdout,final=True)

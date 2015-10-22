@@ -317,6 +317,7 @@ class MCState(object):
         # Metropolis acceptance
         if log_like_try is not None and not np.isnan(log_like_try):   # propagator is well behaved  TODO implement
             dlog = log_like_try - self.log_like
+            print "dlog",dlog,log_like_try
             r = np.random.random()  #in [0,1[
             #if dlog > 0: print "aha",
             #print dlog,self.log_like,log_like_try 
@@ -330,6 +331,7 @@ class MCState(object):
                 self.naccwrad += 1
                 self.naccwrad_update += 1
                 self.log_like = log_like_try
+        else: print "WARNING: log_like_try behaves badly"
 
 
     def check_propagator(self,lagtime):
