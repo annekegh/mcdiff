@@ -29,7 +29,7 @@ def read_F_D_edges(filename):
             F.append(float(words[3]))
             if len(words) >= 5:
                 D.append(float(words[4]))
-            elif len(words)!=4:
+            elif len(words)!=4 and len(words)!=6:
                 raise ValueError("error in the format line"+line)
     f.close()
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
@@ -58,10 +58,10 @@ def read_Drad(filename):
             words = line.split()
             bins_str.append(float(words[1]))
             bins_end.append(float(words[2]))
-            if len(words) == 4:
+            if len(words) == 4 or len(words)==5:
                 D.append(float(words[3]))
-            else:  #if len(words)!=4:
-                raise ValueError("error in the format line"+line)
+          #  else:  #if len(words)!=4:
+          #      raise ValueError("error in the format line"+line)
     f.close()
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
     return np.array(D),np.array(edges)
@@ -292,4 +292,38 @@ def read_Drad_logger(logger):
     #Dst = D*(np.exp(Wst)-1)
     Dradst = dradst*np.exp(logger.model.wradunit)
     return Drad,redges,Dradst
+
+def read_F_D_edges_logger_individualprofiles(logger):
+    if logger.model.ncosF <= 0:
+        F = logger.v*logger.model.vunit
+        #v = np.mean(logger.v,0)
+        #vst = np.std(logger.v,0)
+        print "Fshape",F.shape
+    else:
+        a = np.zeros((logger.nf,logger.model.dim_v))
+        for i in xrange(len(a)):
+            a[i,:] = logger.model.calc_profile(logger.v_coeff[i,:],logger.model.v_basis)
+        F = a*logger.model.vunit
+        print "Fshape",F.shape
+        #v = np.mean(a,0)
+        #vst = np.std(a,0)
+
+    if logger.model.ncosD <= 0:
+        W = logger.w+logger.model.wunit
+        D = np.exp(W)   # in angstrom**2/ps
+        #w = np.mean(logger.w,0)
+        #wst = np.std(logger.w,0)
+        #dst = np.std(np.exp(logger.w),0)
+    else:
+        a = np.zeros((logger.nf,logger.model.dim_w))
+        for i in xrange(len(a)):
+            a[i,:] = logger.model.calc_profile(logger.w_coeff[i,:],logger.model.w_basis)
+        W = a+logger.model.wunit
+        D = np.exp(W)   # in angstrom**2/ps
+        #w = np.mean(a,0)
+        #wst = np.std(a,0)
+        #dst = np.std(np.exp(a),0)
+
+    edges = logger.model.edges
+    return F,D,edges
 

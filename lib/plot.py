@@ -14,7 +14,10 @@ def plotsettings():
     plt.rcParams['axes.titlesize'] = 16
     plt.rcParams['xtick.major.size'] = 10
     plt.rcParams['xtick.minor.size'] = 4
-    plt.rcParams['xtick.major.size'] = 10
+    #plt.rcParams['xtick.major.width'] = 2  # default 0.5
+    plt.rcParams['ytick.major.size'] = 10
+    plt.rcParams['ytick.minor.size'] = 4
+    #plt.rcParams['ytick.major.width'] = 2  # default 0.5
     plt.rcParams['figure.subplot.left']=0.15
     plt.rcParams['figure.subplot.bottom']=0.14
     plt.rcParams['legend.fontsize'] = 18
@@ -24,9 +27,9 @@ def plotsettingsax(ax):
         line.set_markersize(10)
         line.set_markeredgewidth(2)
 plotsettings()
+linestyles = ["-","--"]
 
-
-def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
+def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
            error=None,transparent=False):
     # F in units kBT
     # F is a list of arrays, each array is a profile
@@ -66,7 +69,8 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,grey=False,
     plt.xlabel("z [A]")
     plt.ylabel("F [kBT]")
     plt.title(title)
-    plt.ylim(0,5)
+    plt.ylim(0,4)
+    if legend is not None: plt.legend(legend)
     plt.savefig(filename,transparent=transparent)
 
 def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
@@ -151,7 +155,7 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
     plt.xlabel("z [A]")
     plt.ylabel("Drad [A^2/ps]")
     plt.title(title)
-    if legend is not None and error is None:
+    if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
     plt.savefig(filename,transparent=transparent)
 
@@ -205,9 +209,10 @@ def plot_three(F,D,Drad,filename,edges,transparent=False):
 
     plt.savefig(filename,transparent=transparent)
 
-def plot_ratio(D,Drad,filename,edges,transparent=False):
+def plot_ratio(D,Drad,filename,edges,title="anisotropy",transparent=False):
     # assume F,D,edges are lists of arrays, each list is a profile
     plt.figure()
+    plt.title(title)
     for i in xrange(len(D)):
         d = D[i]
         drad = Drad[i]
@@ -215,12 +220,12 @@ def plot_ratio(D,Drad,filename,edges,transparent=False):
         x_D    = edges[i][:len(d)]+dx      # if periodic, then one more than if non-periodic
         x_Drad = edges[i][:len(drad)]+dx/2.   # these are the middle points of the bins
 
-        plt.subplot(2,1,1)
-        plt.plot(x_D,d)
-        plt.plot(x_Drad,drad,'o-')
-        plt.ylabel("D,Drad [A^2/ps]")
+     #   plt.subplot(2,1,1)
+     #   plt.plot(x_D,d)
+     #   plt.plot(x_Drad,drad,'o-')
+     #   plt.ylabel("D,Drad [A^2/ps]")
 
-        plt.subplot(2,1,2)
+     #   plt.subplot(2,1,2)
         if len(d) != len(drad):  pass   # TODO XXXXXXXXXXXXXXX  ratio = Drad[-nc:]/D[-nc:]
         nc = min(len(d),len(drad))   # number of components
         x = edges[i][:nc]
