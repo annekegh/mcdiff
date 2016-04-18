@@ -135,7 +135,7 @@ def plotvecs(list_vecs):
 
 def plot_crd_z(data1,data2,dtc,outdir,zpbc):
     print "data", data1.shape, data2.shape
-    from functionsdiffusion import plot_vs_time
+    from functionsdistance import plot_vs_time
 
     toplot = add_vec_toarray(data1[:,::2],[data2[:,0],data2[:,0]+zpbc/2.,data2[:,0]-zpbc/2.])
     plot_vs_time(toplot,dtc,outdir+"/fig_crd-z.png")
@@ -150,7 +150,7 @@ def plot_crd_z(data1,data2,dtc,outdir,zpbc):
     plot_vs_time(toplot,dtc,outdir+"/fig_pbccrd-z.shift.png",**kwargs)
 
 def plot_crd_z_hexd(data1,dtc,outdir,zpbc):
-    from functionsdiffusion import plot_vs_time
+    from functionsdistance import plot_vs_time
 
     print data1.shape
     coor = data1[:,::2]

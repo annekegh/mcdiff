@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from functionshistogram import read_coor
-from functionsdiffusion import fit_sqrt_vs_time, plot_vs_time
+from functionsdiffusion import fit_sqrt_vs_time
 
 
 def plotsettings():
@@ -55,6 +55,7 @@ def store_msd(t,msd,filename,error=None):
 
 def analyze_dist_1D(list_x,nstep,outdir,dtc):
     """Take the average over the D estimates in each of these x-arrays"""
+    # fit range = [0,nstep*dtc[
     assert len(list_x) > 0
     nfiles = len(list_x)
     t = np.arange(0,nstep*dtc,dtc)
@@ -1121,3 +1122,16 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False,npt=False):
         return dist2_xy,dist2_z,dist2_r,weight
     else:
         return alldist,weight
+
+
+#### PLOT ####
+def plot_vs_time(x,dt,filename,**kwargs):
+    plt.figure()
+    t = np.arange(len(x))*dt
+    plt.plot(t,x,**kwargs)
+    plt.xlabel("t [ps]")
+    plt.savefig(filename)
+
+
+
+
