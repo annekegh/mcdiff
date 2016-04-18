@@ -65,9 +65,8 @@ class Model(object):
         # units
         dt = 1. # ps
         dx = self.edges[1]-self.edges[0]  # in angstrom
-        unit = dx**2/dt            # in angstrom**2/ps
         self.vunit = 1.  # in kBT
-        self.wunit = np.log(unit)  # in angstrom**2/ps
+        self.wunit = np.log(dx**2/dt)  # in angstrom**2/ps
 
         self.w += (np.log(D0)-self.wunit)  # initialize to D0 in A**2/ps
 

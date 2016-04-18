@@ -36,7 +36,9 @@ def setup_bessel_functions(lmax,redges,):
     redges  --  bin edges for radial bins, starts with 0.
     dim_w  --  number of transitions between bins (size diffusion vector)   TODO
     rmax  --  radius where all functions are zero
-    lmax  --  number of Bessel functions taken into account, each labeled by the zero by which the argument is rescaled"""
+    lmax  --  number of Bessel functions taken into account, each labeled by the zero by which the argument is rescaled
+    Output
+    bessels  --  in units 1/dr"""
 
     # first lmax zeros of 0th order Bessel first type
     bessel0_zeros = scipy.special.jn_zeros(0,lmax)   # no unit
@@ -75,7 +77,8 @@ def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
     bessels0_zeros  --  first lmax zeros, no unit
     bessels  --  dimension lmax x dim_rad, in units [1/dr]
 
-    rate_l  --  rate matrix including sink equation, in [1/dt]"""
+    rate_l  --  rate matrix including sink equation, in [1/dt]
+    propagator  --  in 1/dr (I think)"""  # TODO unit double check?
 
     rmax = np.float64(dim_rad)  # in units [dr]
 
@@ -88,7 +91,6 @@ def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
     for l in range(lmax):
         sink = np.exp(wrad)*bessel0_zeros[l]**2/rmax**2 # sink term D_par(i) * (b_l)**2
         # in units np.exp(wrad) [dr**2/dt] / rmax**2 [dr**2], so in units [1/dt]
-        # TODO unit of D , with rmax and dz and dr
 
         rate_l[:,:] = rate[:,:]                 # take rate matrix for 1-D diffusion
         rate_l.ravel()[::n+1] -= sink           # and add sink term
@@ -97,8 +99,10 @@ def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
         # increment propagator by solution of sink equation for each l
         # propagator to arrive in radial bin k, contribution from Bessel function l
         # bessels in [1/dr], mat_exp is "kind of" [1/dz], so propagator in [1/dr/dz]
+        # so propagator in [1/dr] (the 1/dz is more of a probability/bin, so gives no unit)
         for k in range(dim_rad):
             propagator[k,:,:] += bessels[l,k] * mat_exp[:,:]
+    # TODO normalize?
     #propagator /= np.sum(np.sum(propagator,axis=0),axis=0)
     return propagator
 

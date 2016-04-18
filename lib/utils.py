@@ -11,6 +11,17 @@ import numpy.linalg
 
 
 #------------------------
+# UNITS
+# F -- free energy, in kBT
+# D -- diffusion constant, in A^2/ps
+# v -- equal to F, in kBT
+# w -- log( D/(dx^2/dt) ), has no unit
+# exp(w) -- D/(dx^2/dt), has no unit, amounts to D in units dx^2/dt
+# rate -- in 1/dt   # TODO CONFIRM  ja, dit is zo.
+# lagtime -- in ps or in dt   # TODO CONFIRM  ook elders nakijken
+#------------------------
+
+#------------------------
 # EXTRA FUNCTIONS
 #------------------------
 
@@ -103,6 +114,8 @@ def string_vecs(n,pbc):
 def log_likelihood(n,ilag,transition,lagtime,rate):
     """calculate log-likelihood from rate matrix and transition matrix
     assuming time step lagtime"""
+    # lagtime -- in dt  # TODO confirm elders
+    # rate -- rate matrix, in 1/dt
     # calc propagator as matrix exponential
     propagator = scipy.linalg.expm2(lagtime*rate)
     # sum over all transitions
