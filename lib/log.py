@@ -100,60 +100,60 @@ class Logger(object):
         # Free energy
         if model.ncosF <= 0:    # I CHANGED THIS??????????????
             v_coeff = None
-            v = np.mean(self.v[s:,:],0)
-            vst = np.std(self.v[s:,:],0)
+            F = np.mean(self.v[s:,:],0)
+            Fst = np.std(self.v[s:,:],0)
         else:
             v_coeff = np.mean(self.v_coeff[s:,:],0)
             # compute profile
             vec = np.zeros((self.nf,model.dim_v),float)
             for i in range(len(vec)):
                 vec[i,:] = model.calc_profile(self.v_coeff[i,:],model.v_basis)
-            v = np.mean(vec[s:,:],0)
-            vst = np.std(vec[s:,:],0)
+            F = np.mean(vec[s:,:],0)
+            Fst = np.std(vec[s:,:],0)
 
         # Diffusion profile
         if model.ncosD <= 0:
             w_coeff = None
-            D = np.exp(self.w+model.wunit)
+            D0 = np.exp(self.w+model.wunit)
         else:
             w_coeff = np.mean(self.w_coeff[s:,:],0)
             # compute profile
             vec = np.zeros((self.nf,model.dim_w),float)
             for i in range(len(vec)):
                 vec[i,:] = model.calc_profile(self.w_coeff[i,:],model.w_basis)            
-            D = np.exp(vec+model.wunit)
-        D = np.mean(D[s:,:],0)
-        Dst = np.std(D[s:,:],0)
+            D0 = np.exp(vec+model.wunit)
+        D = np.mean(D0[s:,:],0)
+        Dst = np.std(D0[s:,:],0)
 
         # Radial diffusion profile
         if hasattr(model,"ncosDrad"):
             if model.ncosDrad <= 0:
                 wrad_coeff = None
-                Drad = np.exp(self.wrad+model.wradunit)
+                D0 = np.exp(self.wrad+model.wradunit)
             else:
                 wrad_coeff = np.mean(self.wrad_coeff[s:,:],0)
                 # compute profile
                 vec = np.zeros((self.nf,model.dim_wrad),float)
                 for i in range(len(vec)):
                     vec[i,:] = model.calc_profile(self.wrad_coeff[i,:],model.wrad_basis)
-                Drad = np.exp(vec+model.wradunit)
-            Drad = np.mean(Drad[s:,:],0)
-            Dradst = np.std(Drad[s:,:],0)
+                D0 = np.exp(vec+model.wradunit)
+            Drad = np.mean(D0[s:,:],0)
+            Dradst = np.std(D0[s:,:],0)
 
         else:
             wrad_coeff = None
             Drad = None
             Dradst = None
 
-        error = [vst,Dst,Dradst]
+        error = [Fst,Dst,Dradst]
 
         if hasattr(model,"timezero"): timezero = model.timezero
         else: timezero = None
-        return v,w,wrad, error, v_coeff,w_coeff,wrad_coeff, timezero
+        return F,D,Drad, error, v_coeff,w_coeff,wrad_coeff, timezero
 
     def print_average(self,model,st=0):
 
-        v,w,wrad, error, v_coeff,w_coeff,wrad_coeff, timezero = self.get_profiles_average(model,st=st)
+        F,D,Drad, error, v_coeff,w_coeff,wrad_coeff, timezero = self.get_profiles_average(model,st=st)
 
         #print self.__dict__
         #v = np.mean(self.v,0)
@@ -161,7 +161,7 @@ class Logger(object):
         import sys
         self.print_MC_params(f=sys.stdout,final=True)
         print_coeffs(sys.stdout,model,v_coeff,w_coeff,wrad_coeff,timezero,final=True,)
-        print_profiles(sys.stdout,model,v,w,wrad,final=True,error=error)
+        print_profiles(sys.stdout,model,F,D,Drad,final=True,error=error,unit="notinternal")
 
 
     def statistics(self,MC,st=0):
@@ -255,7 +255,7 @@ def print_coeffs(f,model,v_coeff=None,w_coeff=None,wrad_coeff=None,timezero=None
 
 
 
-def print_profiles(f,model,v,w,wrad=None,final=False,error=None): 
+def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal"): 
     """print profiles (potential and diffusion coefficients)
     f is a writable object"""
     # error is a list of arrays [Fst,Dst,Dradst]
@@ -266,26 +266,35 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None):
 
     # units:
     F = v  # in kBT
-    D = np.exp(w+model.wunit)  # in angstrom**2 per [unit-lag-times]
-    #Fst = Fst  # in kBT
-    #Dst =
-
-    edges = model.edges
-    f.write("%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)\n"))
-    for i in range(model.dim_v-1):
-        if error is None:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e%s\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
-        else:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e  %13.5e %13.5e\n" %(
-                    i,edges[i],edges[i+1],F[i],D[i],Fst[i],Dst[i] ) )
-    if model.pbc:
-        i = model.dim_v-1   # just one more time
-        if error is None:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e%s\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
-        else:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e  %13.5e %13.5e\n" %(
-                    i,edges[i],edges[i+1],F[i],D[i],Fst[i],Dst[i] ) )
+    edges = model.edges  # in angstrom
+    if unit is "internal":
+        D = np.exp(w+model.wunit)  # in angstrom**2 per [unit-lag-times]
+        if wrad is not None:
+            Drad = np.exp(wrad+model.wradunit)  # in angstrom**2 per [unit-lag-times]
+             # TODO what with 2 pi r
     else:
+        D = w
+        Drad = wrad
+
+    if error is not None:     # units were already okay!
+        Fst = error[0] # in kBT
+        Dst = error[1]
+        Dradst = error[2]
+        if unit is "internal":
+            Dst = np.exp(error[1]+model.wunit)
+            if wrad is not None:
+                Dradst = np.exp(error[2]+model.wradunit)
+
+    f.write("%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)\n"))
+    if model.pbc: maxi = model.dim_v
+    else: maxi = model.dim_v-1
+    for i in range(maxi):
+        if error is None:
+            f.write("%8d %8.3f %8.3f  %13.5e %13.5e%s\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
+        else:
+            f.write("%8d %8.3f %8.3f  %13.5e %13.5e  %13.5e %13.5e\n" %(
+                    i,edges[i],edges[i+1],F[i],D[i],Fst[i],Dst[i] ) )
+    if not model.pbc:  # some other type of line: only F, no D
         if error is None:
             f.write("%8d %8.3f %8.3f  %13.5e\n" %(model.dim_v-1,edges[-2],edges[-1],F[-1] ) )
         else:
@@ -298,12 +307,14 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None):
         f is a writable object"""
         if final: print >>f,"===== final Drad ====="
         else:     print >>f,"===== Drad ====="
-        D = np.exp(wrad+model.wradunit)  # in angstrom**2 per [unit-lag-times]   # TODO what with 2 pi r
         edges = model.edges   # same as bins in 1-D z-direction
         f.write("%8s %8s %8s  %s" % ("index","bin-str","bin-end","diffusion-coefficient-at[i]\n"))
         for i in range(model.dim_wrad):
             #print "i,dim_wrad,len(edges)",i, self.model.dim_wrad, len(edges)
-            f.write("%8d %8.3f %8.3f  %13.5e\n" %(i,edges[i],edges[i+1],D[i] ) )
+            if error is None:
+                f.write("%8d %8.3f %8.3f  %13.5e\n" %(i,edges[i],edges[i+1],Drad[i] ) )
+            else:
+                f.write("%8d %8.3f %8.3f  %13.5e  %13.5e\n" %(i,edges[i],edges[i+1],Drad[i],Dradst[i] ) )
         f.write("#Done\n")
 
 #================================================

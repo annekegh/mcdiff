@@ -31,7 +31,7 @@ def rad_log_like_lag(dim_trans,dim_rad, num_lag, rate, wrad, lagtimes, transitio
 
     return log_like
 
-def setup_bessel_functions(lmax,redges,):
+def setup_bessel_functions(lmax,redges):
     """set up Bessel functions first type zero-th order J_0(b_l x)
     redges  --  bin edges for radial bins, starts with 0.
     dim_w  --  number of transitions between bins (size diffusion vector)   TODO
@@ -57,14 +57,31 @@ def setup_bessel_functions(lmax,redges,):
     for l in range(lmax):
         bessels[l,:] = 2*r*scipy.special.j0(r/rmax*bessel0_zeros[l]) / bessel1_inzeros[l]**2 /rmax**2
         # in units r [dr] / rmax**2 [dr**2], so in units [1/dr]
-    if False:
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        plt.plot(bessels.transpose())
-        plt.savefig("bessels.%i.png"%lmax)
 
     return bessel0_zeros,bessels
+
+
+def plot_bessels(lmax,redges,figname,color=None):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    #from mcdiff.plot import plotsettings
+    #plotsettings()
+    # construct
+    dr = redges[1]-redges[0]
+    bessel0_zeros,bessels = setup_bessel_functions(lmax,redges)
+    # plot
+    plt.plot(redges,np.zeros(len(redges)),color='grey') #,linewidth=2)
+    if color is not None:
+        plt.plot(redges,bessels.transpose(),color=color)
+    else:
+        plt.plot(redges,bessels.transpose())
+    plt.xlabel("r [A]")
+    plt.ylabel("1/dr, with dr = %5.2fA"%dr)
+    plt.title("bessel functions")
+    plt.savefig("%s.lmax%i.png"%(figname,lmax))
+    print "picture printed:...", figname
+
 
 def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
            lmax,bessel0_zeros,bessels,):
