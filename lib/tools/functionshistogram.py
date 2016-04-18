@@ -54,7 +54,16 @@ def shift_wrt_layer(data1,data2):
         coor[:,i] = data1[:,i] - d2  # shift
     return coor
 
-def plot_histogram_pbc(coor,zpbc,figname):
+def store_hist(bin_edges,hist,filename,):
+    assert len(bin_edges) == len(hist)+1
+    bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
+    f = open(filename,"w+")
+    for i in range(len(hist)):
+        print >> f, bin_edges[i], bin_edges[i+1], bin_midst[i], hist[i]
+    f.close()
+    print "file written...",filename
+
+def plot_histogram_pbc(coor,zpbc,figname,):
     nbins = 100
     low = -zpbc/2
     high = zpbc/2
@@ -66,14 +75,20 @@ def plot_histogram_pbc(coor,zpbc,figname):
     plt.plot(bin_midst,hist)
     plt.bar(np.array(bin_midst)+zpbc,hist)
     plt.savefig(figname+".png")
+    print "file written...",figname+".png"
 
     plt.figure()
     maxloghist = max(np.log(hist))
     plt.plot(bin_midst,-np.log(hist)+maxloghist)
-    plt.plot(np.array(bin_midst)+zpbc,-np.log(hist)+maxloghist,color='blue')
-    plt.ylim(0,5)   # hard coded ########### TODO
+    plt.ylim(0,3.5)   # hard coded ########### TODO
     plt.ylabel("F in kBT")
+    plt.savefig(figname+".one.log.png")
+    print "file written...",figname+".one.log.png"
+    
+    # another period
+    plt.plot(np.array(bin_midst)+zpbc,-np.log(hist)+maxloghist,color='blue')
     plt.savefig(figname+".log.png")
+    print "file written...",figname+".log.png"
 
     # print to a file for later use
     f = file(figname+".log.txt","w+")
@@ -82,6 +97,7 @@ def plot_histogram_pbc(coor,zpbc,figname):
     for i in range(len(bin_midst)):
         print >> f, bin_midst[i], -np.log(hist[i])+maxloghist 
     f.close()
+    print "file written...",figname+".log.txt"
 
 
 def plot_histogram(coor,figname,ymin=None,ymax=None):
@@ -92,6 +108,7 @@ def plot_histogram(coor,figname,ymin=None,ymax=None):
     plt.figure()
     plt.plot(bin_midst,hist)
     plt.savefig(figname+".png")
+    print "file written...",figname+".png"
 
     plt.figure()
     maxloghist = max(np.log(hist))
@@ -99,6 +116,7 @@ def plot_histogram(coor,figname,ymin=None,ymax=None):
     plt.ylim(ymin,ymax)
     plt.ylabel("F in kBT")
     plt.savefig(figname+".log.png")
+    print "file written...",figname+".log.png"
 
 def add_constant_tolist(list_vecs,list_c):
     list_tot = [vec for vec in list_vecs]  # a copy

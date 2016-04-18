@@ -460,11 +460,11 @@ def write_Tmat(A,filename):
 # PLOTS
 #=====================
 
-def histogram(x,filename,**kwargs):
-
-    plt.figure()
-    plt.hist(x,bins=100,**kwargs)
-    plt.savefig(filename)
+#def histogram(x,filename,**kwargs):
+#
+#    plt.figure()
+#    plt.hist(x,bins=100,**kwargs)
+#    plt.savefig(filename)
 
     #hist(x, bins=10, range=None, normed=False, weights=None,
     #   cumulative=False, bottom=None, histtype='bar', align='mid',
@@ -477,6 +477,7 @@ def plot_vs_time(x,dt,filename,**kwargs):
     plt.plot(t,x,**kwargs)
     plt.xlabel("t [ps]")
     plt.savefig(filename)
+    print "file written...",filename
 
 def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sqrt=True):
     # use input data correctly
@@ -532,6 +533,7 @@ def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sq
     title += ", a=%f [e-4cm**2/s]  b=%f" %(a_1,b_1)
     plt.title(title)
     plt.savefig(figname)
+    print "file written...",figname
     return a_1,b_1,a_2
 
 
