@@ -174,7 +174,7 @@ class MCState(object):
                     self.model.wrad_coeff[0] -= self.model.wradunit
                     self.model.update_wrad()
             else:
-                print self.model.wrad_coeff
+                #print self.model.wrad_coeff
                 coeff = read_Dcoeffs(initfile,final=True) # unit: w_coeff[0] in angstrom**2/ps
                 nc = len(coeff)
                 if nc > 0:
@@ -183,7 +183,7 @@ class MCState(object):
                     self.model.wrad_coeff[:n] = coeff[:n]
                     self.model.wrad_coeff[0] -= self.model.wradunit
                     self.model.update_wrad()
-                    print self.model.wrad_coeff
+                    #print self.model.wrad_coeff
           else:
             Drad,redges = read_Drad(initfile) # unit: Drad in angstrom**2/ps
             nc = len(Drad)
@@ -314,14 +314,14 @@ class MCState(object):
         log_like_try = rad_log_like_lag(self.model.dim_v, self.model.dim_rad, self.data.dim_lt, self.model.rate, 
                  wradt, self.data.list_lt, self.data.list_trans, self.model.redges,self.lmax,self.model.bessel0_zeros,self.model.bessels, 0. )
 
-        print "dlog",log_like_try - self.log_like
+        #print "dlog",log_like_try - self.log_like
         # Metropolis acceptance
         if log_like_try is not None and not np.isnan(log_like_try):   # propagator is well behaved  TODO implement
             dlog = log_like_try - self.log_like
-            print "dlog",dlog,log_like_try
+            #print "dlog",dlog,log_like_try
             r = np.random.random()  #in [0,1[
             #if dlog > 0: print "aha",
-            #print dlog,self.log_like,log_like_try 
+            print "dlog",dlog,self.log_like,log_like_try 
             if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
                 #print "accpet"
                 self.model.wrad = wradt
