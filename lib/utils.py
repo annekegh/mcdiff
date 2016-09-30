@@ -17,7 +17,7 @@ import numpy.linalg
 # v -- equal to F, in kBT
 # w -- log( D/(dx^2/dt) ), has no unit
 # exp(w) -- D/(dx^2/dt), has no unit, amounts to D in units dx^2/dt
-# rate -- in 1/dt   # TODO CONFIRM  ja, dit is zo.
+# rate -- in 1/dt
 # lagtime -- in ps or in dt   # TODO CONFIRM  ook elders nakijken
 #------------------------
 
@@ -25,11 +25,41 @@ import numpy.linalg
 # EXTRA FUNCTIONS
 #------------------------
 
-def init_rate_matrix(n,v,w,pbc):
+def init_rate_matrix(n,v,w,pbc,st=None,end=None,side=None):
+    # st -- absorbing or reflective bin to the left
+    # end -- absorbing or reflective bin to the right
+    # side -- which side is absorbing (both, left, right)
     if pbc:
-        return init_rate_matrix_pbc(n,v,w)
+        if st is not None or end is not None or side is not None:
+            print "you are asking too much:"
+            print "asking for rate matrix with pbc=True AND with absorption/reflection in bins=",st,end
+            raise NotImplemented
+        return init_rate_matrix_pbc(n,v,w,)  # PBC
+
     else:
-        return init_rate_matrix_nopbc(n,v,w)
+        if st is None and end is None and side is None:
+            rate = init_rate_matrix_nopbc(n,v,w)  # NOPBC, left=right=reflective
+        else:
+            rate = init_rate_matrix_pbc(n,v,w)  # PBC   # because I want correct corner elements
+            rate[-1,0] = 0.     #remove PBC
+            rate[0,-1] = 0.     #remove PBC
+
+            if st is None:
+                st = -1
+            if end is None:
+                end = n
+            assert st >= -1 and st <n-1
+            assert end <=n  and end >1
+            assert st+1<end
+
+            rate = rate[st+1:end,st+1:end]   # taking a cut
+            # sides are automatically absorbing when taking a cut
+            if side not in ["left","both"]:
+                rate[0,0] = -rate[1,0]      # make left reflective
+            if side not in ["right","both"]:
+                rate[-1,-1] = -rate[-2,-1]  # make right reflective
+        return rate
+
 
 def init_rate_matrix_pbc(n,v,w):
     """initialize rate matrix from potential vector v and diffusion
@@ -85,6 +115,17 @@ def init_rate_matrix_nopbc(n,v,w):
     # diagonal elements
     for i in range(1,n-1):
         rate[i,i] = - rate[i-1,i] - rate[i+1,i]
+    return rate
+
+# this is now obsolete!!!
+# this differs from the other definition, where bins -1 and N are absorbing, by taking a cut
+def make_rate_absorbing_old(rate,side):
+    if side not in ["left","right"]:
+        raise ValueError("side is not known:",side)
+    if side == "left":
+        rate[1,0] = 0.    # absorbing in bin 0, nothing goes from 0 to 1
+    elif side == "right":
+        rate[-2,-1] = 0.  # absorbing in bin N-1, nothing goes from N-1 to N-2
     return rate
 
 def string_energy(vec,k,pbc):
