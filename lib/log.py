@@ -215,6 +215,13 @@ class Logger(object):
                 print_vector(self.wrad_coeff,s)
 
 
+    def plot_likelihood(self,figname):
+        import matplotlib.pyplot as plt
+        plt.figure()
+        r = np.arange(len(self.log_like))*self.freq
+        plt.plot(r,self.log_like)
+        plt.savefig(figname)
+
 #================================================
 
 def load_logger(filename):
@@ -290,7 +297,7 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
     else: maxi = model.dim_v-1
     for i in range(maxi):
         if error is None:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e%s\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
+            f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
         else:
             f.write("%8d %8.3f %8.3f  %13.5e %13.5e  %13.5e %13.5e\n" %(
                     i,edges[i],edges[i+1],F[i],D[i],Fst[i],Dst[i] ) )
