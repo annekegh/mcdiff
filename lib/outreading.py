@@ -327,3 +327,23 @@ def read_F_D_edges_logger_individualprofiles(logger):
     edges = logger.model.edges
     return F,D,edges
 
+def read_Drad_logger_individualprofiles(logger):
+    if logger.model.ncosDrad <= 0:
+        Wrad = logger.wrad+logger.model.wradunit
+        Drad = np.exp(Wrad)   # in angstrom**2/ps
+        #wrad = np.mean(logger.wrad,0)
+        #wradst = np.std(logger.wrad,0)
+        #dradst = np.std(np.exp(logger.wrad),0)
+    else:
+        a = np.zeros((logger.nf,logger.model.dim_wrad))
+        for i in xrange(len(a)):
+            a[i,:] = logger.model.calc_profile(logger.wrad_coeff[i,:],logger.model.wrad_basis)
+        Wrad = a+logger.model.wradunit
+        Drad = np.exp(Wrad)   # in angstrom**2/ps
+        #wrad = np.mean(a,0)
+        #wradst = np.std(a,0)
+        #dradst = np.std(np.exp(a),0)
+
+    edges = logger.model.edges
+    return Drad,edges
+
