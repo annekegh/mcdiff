@@ -222,6 +222,91 @@ class Logger(object):
         plt.plot(r,self.log_like)
         plt.savefig(figname)
 
+
+class CombinedLogger(Logger):
+    def __init__(self, log1, log2, do_radial=False):
+        self.do_radial = do_radial
+        self.nmc = log1.nmc + log2.nmc
+        assert log1.freq==log2.freq, 'CombinedLogger requires Logger instances with equal frequency'
+        self.freq = log1.freq
+        nf = self.nmc/self.freq + 1
+        self.nf = nf
+        # arrays
+        self.log_like  = np.concatenate([log1.log_like,log2.log_like])
+        self.timezero  = np.concatenate([log1.timezero,log2.timezero])
+        self.dv        = np.concatenate([log1.dv,log2.dv])
+        self.dw        = np.concatenate([log1.dw,log2.dw])
+        self.dwrad     = np.concatenate([log1.dwrad,log2.dwrad])
+        self.dtimezero = np.concatenate([log1.dtimezero,log2.dtimezero])
+
+
+        if hasattr(log1,"v"):
+            self.v = np.concatenate([log1.v,log2.v])
+        else:
+            self.v_coeff = np.concatenate([log1.v_coeff,log2.v_coeff])
+        if hasattr(log1,"w"):
+            self.w = np.concatenate([log1.w,log2.w])
+        else:
+            self.w_coeff = np.concatenate([log1.w_coeff,log2.w_coeff])
+        if do_radial:
+            if hasattr(log1,"wrad"):
+                self.wrad = np.concatenate([log1.wrad,log2.wrad])
+            else:
+                self.wrad_coeff = np.concatenate([log1.wrad_coeff,log2.wrad_coeff])
+
+
+    def statistics(self,model):
+        #... MC.model.blabla ==> model.blabla
+        # TODO
+        # st  --  start (cutting out the first MC steps)
+        s = st/self.freq
+        if s >= self.nf:
+            print "WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s)
+
+        def print_vector(vec,s):
+            # vec has dimension  nsamples-in-MC x len(profile)
+            print "VEC",vec.shape
+            assert len(vec.shape) == 2
+            for i in range(vec.shape[1]):
+                print i, np.mean(vec[s:,i]),np.std(vec[s:,i])
+
+        # Free energy
+        print "===== stat v ====="
+        if model.ncosF <= 0:
+            print_vector(self.v,s)
+        else:
+            vec = np.zeros((self.nf,model.dim_v),float)
+            for i in range(len(vec)):
+                vec[i,:] = model.calc_profile(self.v_coeff[i,:],model.v_basis)
+            print_vector(vec,s)
+            print "===== stat v_coeff ====="
+            print_vector(self.v_coeff,s)
+
+        # Diffusion profile
+        print "===== stat w ====="
+        if model.ncosD <= 0:
+            print_vector(self.w,s)
+        else:
+            vec = np.zeros((self.nf,model.dim_w),float)
+            for i in range(len(vec)):
+                vec[i,:] = model.calc_profile(self.w_coeff[i,:],model.w_basis)
+            print_vector(vec,s)
+            print "===== stat w_coeff ====="
+            print_vector(self.w_coeff,s)
+
+        # Radial diffusion profile
+        if self.do_radial:
+            print "===== stat wrad ====="
+            if model.ncosDrad <= 0:
+                print_vector(self.wrad,s)
+            else:
+                vec = np.zeros((self.nf,model.dim_wrad),float)
+                for i in range(len(vec)):
+                    vec[i,:] = model.calc_profile(self.wrad_coeff[i,:],model.wrad_basis)
+                print_vector(vec,s)
+                print "===== stat wrad_coeff ====="
+                print_vector(self.wrad_coeff,s)
+
 #================================================
 
 def load_logger(filename):
@@ -337,3 +422,14 @@ def write_average_from_pic(picfilename,datfilename):
     logger.print_average(logger.model)
     sys.stdout = sys.__stdout__
 
+
+def combine_picfiles(picfilename1,picfilename2,filename=None,do_radial=False):
+    # take two picfiles, make loggers, and combine the loggers
+    # if newpicfile is set to a filename, then a new picfile will be written
+    # the function returns the combined logger
+    logger1 = load_logger(picfilename1)
+    logger2 = load_logger(picfilename2)
+    logger = CombinedLogger(logger1,logger2,do_radial=do_radial)
+    if filename is not None:
+        logger.dump(filename)
+    return logger
