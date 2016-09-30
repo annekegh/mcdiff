@@ -66,8 +66,8 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
                 plt.errorbar(x,f,yerr=std)
             if pbc:
                plt.plot(x+L,f)
-    plt.xlabel("z [A]")
-    plt.ylabel("F [kBT]")
+    plt.xlabel(r"$z$ ($\AA$)")
+    plt.ylabel(r"$F$ ($k_BT$)")
     plt.title(title)
     plt.ylim(0,4)
     if legend is not None: plt.legend(legend)
@@ -109,11 +109,15 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
                 plt.errorbar(x,d,yerr=std)
             if pbc:
                 plt.plot(x+L,d)
-    plt.xlabel("z [A]")
-    plt.ylabel("D [A^2/ps]")
+    #plt.xlabel("z [A]")
+    #plt.ylabel("D [A^2/ps]")
+    #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
+    plt.xlabel(r"$z$ ($\AA$)")
+    plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
     plt.title(title)
-    if legend is not None and error is None:
+    if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
+    #plt.tight_layout()
     plt.savefig(filename,transparent=transparent)
 
 def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,
@@ -152,11 +156,13 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
                 plt.errorbar(x,d,yerr=std)
             if pbc:
                 plt.plot(x+L,d)
-    plt.xlabel("z [A]")
-    plt.ylabel("Drad [A^2/ps]")
+    plt.xlabel(r"$z$ ($\AA$)")
+    #plt.ylabel(r"$D_\mathrm{r}$ ($\AA^2/$ps)")
+    plt.ylabel(r"$D_{||}$ ($\AA^2/$ps)")
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
+    #plt.tight_layout()
     plt.savefig(filename,transparent=transparent)
 
 
@@ -196,17 +202,19 @@ def plot_three(F,D,Drad,filename,edges,transparent=False):
 
         plt.subplot(3,1,1)
         plt.plot(x_F,f)
-        plt.ylabel("F [kBT]")
+        plt.ylabel(r"$F$ ($k_BT$)")
 
         plt.subplot(3,1,2)
         plt.plot(x_D,d)
-        plt.ylabel("D [A^2/ps]")
+        #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
+        plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
 
         plt.subplot(3,1,3)
         plt.plot(x_Drad,drad)
-        plt.ylabel("Drad [A^2/ps]")
-        plt.xlabel("z [A]")
+        #plt.ylabel(r"$D_\mathrm{r}$ ($\AA^2/$ps)")
+        plt.ylabel(r"$D_{||}$ ($\AA^2/$ps)")
 
+    plt.xlabel(r"$z$ ($\AA$)")
     plt.savefig(filename,transparent=transparent)
 
 def plot_ratio(D,Drad,filename,edges,title="anisotropy",transparent=False):
@@ -239,7 +247,12 @@ def plot_ratio(D,Drad,filename,edges,title="anisotropy",transparent=False):
         ratio = drad[:nc]/dave[:nc]
         plt.plot(x,ratio)
         plt.plot([x[0],x[-1]],[1.,1.],color='k',lw=1)
-        plt.ylabel("Drad/D")
+        #plt.ylabel("Drad/D")
+
+        plt.xlabel(r"$z$ ($\AA$)")
+        #plt.ylabel(r"$D_\mathrm{r}/D_\mathrm{n}$")
+        plt.ylabel(r"$D_{||}/D_\perp$")
+
 
         #plt.subplot(3,1,3)
         #plt.plot(x,drad[:nc]-dave[:nc])
