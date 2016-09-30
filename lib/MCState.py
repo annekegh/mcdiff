@@ -73,7 +73,7 @@ class MCState(object):
                 self.model = RadModel(self.data,self.D0,ncosF,ncosD,ncosP)
             else:
                 raise ValueError( "model %s not found" % model)
-            bessel0_zeros,bessels = setup_bessel_functions(self.lmax,self.model.redges,)
+            bessel0_zeros,bessels = setup_bessel_functions(self.lmax,self.model.dim_rad,)
             self.model.bessels = bessels
             self.model.bessel0_zeros = bessel0_zeros
             self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc)

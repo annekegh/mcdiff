@@ -316,7 +316,7 @@ class RadModel(CosinusModel):
         CosinusModel.__init__(self,trans,D0,ncosF,ncosD,ncosP)
 
         # adding the radial model things
-        self.redges = trans.redges
+        self.redges = trans.redges    # this is [0.,dr,2dr,...,], it has dim_rad elements
         self.dim_rad = trans.dim_rad  # len(redges)
         self.init_model_rad(D0)
 

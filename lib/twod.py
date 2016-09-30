@@ -31,32 +31,34 @@ def rad_log_like_lag(dim_trans,dim_rad, num_lag, rate, wrad, lagtimes, transitio
 
     return log_like
 
-def setup_bessel_functions(lmax,redges):
+def setup_bessel_functions(lmax,dim_rad):
     """set up Bessel functions first type zero-th order J_0(b_l x)
-    redges  --  bin edges for radial bins, starts with 0.
-    dim_w  --  number of transitions between bins (size diffusion vector)   TODO
-    rmax  --  radius where all functions are zero
-    lmax  --  number of Bessel functions taken into account, each labeled by the zero by which the argument is rescaled
+    Input
+      lmax  --  number of Bessel functions taken into account, each labeled
+                by the zero by which the argument is rescaled
+      dim_rad  --  len(redges), number of radial bins
     Output
-    bessels  --  in units 1/dr"""
+      bessel0_zeros  --  no unit
+      bessels  --  no unit: in units per-r-bin"""
 
     # first lmax zeros of 0th order Bessel first type
     bessel0_zeros = scipy.special.jn_zeros(0,lmax)   # no unit
     # 1st order Bessel first type in those zeros
     bessel1_inzeros = scipy.special.j1(bessel0_zeros)   # no unit
 
-    dim_rad = len(redges)  # transitions between radial bins
-    rmax = np.float64(dim_rad)  # in units [dr]   # TODO dimensions!!!!!!!!
-    bessels = np.zeros((lmax,dim_rad),dtype=np.float64)
-
-    r = np.arange(dim_rad,dtype=np.float64)+0.5   # in units [dr]
-    #print "r",r
-    #print "rmax",rmax
+    # rmax = dim_rad in high precision ~ radius where all functions are zero
+    rmax = np.float64(dim_rad)
+    r = np.arange(dim_rad,dtype=np.float64)+0.5
+    #print "rmax",rmax   # this is float(dim_rad)
+    #print "r",r   # this is [0,1,2,...dim_rad-1]
+    #actually, this is [0.5,1.5,2.5,...,dim_rad-1+0.5] so always the middle of the dim_rad bins
 
     # set up Bessel functions
+    bessels = np.zeros((lmax,dim_rad),dtype=np.float64)
     for l in range(lmax):
         bessels[l,:] = 2*r*scipy.special.j0(r/rmax*bessel0_zeros[l]) / bessel1_inzeros[l]**2 /rmax**2
         # in units r [dr] / rmax**2 [dr**2], so in units [1/dr]
+        # so in units 'per r-bin' !
 
     return bessel0_zeros,bessels
 
@@ -69,7 +71,8 @@ def plot_bessels(lmax,redges,figname,color=None):
     #plotsettings()
     # construct
     dr = redges[1]-redges[0]
-    bessel0_zeros,bessels = setup_bessel_functions(lmax,redges)
+    dim_rad = len(redges)
+    bessel0_zeros,bessels = setup_bessel_functions(lmax,dim_rad)
     # plot
     plt.plot(redges,np.zeros(len(redges)),color='grey') #,linewidth=2)
     if color is not None:
@@ -77,7 +80,7 @@ def plot_bessels(lmax,redges,figname,color=None):
     else:
         plt.plot(redges,bessels.transpose())
     plt.xlabel("r [A]")
-    plt.ylabel("1/dr, with dr = %5.2fA"%dr)
+    plt.ylabel("per r-bin bin, with dr = %5.2fA"%dr)
     plt.title("bessel functions")
     plt.savefig("%s.lmax%i.png"%(figname,lmax))
     print "picture printed:...", figname
@@ -86,16 +89,17 @@ def plot_bessels(lmax,redges,figname,color=None):
 def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
            lmax,bessel0_zeros,bessels,):
     """calculate propagator for radial diffusion as matrix exponential
+    n  --  dim_trans, dimension transition matrix, usually number of bins in z-direction
+    dim_rad  --  dimension transition matrix, always equal to len(redges)
     rate  --  rate matrix for 1-D diffusion in z-direction, in [1/dt]
     wrad  --  ln Drad, radial diffusion coefficient, dimension n
               Drad = exp(wrad), in [dr**2/dt]
-    n  --  dim_trans, dimension transition matrix, usually number of bins in z-direction
-    dim_rad  --  dimension transition matrix, always equal to len(redges)
+    lagtime  --  should be in units [dt]
     bessels0_zeros  --  first lmax zeros, no unit
-    bessels  --  dimension lmax x dim_rad, in units [1/dr]
+    bessels  --  dimension lmax x dim_rad, no unit, in unit 'per r-bin'
 
     rate_l  --  rate matrix including sink equation, in [1/dt]
-    propagator  --  in 1/dr (I think)"""  # TODO unit double check?
+    propagator  --  no unit, is per r-bin per z-bin"""
 
     rmax = np.float64(dim_rad)  # in units [dr]
 
@@ -111,33 +115,35 @@ def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
 
         rate_l[:,:] = rate[:,:]                 # take rate matrix for 1-D diffusion
         rate_l.ravel()[::n+1] -= sink           # and add sink term
-        mat_exp = scipy.linalg.expm2(lagtime*rate_l) # matrix exponential
+        mat_exp = scipy.linalg.expm2(lagtime*rate_l) # matrix exponential, no unit
 
         # increment propagator by solution of sink equation for each l
         # propagator to arrive in radial bin k, contribution from Bessel function l
-        # bessels in [1/dr], mat_exp is "kind of" [1/dz], so propagator in [1/dr/dz]
-        # so propagator in [1/dr] (the 1/dz is more of a probability/bin, so gives no unit)
+        # bessels is 'per r-bin', no unit
+        # mat_exp is 'per z-bin', no unit
+        # so propagator is 'per r-bin per z-bin', no unit
         for k in range(dim_rad):
-            propagator[k,:,:] += bessels[l,k] * mat_exp[:,:]
-    # TODO normalize?
+            propagator[k,:,:] += bessels[l,k] * mat_exp[:,:]   # no unit
+
+    # TODO normalize? some probability might flow away after long times
     #propagator /= np.sum(np.sum(propagator,axis=0),axis=0)
     return propagator
 
 #=============================
 # TESTING
 #=============================
-if False:
+def test_propagator_twod():
     from mcdiff.utils import init_rate_matrix
     n = 30
     D = 1.   # in angstrom**2/ps
 
     dt = 1.  # ps
     dz = 1.  # angstrom
+    dr = 0.5 # angstrom
     wunit = np.log(dz**2/dt)
-    redges = np.arange(0,50.1,0.5)
+    redges = np.arange(0,50.1,dr)  # in angstrom
     dim_rad = len(redges)
     #rmax = max(redges)
-    dr = redges[1]-redges[0]
     wradunit = np.log(dr**2/dt)
 
     w = np.zeros((n),float)
@@ -151,52 +157,54 @@ if False:
     lagtime = 10.
     lmax = 50
 
-    bessel0_zeros,bessels = setup_bessel_functions(lmax,redges,) #rmax=rmax)
+    bessel0_zeros,bessels = setup_bessel_functions(lmax,dim_rad)
     propagator = propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
-           lmax,bessel0_zeros,bessels,) #rmax=rmax)
-    print propagator
+           lmax,bessel0_zeros,bessels,)  # no unit, is 'per r-bin per z-bin'
+    print "propagator-2d",propagator
 
-if False:
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    for i in range(n):
-        plt.figure()
-        plt.plot(propagator[:,:,i])
-        plt.title("in start z-bin %i" %i)
-        plt.savefig("propagator.3-%i.png"%i)
-    for i in range(n):
-        plt.figure()
-        plt.plot(propagator[:,i,:].transpose())
-        plt.title("in end z-bin %i" %i)
-        plt.savefig("propagator.2-%i.png"%i)
-    for i in range(dim_rad):
-        plt.figure()
-        plt.plot(propagator[i,:,:].transpose())
-        plt.title("in end r-bin %i" %i)
-        plt.savefig("propagator.1-%i.png"%i)
-    for i in range(dim_rad):
-        plt.figure()
-        plt.contourf(propagator[i,:,:].transpose())
-        plt.title("in end r-bin %i" %i)
-        plt.savefig("propagator.1s-%i.png"%i)
-    for i in range(n):
-        plt.figure()
-        plt.contourf(propagator[:,i,:].transpose())
-        plt.title("in end z-bin %i" %i)
-        plt.savefig("propagator.2s-%i.png"%i)
-    for i in range(n):
-        plt.figure()
-        plt.contourf(propagator[:,:,i].transpose())
-        plt.title("in start z-bin %i" %i)
-        plt.savefig("propagator.3s-%i.png"%i)
+    # make plots
+    if False:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        for i in range(n):
+            plt.figure()
+            plt.plot(propagator[:,:,i])
+            plt.title("in start z-bin %i" %i)
+            plt.savefig("propagator.3-%i.png"%i)
+        for i in range(n):
+            plt.figure()
+            plt.plot(propagator[:,i,:].transpose())
+            plt.title("in end z-bin %i" %i)
+            plt.savefig("propagator.2-%i.png"%i)
+        for i in range(dim_rad):
+            plt.figure()
+            plt.plot(propagator[i,:,:].transpose())
+            plt.title("in end r-bin %i" %i)
+            plt.savefig("propagator.1-%i.png"%i)
+        for i in range(dim_rad):
+            plt.figure()
+            plt.contourf(propagator[i,:,:].transpose())
+            plt.title("in end r-bin %i" %i)
+            plt.savefig("propagator.1s-%i.png"%i)
+        for i in range(n):
+            plt.figure()
+            plt.contourf(propagator[:,i,:].transpose())
+            plt.title("in end z-bin %i" %i)
+            plt.savefig("propagator.2s-%i.png"%i)
+        for i in range(n):
+            plt.figure()
+            plt.contourf(propagator[:,:,i].transpose())
+            plt.title("in start z-bin %i" %i)
+            plt.savefig("propagator.3s-%i.png"%i)
 
 
-# check normalization
-if False:
+    # check normalization
+    # propagator is 'per end-r-bin per end-z-bin', no unit
     print "Normalization"
-    a = np.sum(propagator,axis=0)  #*dr # already in units 1/dr/dz
-    print "sum-axis-0",a
-    b = np.sum(a,axis=0)   # *dz # already in units dz
+    a = np.sum(propagator,axis=0)  # is per end-z-bin
+    print "sum-axis-0  ",a
+    b = np.sum(a,axis=0)   # is total probability (for each initial z-bin) 
     print "sum-axis-0-0",b
-    print np.sum(b)
+    print "sum         ",np.sum(b)
+
