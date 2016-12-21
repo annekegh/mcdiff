@@ -2,7 +2,6 @@
 
 import numpy as np
 
-
 def read_F_D_edges(filename):
     """File contains F and D in the following format
     bin-number  start-of-bin  end-of-bin  F(bin)  D(bin-to-next-bin)
@@ -67,6 +66,7 @@ def read_Drad(filename):
     return np.array(D),np.array(edges)
 
 def read_many_profiles(list_filename,pic=False):
+    """Read from a list of filenames: F,D"""
     if pic:
         F = []
         D = []
@@ -96,6 +96,7 @@ def read_many_profiles(list_filename,pic=False):
         return F,D,E,None,None
 
 def read_many_profiles_Drad(list_filename,pic=False):
+    """Read from a list of filenames: Drad"""
     if pic:
         Drad   = []
         RE     = []
@@ -121,35 +122,45 @@ def read_many_profiles_Drad(list_filename,pic=False):
 
 #==============================
 
+def average_profile(prof):
+    """average over list prof = [array1, array2,...] or over array prof = a-profile-on-every-line
+    each array is a one-dimensional numpy array
+    """
+    if type(prof) is list:
+        if len(prof) == 1:   # no need to take average
+            mean = prof[0]
+            if mean is not None:
+                std  = np.zeros(len(mean),float)   # no std
+            else:
+                std = None
+        else:
+            for i in range(1,len(prof)): assert len(prof[i])==len(prof[0])   # all the same length
+            profarr  = np.array(prof)         # convert
+            mean = np.mean(profarr,0)
+            std  = np.std(profarr,0)
+    elif len(prof.shape) == 2:  # a numpy array, each row is a profile
+        mean = np.mean(prof,0)
+        std  = np.std(prof,0)
+    else:   # just one profile, no need to take average
+        mean = np.zeros(prof.shape)
+        mean[:] = prof[:]   # make a copy
+        std = np.zeros(len(mean),float)   # no std
+    return mean,std
 
 def average_profiles(F,D,Drad,E):
-    "average over different profiles"
-    # F, D, E are lists of profiles
-    assert type(F) is list
-    assert type(D) is list
+    """average over different profiles
+    average profiles are taken (not the coeff)
+
+    F, D, E are lists of profiles, or arrays where every line is a profile
+    """
     assert len(F) == len(D)
-    if len(F) == 1:
-        Fst = np.zeros(len(F[0]),float)
-        Fmean = F[0]
-    else:
-        farr  = np.array(F)
-        Fmean = np.mean(farr,0)
-        Fst   = np.std(farr,0)
-    if len(D) == 1:
-        Dmean = D[0]
-        Dst = np.zeros(len(D[0]),float)
-    else:
-        darr = np.array(D)
-        Dmean = np.mean(darr,0)
-        Dst = np.std(darr,0)
-    if len(Drad) == 1:
-        Dradmean = Drad[0]
-        Dradst = np.zeros(len(Drad[0]),float)
-    else:
-        dradarr = np.array(Drad)
-        Dradmean = np.mean(dradarr,0)
-        Dradst = np.std(dradarr,0)
-    edges = E[0]
+    #assert len(F) == len(Drad)
+    Fmean,Fst = average_profile(F)
+    Dmean,Dst = average_profile(D)
+    Dradmean,Dradst = average_profile(Drad)
+    edges = E[0]   # just the first
+    return Fmean,Dmean,Dradmean,edges,Fst,Dst,Dradst
+
     #for i in range(len(E)-1):
     #        assert len(E[i])==len(E[i+1])  # each file has same number of bins
     #        assert (E[i]==E[i+1]).all()  # check if edges are really identical
@@ -160,7 +171,7 @@ def average_profiles(F,D,Drad,E):
     #            F[:,i] += (-min(F[:,i]) ) #+ i)
 
     # keep edges a 1D vector ?????XXXX TODO 
-    return Fmean,Dmean,Dradmean,edges,Fst,Dst,Dradst
+
 
 
 def read_Fcoeffs(filename,final=False):
@@ -240,89 +251,99 @@ def read_dv_dw(filename,final=False):
     f.close()
     return dv,dw
 
-def read_F_D_edges_logger(logger):
-    if logger.model.ncosF <= 0:
-        v = np.mean(logger.v,0)
-        vst = np.std(logger.v,0)
+
+#==============================
+# using loggers
+#==============================
+
+def read_coeff_logger(logger):
+    """read coeffs from logger and determine the average
+    """
+    if logger.model.ncosF > 0:
+        v_coeff,v_coeff_st = average_profile(logger.v_coeff)
     else:
-        a = np.zeros((logger.nf,logger.model.dim_v))
-        for i in xrange(len(a)):
-            a[i,:] = logger.model.calc_profile(logger.v_coeff[i,:],logger.model.v_basis)
-        v = np.mean(a,0)
-        vst = np.std(a,0)
+        v_coeff = None
+        v_coeff_st = None
+
+    if logger.model.ncosD > 0:
+        w_coeff,w_coeff_st = average_profile(logger.w_coeff)
+    else:
+        w_coeff = None
+        w_coeff_st = None
+
+    if hasattr(logger.model,"ncosDrad"):
+        if logger.model.ncosDrad > 0:
+            wrad_coeff,wrad_coeff_st = average_profile(logger.wrad_coeff)
+    else:
+        wrad_coeff = None
+        wrad_coeff_st = None
+
+    # average of timezero
+    timezero = np.mean(logger.timezero)
+    timezero_st = np.std(logger.timezero)
+
+    return v_coeff,w_coeff,wrad_coeff,v_coeff_st,w_coeff_st,wrad_coeff_st,timezero,timezero_st
+
+def read_F_D_edges_logger(logger):
+    """read F,D,edges from logger and determine the average
+    average is taken from profiles (not coeffs)
+    """
+    if logger.model.ncosF <= 0:
+        v,vst = average_profile(logger.v)
+    else:
+        v,vst = logger.average_profile_v_from_coeff()
 
     if logger.model.ncosD <= 0:
-        w = np.mean(logger.w,0)
-        wst = np.std(logger.w,0)
-        dst = np.std(np.exp(logger.w),0)
+        w,wst = average_profile(logger.w)
+        d,dst = average_profile(np.exp(logger.w))   # units are missing
     else:
-        a = np.zeros((logger.nf,logger.model.dim_w))
-        for i in xrange(len(a)):
-            a[i,:] = logger.model.calc_profile(logger.w_coeff[i,:],logger.model.w_basis)
-        w = np.mean(a,0)
-        wst = np.std(a,0)
-        dst = np.std(np.exp(a),0)
+        w,wst,d,dst = logger.average_profile_w_from_coeff()   # units are missing
 
     F = v*logger.model.vunit
-    W = w+logger.model.wunit
-    D = np.exp(W)   # in angstrom**2/ps
+    D = d*np.exp(logger.model.wunit)
     edges = logger.model.edges
     Fst = vst*logger.model.vunit
-    Wst = wst+logger.model.wunit
-    #Dst = D*(np.exp(Wst)-1)
     Dst = dst*np.exp(logger.model.wunit)
     return F,D,edges,Fst,Dst
 
 def read_Drad_logger(logger):
-    if logger.model.ncosDrad <= 0:
-        wrad = np.mean(logger.wrad,0)
-        wradst = np.std(logger.wrad,0)
-    else:
-        a = np.zeros((logger.nf,logger.model.dim_wrad))
-        for i in xrange(len(a)):
-            a[i,:] = logger.model.calc_profile(logger.wrad_coeff[i,:],logger.model.wrad_basis)
-        wrad = np.mean(a,0)
-        wradst = np.std(a,0)
-        dradst = np.std(np.exp(a),0)
+    """read Drad from logger and determine the average
+    average is taken from profiles (not coeffs)
+    """
+    if hasattr(logger.model,"ncosDrad"):
+        if logger.model.ncosDrad <= 0:
+            w,wst = average_profile(logger.wrad)
+            d,dst = average_profile(np.exp(logger.wrad))   # units are missing
+        else:
+            wrad,wradst,drad,dradst = logger.average_profile_wrad_from_coeff()   # units are missing
 
-    Wrad = wrad+logger.model.wradunit
-    Drad = np.exp(Wrad)   # in angstrom**2/ps
-    redges = logger.model.redges
-    Wradst = wradst+logger.model.wradunit
-    #Dst = D*(np.exp(Wst)-1)
-    Dradst = dradst*np.exp(logger.model.wradunit)
+        Drad = drad*np.exp(logger.model.wradunit)
+        redges = logger.model.redges
+        Dradst = dradst*np.exp(logger.model.wradunit)
+    else:
+        Drad = None; redges = None; Dradst = None
     return Drad,redges,Dradst
 
 def read_F_D_edges_logger_individualprofiles(logger):
     if logger.model.ncosF <= 0:
         F = logger.v*logger.model.vunit
-        #v = np.mean(logger.v,0)
-        #vst = np.std(logger.v,0)
-        print "Fshape",F.shape
+        #print "Fshape",F.shape
     else:
         a = np.zeros((logger.nf,logger.model.dim_v))
         for i in xrange(len(a)):
             a[i,:] = logger.model.calc_profile(logger.v_coeff[i,:],logger.model.v_basis)
         F = a*logger.model.vunit
-        print "Fshape",F.shape
-        #v = np.mean(a,0)
-        #vst = np.std(a,0)
+        #print "Fshape",F.shape
 
     if logger.model.ncosD <= 0:
         W = logger.w+logger.model.wunit
         D = np.exp(W)   # in angstrom**2/ps
-        #w = np.mean(logger.w,0)
-        #wst = np.std(logger.w,0)
-        #dst = np.std(np.exp(logger.w),0)
     else:
         a = np.zeros((logger.nf,logger.model.dim_w))
         for i in xrange(len(a)):
             a[i,:] = logger.model.calc_profile(logger.w_coeff[i,:],logger.model.w_basis)
         W = a+logger.model.wunit
         D = np.exp(W)   # in angstrom**2/ps
-        #w = np.mean(a,0)
-        #wst = np.std(a,0)
-        #dst = np.std(np.exp(a),0)
 
     edges = logger.model.edges
     return F,D,edges
@@ -331,18 +352,12 @@ def read_Drad_logger_individualprofiles(logger):
     if logger.model.ncosDrad <= 0:
         Wrad = logger.wrad+logger.model.wradunit
         Drad = np.exp(Wrad)   # in angstrom**2/ps
-        #wrad = np.mean(logger.wrad,0)
-        #wradst = np.std(logger.wrad,0)
-        #dradst = np.std(np.exp(logger.wrad),0)
     else:
         a = np.zeros((logger.nf,logger.model.dim_wrad))
         for i in xrange(len(a)):
             a[i,:] = logger.model.calc_profile(logger.wrad_coeff[i,:],logger.model.wrad_basis)
         Wrad = a+logger.model.wradunit
         Drad = np.exp(Wrad)   # in angstrom**2/ps
-        #wrad = np.mean(a,0)
-        #wradst = np.std(a,0)
-        #dradst = np.std(np.exp(a),0)
 
     edges = logger.model.edges
     return Drad,edges

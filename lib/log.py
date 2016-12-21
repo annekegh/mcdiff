@@ -86,88 +86,52 @@ class Logger(object):
         #print >>f, "k=", self.k
         print >>f, "-"*20
 
-    def get_profiles_average(self,model,st=0):
-        # st  --  start (cutting out the first MC steps)
-        # v,w,wrad  --  profiles
-        # vst,wst,wradst  --  errors on profiles
-        # v = F in kBT
-        # w => D = exp(w*unitw)
-        # wrad => Drad = exp(wrad*unitwrad)
-        s = st/self.freq
-        if s >= self.nf:
-            print "WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s)
 
-        # Free energy
-        if model.ncosF <= 0:    # I CHANGED THIS??????????????
-            v_coeff = None
-            F = np.mean(self.v[s:,:],0)
-            Fst = np.std(self.v[s:,:],0)
-        else:
-            v_coeff = np.mean(self.v_coeff[s:,:],0)
-            # compute profile
-            vec = np.zeros((self.nf,model.dim_v),float)
-            for i in range(len(vec)):
-                vec[i,:] = model.calc_profile(self.v_coeff[i,:],model.v_basis)
-            F = np.mean(vec[s:,:],0)
-            Fst = np.std(vec[s:,:],0)
+    def average_profile_v_from_coeff(self,):
+        a = np.zeros((self.nf,self.model.dim_v))
+        for i in xrange(len(a)):
+            a[i,:] = self.model.calc_profile(self.v_coeff[i,:],self.model.v_basis)
+        v = np.mean(a,0)
+        vst = np.std(a,0)
+        return v,vst
 
-        # Diffusion profile
-        if model.ncosD <= 0:
-            w_coeff = None
-            D0 = np.exp(self.w+model.wunit)
-        else:
-            w_coeff = np.mean(self.w_coeff[s:,:],0)
-            # compute profile
-            vec = np.zeros((self.nf,model.dim_w),float)
-            for i in range(len(vec)):
-                vec[i,:] = model.calc_profile(self.w_coeff[i,:],model.w_basis)            
-            D0 = np.exp(vec+model.wunit)
-        D = np.mean(D0[s:,:],0)
-        Dst = np.std(D0[s:,:],0)
+    def average_profile_w_from_coeff(self,):
+        a = np.zeros((self.nf,self.model.dim_w))
+        for i in xrange(len(a)):
+            a[i,:] = self.model.calc_profile(self.w_coeff[i,:],self.model.w_basis)
+        w = np.mean(a,0)
+        wst = np.std(a,0)
+        d = np.mean(np.exp(a),0)        # unit is missing
+        dst = np.std(np.exp(a),0)       # unit is missing
+        return w,wst,d,dst
 
-        # Radial diffusion profile
-        if hasattr(model,"ncosDrad"):
-            if model.ncosDrad <= 0:
-                wrad_coeff = None
-                D0 = np.exp(self.wrad+model.wradunit)
-            else:
-                wrad_coeff = np.mean(self.wrad_coeff[s:,:],0)
-                # compute profile
-                vec = np.zeros((self.nf,model.dim_wrad),float)
-                for i in range(len(vec)):
-                    vec[i,:] = model.calc_profile(self.wrad_coeff[i,:],model.wrad_basis)
-                D0 = np.exp(vec+model.wradunit)
-            Drad = np.mean(D0[s:,:],0)
-            Dradst = np.std(D0[s:,:],0)
-
-        else:
-            wrad_coeff = None
-            Drad = None
-            Dradst = None
-
-        error = [Fst,Dst,Dradst]
-
-        if hasattr(model,"timezero"): timezero = model.timezero
-        else: timezero = None
-        return F,D,Drad, error, v_coeff,w_coeff,wrad_coeff, timezero
+    def average_profile_wrad_from_coeff(self,):
+        a = np.zeros((self.nf,self.model.dim_wrad))
+        for i in xrange(len(a)):
+            a[i,:] = self.model.calc_profile(self.wrad_coeff[i,:],self.model.wrad_basis)
+        wrad = np.mean(a,0)
+        wradst = np.std(a,0)
+        drad = np.mean(np.exp(a),0)     # unit is missing
+        dradst = np.std(np.exp(a),0)    # unit is missing
+        return wrad,wradst,drad,dradst
 
     def print_average(self,model,st=0):
-
-        F,D,Drad, error, v_coeff,w_coeff,wrad_coeff, timezero = self.get_profiles_average(model,st=st)
-        # this defines error
-        # if error is None: it will not be printed in print_profiles
-        # error is computed correctly in get_profiles_average
-
-        #print self.__dict__
-        #v = np.mean(self.v,0)
+        from outreading import read_F_D_edges_logger, read_Drad_logger, read_coeff_logger
+        F,D,edges,Fst,Dst = read_F_D_edges_logger(self)
+        Drad,redges,Dradst = read_Drad_logger(self)
+        v_coeff,w_coeff,wrad_coeff,v_coeff_st,w_coeff_st,wrad_coeff_st, timezero,timezero_st = read_coeff_logger(self)
+        error = [Fst,Dst,Dradst]
 
         import sys
         self.print_MC_params(f=sys.stdout,final=True)
         print_coeffs(sys.stdout,model,v_coeff,w_coeff,wrad_coeff,timezero,final=True,)
         print_profiles(sys.stdout,model,F,D,Drad,final=True,error=error,unit="notinternal")
 
-
     def statistics(self,MC,st=0):
+
+        # TODO I should change the function statistics
+        # statistics_print versus statistics no print
+
         # st  --  start (cutting out the first MC steps)
         s = st/self.freq
         if s >= self.nf:
@@ -352,9 +316,10 @@ def print_coeffs(f,model,v_coeff=None,w_coeff=None,wrad_coeff=None,timezero=None
 
 def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal"): 
     """print profiles (potential and diffusion coefficients)
-    f is a writable object"""
-    # error is a list of arrays [Fst,Dst,Dradst]
-
+    f -- is a writable object
+    error -- is a list of arrays [Fst,Dst,Dradst]
+    final -- whether flag 'final' should be written
+    """
 
     if final: print >>f,"===== final F D ====="
     else:     print >>f,"===== F D ====="
@@ -366,7 +331,6 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
         D = np.exp(w+model.wunit)  # in angstrom**2 per [unit-lag-times]
         if wrad is not None:
             Drad = np.exp(wrad+model.wradunit)  # in angstrom**2 per [unit-lag-times]
-             # TODO what with 2 pi r
     else:
         D = w
         Drad = wrad
@@ -378,7 +342,7 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
         if unit is "internal":
             Dst = np.exp(error[1]+model.wunit)
             if wrad is not None:
-                Dradst = np.exp(error[2]+model.wradunit)
+                Dradst = np.exp(error[2]+model.wradunit)   #### let's hope this never happens, because this is not really okay ####
 
     f.write("%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)\n"))
     if model.pbc: maxi = model.dim_v
@@ -415,16 +379,13 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
 #================================================
 
 def write_average_from_pic(picfilename,datfilename):
-    from outreading import read_F_D_edges_logger
-
+    # TODO this can become function of logger?
     logger = load_logger(picfilename)
-    F,D,edges,Fst,Dst = read_F_D_edges_logger(logger)
 
-    import sys
+    import sys   # redirect output to chosen file
     sys.stdout = file(datfilename,"w+")
     logger.print_average(logger.model)
     sys.stdout = sys.__stdout__
-
 
 def combine_picfiles(picfilename1,picfilename2,filename=None,do_radial=False):
     # take two picfiles, make loggers, and combine the loggers
@@ -436,3 +397,4 @@ def combine_picfiles(picfilename1,picfilename2,filename=None,do_radial=False):
     if filename is not None:
         logger.dump(filename)
     return logger
+
