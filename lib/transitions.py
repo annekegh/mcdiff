@@ -72,8 +72,8 @@ def reduce_Tmat(dim_trans,header,transmatrix):
     for i in range(len(transmatrix)):
         if sum(transmatrix[i,:]) != 0 and sum(transmatrix[:,i]) != 0:
             select.append(i)
-    select = range(min(select),max(select)+1)
-    if select[0]==0 or select[-1]==len(transmatrix):    # what if I cut off zeros???  TODO
+    select = range(min(select),max(select)+1)   # I do not cut in the middle
+    if select[0]==0 and select[-1]==len(transmatrix):    # what if I cut off zeros???  TODO
        print "reduction transition matrix: dim_trans from %i to %i, nothing happened" %(dim_trans+redux,dim_trans)
        return dim_trans,header,transmatrix
     else: 
