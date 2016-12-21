@@ -113,6 +113,35 @@ def cut_transitions_square(filename,start,end,outfile,count="cut"):
     assert filename != outfile  # do not overwrite
     write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
 
+def cyclic_permuation_transitions_square(filename,shift,outfile,): #count=None):
+    """Shift indices periodically
+    Read transitions from file and cut out the piece [shift:] and paste it behind [:shift],
+    counting starts from 0"""
+    #from mcdiff.reading import read_transition_square, read_transition_header
+    from mcdiff.tools.functionsextract import write_Tmat_square
+    dim_trans = guess_dim_transition_square(filename)
+    header = read_transition_header(filename)
+    transmatrix = read_transition_square(filename,dim_trans)
+
+    if 'edges' in header:
+        edges = header['edges']
+    else:
+        edges = None
+    count = header['count']
+    lt = header['lt']
+    dt = header['dt']
+    dn = header['dn']
+
+    n = dim_trans
+    A = np.zeros(transmatrix.shape,int)
+    A[:(n-shift),:(n-shift)] = transmatrix[shift:,shift:]
+    A[(n-shift):,:(n-shift)] = transmatrix[:shift,shift:]
+    A[:(n-shift),(n-shift):] = transmatrix[shift:,:shift]
+    A[(n-shift):,(n-shift):] = transmatrix[:shift,:shift]
+
+    assert filename != outfile  # do not overwrite
+    write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
+
 def merge_transitions(trans,outfile,):
     """combine the different trans matrices in Transitions matrix
 
