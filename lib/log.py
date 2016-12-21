@@ -154,6 +154,9 @@ class Logger(object):
     def print_average(self,model,st=0):
 
         F,D,Drad, error, v_coeff,w_coeff,wrad_coeff, timezero = self.get_profiles_average(model,st=st)
+        # this defines error
+        # if error is None: it will not be printed in print_profiles
+        # error is computed correctly in get_profiles_average
 
         #print self.__dict__
         #v = np.mean(self.v,0)
