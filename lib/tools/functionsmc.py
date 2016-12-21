@@ -63,7 +63,7 @@ def read_transition(filename,num_bin):
 def read_all_transitions(argv):
     print argv
     """read all input from sys.argv: lagtimes and transitions"""
-    num_lag = ( len ( sys.argv ) - 2 ) / 2
+    num_lag = ( len ( argv ) - 2 ) / 2
     print "number of lagtimes:", num_lag
     lagtimes = np.zeros((num_lag),dtype=np.float64)
 
