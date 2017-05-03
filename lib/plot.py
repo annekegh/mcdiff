@@ -114,6 +114,7 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
     #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
+    #plt.ylim(0.,0.7)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
@@ -157,8 +158,8 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
             if pbc:
                 plt.plot(x+L,d)
     plt.xlabel(r"$z$ ($\AA$)")
-    #plt.ylabel(r"$D_\mathrm{r}$ ($\AA^2/$ps)")
     plt.ylabel(r"$D_{||}$ ($\AA^2/$ps)")
+    #plt.ylim(0.,0.7)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)

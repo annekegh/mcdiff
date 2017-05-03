@@ -29,7 +29,6 @@ def plotsettingsax(ax):
 import sys
 list_filenames = sys.argv[1:]
 print list_filenames
-#list_filenames.sort()
 
 # guess name
 figname="fig_"
@@ -213,6 +212,36 @@ plt.plot(1./lts,D.T,"o-")
 plt.xlabel("1/lt [1/ps]")
 plt.ylabel("D [A^2/ps]")
 plt.savefig(figname+"lts1.png")
+
+# do not plot all
+
+from plot import plotsettings
+plotsettings()
+plotx = np.zeros(len(lts)+1)
+plotx[-1] = 0.
+plotx[:-1] = 1./lts
+plotD = np.zeros((len(D),len(lts)+1))
+plotD[:,-1] = Dreal
+plotD[:,:-1] = D
+plotD = (plotD.T)[:,:len(D)/2:5]  # has a transpose already # rows-> different lts, cols-> different bin
+words = figname.split("_")
+title = words[1].upper()
+
+
+plt.figure()
+plt.plot(plotx,plotD,"o-")
+plt.plot(np.zeros(plotD.shape[1]),plotD[-1,:],"o",color='k',markersize=8)
+#plt.plot(1./lts,(D.T)[:,:len(D)/2:5],"o-")   # subsample the first half of the profile
+plt.rc(('xtick','ytick','axes'), labelsize=18.0)
+plt.locator_params(axis='y',nbins=6) #to specify number of ticks on both or any single axes
+#plt.locator_params(axis='x',nbins=10)
+plt.xlabel(r"$1/t$ (1/ps)")
+plt.ylabel(r"$D$ ($\AA^2$/ps)")
+plt.xlim(xmin=0)
+plt.title(title,fontsize=24)
+plt.tight_layout()
+plt.savefig(figname+"lts1.somelines.png")
+
 
 ##################################
 
