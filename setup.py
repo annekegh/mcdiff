@@ -11,7 +11,7 @@ if __name__ == "__main__":
         #author_email='An.Ghysels@UGent.be',
         #url='http://molmod.ugent.be/code/',
         package_dir = {'mcdiff': 'lib'},
-        packages = ['mcdiff','mcdiff.tools'],
+        packages = ['mcdiff','mcdiff.tools','mcdiff.permeability'],
         scripts=glob("scripts/*"),
         classifiers=[
             #'Development Status :: 3 - Alpha',
