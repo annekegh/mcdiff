@@ -92,7 +92,7 @@ def cut_transitions_square(filename,start,end,outfile,count="cut"):
     so size NxN with N=end-start, row/col end is not included
     counting starts from 0"""
     #from mcdiff.reading import read_transition_square, read_transition_header
-    from mcdiff.tools.functionsextract import write_Tmat_square
+    from mcdiff.tools.extract import write_Tmat_square
     dim_trans = guess_dim_transition_square(filename)
     header = read_transition_header(filename)
     transmatrix = read_transition_square(filename,dim_trans)
@@ -118,7 +118,7 @@ def cyclic_permuation_transitions_square(filename,shift,outfile,): #count=None):
     Read transitions from file and cut out the piece [shift:] and paste it behind [:shift],
     counting starts from 0"""
     #from mcdiff.reading import read_transition_square, read_transition_header
-    from mcdiff.tools.functionsextract import write_Tmat_square
+    from mcdiff.tools.extract import write_Tmat_square
     dim_trans = guess_dim_transition_square(filename)
     header = read_transition_header(filename)
     transmatrix = read_transition_square(filename,dim_trans)
@@ -149,7 +149,7 @@ def merge_transitions(trans,outfile,):
     this can happen if Transitions object combines the trans
     matrices of different runs of the same system."""
 
-    from mcdiff.tools.functionsextract import write_Tmat_square,write_Tmat_cube
+    from mcdiff.tools.extract import write_Tmat_square,write_Tmat_cube
 
     # make sure to have equal lag times
     assert (trans.list_lt-trans.list_lt[0]).all() == 0

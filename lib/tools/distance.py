@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from functionshistogram import read_coor
+from histogram import read_coor
 from functionsdiffusion import fit_sqrt_vs_time
 
 
@@ -84,9 +84,10 @@ def analyze_dist_1D(list_x,nstep,outdir,dtc):
     # extra figures
     m2 = np.mean(alldist2,axis=1)
     #s2 = np.std(alldist2,axis=1)
-    fit_sqrt_vs_time(np.sqrt(m2),dtc,outdir+"/fig_dist.average.png",title="average of %i"%nfiles)
+    a_1,b_1,a_2 = fit_sqrt_vs_time(np.sqrt(m2),dtc,outdir+"/fig_dist.average.png",title="average of %i"%nfiles)
 
     print_output_D_ave_1D(allD)
+    return a_1/2.
 
 
 def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=None):
@@ -395,8 +396,8 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
               False or True (divide MSD by P(t))
     """
     if surv: # True or divide # for survival probability
-        from mcdiff.tools.functionsextract import indices_survived, calc_survival_probability
-        from mcdiff.tools.functionsextract import calc_survival_probability_add
+        from mcdiff.tools.extract import indices_survived, calc_survival_probability
+        from mcdiff.tools.extract import calc_survival_probability_add
 
     if dn2 is None:
         dn2 = dn1
