@@ -321,7 +321,7 @@ class MCState(object):
             #print "dlog",dlog,log_like_try
             r = np.random.random()  #in [0,1[
             #if dlog > 0: print "aha",
-            print "dlog",dlog,self.log_like,log_like_try 
+            #print "dlog",dlog,self.log_like,log_like_try 
             if r < np.exp(dlog/self.temp): # accept if dlog increases, accept maybe if decreases
                 #print "accpet"
                 self.model.wrad = wradt
