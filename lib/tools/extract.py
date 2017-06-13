@@ -134,6 +134,39 @@ def transition_matrix_add1(A,x,edges,shift=1):
         #i += 1
     return A
 
+def transition_matrix_add1_npt(A,x,zpbc,nbins,shift=1):
+    assert len(x.shape) == 1
+    assert shift < len(x)
+    assert len(x) == len(zpbc)
+    assert len(A) == nbins+2
+    arr = np.arange(nbins+1)-nbins/2.
+    digitized = np.zeros(x.shape)
+    for i in xrange(len(digitized)):
+        digitized[i] = np.digitize([x[i]],(arr*zpbc[i]/nbins))
+    #digitized = np.digitize(x,edges)
+    #if False:  # pbc
+    #  for i in digitized:
+    #    assert i > 0
+    #    assert i < len(edges)
+    #print "min,max,A.shape"
+    #print min(digitized),max(digitized),A.shape
+    #print "min,max",
+    #print min(x),max(x)
+    # periodic boundary conditions: just checking
+    print "check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1])
+    #i = 0
+    for start,end in zip(digitized[:-shift],digitized[shift:]):
+        #nbins = len(edges)-1
+        #D = min( abs(end-start), abs(end-start-nbins), abs(end-start+nbins) )
+        #if D >= 5:
+        #   print "step", i
+        #   print shift, start, end
+        #   #print stop
+        A[end,start]+=1
+        #i += 1
+    return A
+
+
 def transition_matrix_add2(A,x,edges,shift=1):
     assert len(x.shape) == 1
 
