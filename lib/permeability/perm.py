@@ -11,8 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mcdiff
 from mcdiff.outreading import read_F_D_edges, read_Drad
+from mcdiff.utils import construct_rate_matrix_from_F_D
 from mcdiff.permeability.deff import calc_Dave_midF, calc_Dave_notmidF
-from analyzeprofiles import construct_rate_matrix_from_F_D
 
 ##### UNITS #####
 # F -- in kBT

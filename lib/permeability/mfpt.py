@@ -9,8 +9,8 @@ AG, Sept 2016"""
 import numpy as np
 import mcdiff
 from mcdiff.outreading import read_F_D_edges, read_Drad
+from mcdiff.utils import construct_rate_matrix_from_F_D
 import matplotlib.pyplot as plt
-from analyzeprofiles import construct_rate_matrix_from_F_D
 
 ##### UNITS #####
 # F -- in kBT
@@ -473,13 +473,15 @@ def plot_distribution(F,D,dx,dt,b1,b2):
 
 
 #-------------
-def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None):
+def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,side="right"):
     """Compute the mean first passage time (MFPT)"""
     # dx -- in angstrom
     # dt -- in ps
     # D -- in angstrom**2/ps
     # mfpt -- in ps
+    # side -- right (default), left, both
     # numbering of bins starts with 0
+    assert side in ["right","left","both"]
 
     # init -- initial z-bin
     # b1 and b2 - absorbing bins
@@ -532,8 +534,6 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None):
         mfpt2,tau2,std2 = get_mfpt_from_rate_k12_before(subrate,prop,dt,k1,0,part,t)   # in ps  # this is exit to the left
         mfpt3,tau3,std3 = get_mfpt_from_rate_k12_before(subrate,prop,dt,k1,k2,part,t)   # in ps  # this is exit on both sides
 
-    mfpt = mfpt1 # right
-    tau = tau1   # right
     #print "check:",np.sum((mfpt1-mfpt3[::-1])**2)  # check symmetry between profiles
 
     # selected mfpt
@@ -544,9 +544,18 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None):
     sel_std1 = std1[init-b1-1]
     sel_std2 = std2[init-b1-1]
     sel_std3 = std3[init-b1-1]
-    # choose right
-    sel_mfpt = sel_mfpt1
-    sel_std1 = sel_std1
+
+    # choose side, also for "return" value
+    if side == "right":
+        mfpt = mfpt1
+        sel_mfpt = sel_mfpt1
+    elif side == "left":
+        mfpt = mfpt2
+        sel_mfpt = sel_mfpt2
+    elif side == "both":
+        mfpt = mfpt3
+        sel_mfpt = sel_mfpt3
+    else: raise ValueError
 
     # checking
     #----------
@@ -558,7 +567,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None):
     if doprint:  #rlb = right left both    # This is nice printing!
         print "b1,b2,init",b1,b2,init,
         print "tau-rlb",tau1,tau2,tau3,
-        print "maxmfpt-r", max(mfpt),
+        print "maxmfpt-r", max(mfpt1),
         print "sel-rlb", sel_mfpt1, sel_mfpt2, sel_mfpt3,
         print "std", sel_std1,sel_std2,sel_std3
 
@@ -573,7 +582,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None):
         plt.xlabel("initial bin")
         plt.ylabel("MFPT (ps)")
         plt.legend(loc='best')
-        plt.title("exit to the RIGHT: <tau>=%.1f ps, maxmfpt=%.1f ps" %(tau,max(mfpt)))
+        plt.title("exit to the RIGHT: <tau>=%.1f ps, maxmfpt=%.1f ps" %(tau1,max(mfpt1)))
         plt.savefig("mfpt.hummer.vector.%i.%i.png" %(b1,b2,))
         plt.close()
 

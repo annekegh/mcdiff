@@ -117,6 +117,92 @@ def init_rate_matrix_nopbc(n,v,w):
         rate[i,i] = - rate[i-1,i] - rate[i+1,i]
     return rate
 
+##### CONSTRUCT #####
+# in the following:
+##### UNITS #####
+# F -- in kBT
+# D -- in angstrom**2/ps
+# edges -- in angstrom
+
+# TODO
+# rate*lagtime
+# lagtime in ps
+# rate in 1/dt
+# so do *dt or /dt somewhere 
+
+# input: F and D profiles
+# output: rate matrix, propagator, extra matrices
+
+def construct_rate_matrix_from_F_D(F,D,dx,dt,pbc=True,st=None,end=None,side=None):
+    """compute the rate matrix"""
+    # dx in angstrom
+    # dt in ps
+    # rate in 1/dt
+    # F in units kBT, D in units A^2/ps
+    from mcdiff.utils import init_rate_matrix
+    n = len(F)
+    wunit = np.log(dx**2/dt)
+    w = np.log(D)-wunit     # w has no real unit
+    v = F                   # v in unit kBT
+
+    if pbc or st is not None or end is not None or side is not None:
+        rate = init_rate_matrix(n,v,w,pbc,st=st,end=end,side=side)  # PBC or ABSORBING
+    else:
+        rate = init_rate_matrix(n,v,w[:-1],False,st=st,end=end,side=side)  # NOPBC
+
+    # check: verify normalization
+    #print "norm prop: np.sum(norm**2)", np.sum(np.sum(rate,0)**2)
+
+    return rate   # in 1/dt
+
+def construct_propagator_from_F_D(F,D,Drad,dz,dr,dt,lagtime,lmax,dim_rad,pbc=True,
+    st=None,end=None,side=None,power=None,radialintegral=None):
+    # F -- in kBT
+    # D -- in unit=angstrom**2/ps, D/unit has no dimension
+    #      convert to w = ln(D/unit)
+    # dz, dr -- angstrom
+    # dt -- in ps
+    # dim_rad -- len(redges), where redges is [0.,dr,2dr,..]
+    # propagator  --  no unit, is per r-bin per z-bin
+    # normal
+    # TODO radialintegral=2 for <r**2> but nothing is done with this option
+    rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=pbc,st=st,end=end,side=side)   # in 1/dt
+    n = len(rate)
+
+    # radial
+    from mcdiff.twod import setup_bessel_functions, propagator_radial_diffusion
+    wradunit = np.log(dr**2/dt)
+    wrad = np.log(Drad)-wradunit
+    if st is None: st=-1
+    if end is None: end=len(F)
+    wrad = wrad[st+1:end]
+
+    bessel0_zeros,bessels = setup_bessel_functions(lmax,dim_rad)
+    if radialintegral is not None:
+        from mcdiff.permeability.msd import setup_bessel_functions_integral
+        besselsintegral = setup_bessel_functions_integral(lmax,dim_rad)
+
+    if power is None:
+      if radialintegral is None:
+        propagator = propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
+           lmax,bessel0_zeros,bessels,)   # no unit, is per r-bin per z-bin
+        return propagator
+      else: raise NotImplementedError
+
+    elif power in [-1,-2]:
+      if radialintegral is None:
+        from mcdiff.permeability.msd import timeintegral_propagator_radial_diffusion
+        mat = timeintegral_propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
+           lmax,bessel0_zeros,bessels,power=power)   # in 1/time**power per r-bin per z-bin
+        return mat
+      else:
+        from mcdiff.permeability.msd import radialintegral_propagator_radial_diffusion
+        mat = radialintegral_propagator_radial_diffusion(len(rate),dim_rad,rate,wrad,lmax,bessel0_zeros,
+                   besselsintegral,power)
+        return mat
+
+#=================================
+
 # this is now obsolete!!!
 # this differs from the other definition, where bins -1 and N are absorbing, by taking a cut
 def make_rate_absorbing_old(rate,side):
