@@ -322,7 +322,7 @@ def with_cdf(trange,cdf):
     k = 0
     # uniform grid
     #y = np.arange(0,1,0.00001)   # equal amount?
-    Ny = Nrl    # equal amount???
+    Ny = Nrl    # equal amount???   # TODO
     y = np.arange(0,Ny)/float(Ny)
     for n in xrange(1,Ny):
         # check if value from uniform distr is in the next CDF interval
@@ -345,6 +345,14 @@ def with_cdf(trange,cdf):
 
 
 #-------------
+
+# distribution of Lparallel   # TODO
+# L^2(t=t_exit) = mean (r^2, t=t_exit)
+# distrib = p(r^2,t=t_exit)   #yes?????????????????
+
+# distrib L^2(t|exit) = P()
+
+# distribution of MFPT
 def plot_distribution(F,D,dx,dt,b1,b2):
     """Compute the mean first passage time (MFPT)"""
     # dx -- in angstrom
@@ -473,7 +481,7 @@ def plot_distribution(F,D,dx,dt,b1,b2):
 
 
 #-------------
-def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,side="right"):
+def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,side="right",weigh=False):
     """Compute the mean first passage time (MFPT)"""
     # dx -- in angstrom
     # dt -- in ps
@@ -545,18 +553,6 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
     sel_std2 = std2[init-b1-1]
     sel_std3 = std3[init-b1-1]
 
-    # choose side, also for "return" value
-    if side == "right":
-        mfpt = mfpt1
-        sel_mfpt = sel_mfpt1
-    elif side == "left":
-        mfpt = mfpt2
-        sel_mfpt = sel_mfpt2
-    elif side == "both":
-        mfpt = mfpt3
-        sel_mfpt = sel_mfpt3
-    else: raise ValueError
-
     # checking
     #----------
     if False:
@@ -585,6 +581,22 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         plt.title("exit to the RIGHT: <tau>=%.1f ps, maxmfpt=%.1f ps" %(tau1,max(mfpt1)))
         plt.savefig("mfpt.hummer.vector.%i.%i.png" %(b1,b2,))
         plt.close()
+
+    # choose side, for "return" value
+    if side == "right":
+        #mfpt = mfpt1
+        sel_mfpt = sel_mfpt1
+        if weigh: sel_mfpt = tau1
+    elif side == "left":
+        #mfpt = mfpt2
+        sel_mfpt = sel_mfpt2
+        if weigh: sel_mfpt = tau2
+    elif side == "both":
+        #mfpt = mfpt3
+        sel_mfpt = sel_mfpt3
+        if weigh: sel_mfpt = tau3
+    else: raise ValueError
+
 
     return sel_mfpt
  

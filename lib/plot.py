@@ -168,7 +168,7 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
 
 
 def plot_both(F,D,filename,edges,transparent=False):
-    # assume F,D,edges are lists of arrays, each list is a profile
+    # assume F,D,edges are lists of arrays, each array is a profile
     plt.figure()
     for i in xrange(len(F)):
         f = F[i]
@@ -189,7 +189,7 @@ def plot_both(F,D,filename,edges,transparent=False):
     plt.savefig(filename,transparent=transparent)
 
 def plot_three(F,D,Drad,filename,edges,transparent=False):
-    # assume F,D,edges are lists of arrays, each list is a profile
+    # assume F,D,edges are lists of arrays, each array is a profile
     plt.figure()
     for i in xrange(len(F)):
         f = F[i]

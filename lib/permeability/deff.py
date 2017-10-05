@@ -7,7 +7,7 @@ AG, Jan 11, 2016"""
 import numpy as np
 import mcdiff
 from mcdiff.outreading import read_F_D_edges, read_Drad
-from analyzeprofiles import construct_rate_matrix_from_F_D
+from mcdiff.utils import construct_rate_matrix_from_F_D
 import matplotlib.pyplot as plt
 
 ##### UNITS #####

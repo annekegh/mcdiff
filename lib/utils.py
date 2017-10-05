@@ -192,7 +192,7 @@ def construct_propagator_from_F_D(F,D,Drad,dz,dr,dt,lagtime,lmax,dim_rad,pbc=Tru
     elif power in [-1,-2]:
       if radialintegral is None:
         from mcdiff.permeability.msd import timeintegral_propagator_radial_diffusion
-        mat = timeintegral_propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
+        mat = timeintegral_propagator_radial_diffusion(n,dim_rad,rate,wrad,
            lmax,bessel0_zeros,bessels,power=power)   # in 1/time**power per r-bin per z-bin
         return mat
       else:

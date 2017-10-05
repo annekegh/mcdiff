@@ -71,16 +71,15 @@ def radialintegral_propagator_radial_diffusion(n,dim_rad,rate,wrad,lmax,bessel0_
     return matrix
     
 
-
-def timeintegral_propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
+def timeintegral_propagator_radial_diffusion(n,dim_rad,rate,wrad,
            lmax,bessel0_zeros,bessels,power=-1):
-    """calculate propagator for radial diffusion as matrix exponential
+    """calculate matrices that are needed for the timeintegral of two-D propagator
+
     n  --  dim_trans, dimension transition matrix, usually number of bins in z-direction
     dim_rad  --  dimension transition matrix, always equal to len(redges)
     rate  --  rate matrix for 1-D diffusion in z-direction, in [1/dt]
     wrad  --  ln Drad, radial diffusion coefficient, dimension n
               Drad = exp(wrad), in [dr**2/dt]
-    lagtime  --  should be in [dt]
     lmax  --  number of Bessels
 
     bessels0_zeros  --  first lmax zeros, no unit
