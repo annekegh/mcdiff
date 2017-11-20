@@ -134,7 +134,7 @@ def calc_mfpt_othermethod(F,D,dx,dt,st,end,getmax=False):
         plt.savefig("mfpt.matrix.%i.%i.png" %(st,end))
 
 
-# THIS ONE WORKS
+# THIS ONE WORKS? BUT USE HUMMER INSTEAD
 def calc_mfpt(F,D,dx,dt,st,end,getmax=False,side=None):
     """Compute the mean first passage time (MFPT)"""
     # dx -- in angstrom
@@ -315,170 +315,6 @@ def get_median_from_rate_k12(rate,prop,dt,k1,k2,part,):
 
     return mfpt,tau, std_mfpt
 
-def with_cdf(trange,cdf):
-    Nrl = len(cdf)
-    inverse_cdf = np.zeros(Nrl)
-    inverse_cdf[0] = trange[0]
-    k = 0
-    # uniform grid
-    #y = np.arange(0,1,0.00001)   # equal amount?
-    Ny = Nrl    # equal amount???   # TODO
-    y = np.arange(0,Ny)/float(Ny)
-    for n in xrange(1,Ny):
-        # check if value from uniform distr is in the next CDF interval
-        # find first k where cdf is bigger
-        while cdf[k] < y[n] and k < Nrl:
-            k += 1
-        # store corresponding time 
-        inverse_cdf[n] = trange[k]
-        # or interpolate
-        #inverse_cdf[n] = trange[k-1] + (trange[k] - trange[k-1]) * (y[n] - cdf[k-1])/(cdf[k] - cdf[k-1]) 
-        #if k >= Nrl:
-        #    break
-    delta_inverse_cdf = np.concatenate((np.diff(inverse_cdf), [0]))
-
-    data = np.zeros((len(rho),2))
-    data[:,0] = trange
-    data[:,1] = rho
-    np.savetxt("t_rho_cdf.dat",data)
-    return inverse_cdf,delta_inverse_cdf
-
-
-#-------------
-
-# distribution of Lparallel   # TODO
-# L^2(t=t_exit) = mean (r^2, t=t_exit)
-# distrib = p(r^2,t=t_exit)   #yes?????????????????
-
-# distrib L^2(t|exit) = P()
-
-# distribution of MFPT
-def plot_distribution(F,D,dx,dt,b1,b2):
-    """Compute the mean first passage time (MFPT)"""
-    # dx -- in angstrom
-    # dt -- in ps
-    # D -- in angstrom**2/ps
-    # mfpt -- in ps
-    # numbering of bins starts with 0
-
-    # init -- initial z-bin
-    # b1 and b2 - absorbing bins
-    assert b1>=-1 and b2<=len(F) and b1+1<b2
-
-    # rate matrix
-    v = F-min(F)
-    rate = construct_rate_matrix_from_F_D(v,D,dx,dt,pbc=True)  # in 1/dt
-    # construct rate matrix and inverse
-    subrate = construct_rate_matrix_from_F_D(v,D,dx,dt,pbc=False,st=b1,end=b2,side="both")  # in 1/dt
-
-    # for global mfpt
-    F_small = v[b1+1:b2]  # submatrix
-    part = np.exp(-(F_small-min(F_small)))   # no unit
-
-    # distribution t
-    #---------------
-    if True:
-        import scipy
-        trange = np.exp(np.arange(-2,14,0.05))
-        middle = len(subrate)/2
-        rho = []
-        for t in trange:
-            rho_t = -np.sum(np.dot(subrate,scipy.linalg.expm2(subrate*t)),0)
-            rho.append(rho_t[middle])
-            #print "t",t,"rho",rho_t[middle]
-        print "len",len(rho),"rho_t",rho_t.shape
-        rho = np.array(rho)
-        print "rho",rho.shape
-        plt.figure()
-        plt.semilogx(trange,rho)
-        #plt.plot(trange,rho)
-        plt.xlabel("t [ps]")
-        plt.title("P(exit at time t)")
-        plt.savefig("t_rho.png")
-
-    # cumulative distribution t
-    #---------------------------
-    if True:
-        import scipy
-        trange = np.exp(np.arange(-2,14,0.05))
-        middle = len(subrate)/2   # why ?????????? TODO
-        rho = []
-        for t in trange:
-            # int( R e^Rt, 0..t) = [e^Rt]_0..t = e^Rt-1
-            integral_rho_t = np.diag(np.ones(len(subrate)))-scipy.linalg.expm2(subrate*t)
-            integral_rho_t = np.sum(integral_rho_t,0)
-            rho.append(integral_rho_t[middle])
-            #print "t",t,"rho",rho_t[middle]
-        print len(trange)
-        print "len",len(rho),"integral_rho_t",integral_rho_t.shape
-        rho = np.array(rho)
-        print "rho",rho.shape
-        plt.figure()
-        plt.semilogx(trange,rho)
-        #plt.plot(trange,rho)
-        plt.xlabel("t [ps]")
-        plt.title("P(exit at time t)")
-        plt.savefig("t_rho_cdf.png")
-
-    # distribution t by drawing myself
-    #---------------------------------
-    if True:
-        cdf = rho
-        inverse_cdf,delta_inverse_cdf = with_cdf(trange,cdf)
-
-        print "cdf",cdf
-        print "inverse_cdf",inverse_cdf
-        print "delta_inverse_cdf",inverse_cdf
-        def draw_cdf(N,inverse_cdf,delta_inverse_cdf):
-            Nrl = len(inverse_cdf)
-            indices_float = np.random.uniform(size=N, high=Nrl-1)
-            indices = np.array(indices_float,'i')   # floor / ceil ?
-            y = inverse_cdf[indices] + (indices_float-indices)*delta_inverse_cdf[indices]
-            return y
-        ally = []
-        for i in range(10000):
-            N = 40000
-            y = draw_cdf(N,inverse_cdf,delta_inverse_cdf)
-            #print y
-            #print "y",np.mean(y),np.std(y)
-            ally.append(np.mean(y))
-            
-
-        print "statistics"
-        Nrl = len(inverse_cdf)
-        print inverse_cdf[0],inverse_cdf[Nrl/4],inverse_cdf[Nrl/2],inverse_cdf[3*Nrl/4],inverse_cdf[-1]
-        print trange[0],trange[Nrl/4],trange[Nrl/2],trange[3*Nrl/4],trange[-1]
-
-        # statistics of average of N=40
-        hist,levels = np.histogram(ally,bins=30,)
-        histcdf = np.zeros(hist.shape)
-        for i in range(len(hist)):
-            histcdf[i] = np.sum(hist[:i])
-        histcdf /= np.sum(hist)
-        mid = (levels[:-1]+levels[1:])/2.
-        mid /= 1000   # from ps to ns
-        print len(hist),len(levels)
-        plt.figure()
-        plt.subplot(211)
-        plt.plot(mid,hist)
-        plt.xlabel("time [ns]")
-        plt.ylabel("prob")
-        plt.subplot(212)
-        plt.plot(mid,histcdf)
-        plt.plot(mid,np.ones(mid.shape)*0.25,'k')
-        plt.plot(mid,np.ones(mid.shape)*0.75,'k')
-        plt.plot(mid,np.ones(mid.shape)*0.975,'r')
-        plt.plot(mid,np.ones(mid.shape)*0.025,'r')
-        plt.plot(mid,np.ones(mid.shape)*0.5,'g')
-        #plt.plot(np.ones(2)*mean, [0.,1.],'g')
-        #plt.plot(np.ones(2)*(mean-2*ste), [0.,1.],'r')
-        #plt.plot(np.ones(2)*(mean+2*ste), [0.,1.],'r')
-        plt.ylim(ymin=0.)
-        plt.xlabel("time [ns]")
-        plt.ylabel("CDF")
-
-        plt.savefig("t_rho_histogram_40000samples.png")
-
 
 #-------------
 def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,side="right",weigh=False):
@@ -533,7 +369,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         mfpt2,tau2,std2 = get_median_from_rate_k12(subrate,prop,dt,k1,0,part)   # in ps  # this is exit to the left
         mfpt3,tau3,std3 = get_median_from_rate_k12(subrate,prop,dt,k1,k2,part)   # in ps  # this is exit on both sides
       else:
-    #if False:
+    #if False:   # TODO TODO TODO
         # mfpt before time t
         #-------------------
         import scipy
@@ -599,29 +435,298 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
 
 
     return sel_mfpt
- 
-    #maxmfpt = max(mfpt)
-    #print "max",maxmfpt
-    #if getmax:
-    #    return maxmfpt
-    #else:
-    #    return tau
 
+
+#############
+# STATISTICS
+#############
 #############
 
 
-def use_rate_matrix_mfpt(F,D,dx,dt,figname="userate.png"):
-    rate = calc_rate_matrix_mfpt_left(F,D,dx,dt,)
-    #print "check quality",np.sum(rate,0)
-    #plot_propagator_bin12(propagator,startbin,factor,edges,redges,figname,lagtime)
-    initprob = np.zeros(len(rate),float)
-    initprob[0]=1.
-    plt.figure()
+#-------------
+
+# distribution of Lparallel   # TODO
+# L^2(t=t_exit) = mean (r^2, t=t_exit)
+# distrib = p(r^2,t=t_exit)   #yes?????????????????
+
+# distrib L^2(t|exit) = P()
+
+# distribution of MFPT
+def distribution_mfpt(F,D,dx,dt,b1,b2,trange):
+    """Compute the mean first passage time (MFPT)"""
+    # dx -- in angstrom
+    # dt -- in ps
+    # D -- in angstrom**2/ps
+    # mfpt -- in ps
+    # numbering of bins starts with 0
+
+    # init -- initial z-bin
+    # b1 and b2 - absorbing bins
+    assert b1>=-1 and b2<=len(F) and b1+1<b2
+
+    # rate matrix
+    v = F-min(F)
+    # construct rate matrix and inverse
+    subrate = construct_rate_matrix_from_F_D(v,D,dx,dt,pbc=False,st=b1,end=b2,side="both")  # in 1/dt
+
     import scipy
-    for lagtime in [0.01,0.1,1.,10.,100.,1000.,10000.]:
-        prop = np.dot(scipy.linalg.expm2(rate*lagtime),initprob)
-        plt.plot(prop)
-    plt.savefig(figname)
+    middle = len(subrate)/2   # this is initial bin "k", choose the middle   # TODO not necessary ??
+    rho = []
+    cdf = []
+    for t in trange:
+        mat = scipy.linalg.expm2(subrate*t)   # needed in rho and cdf
+        # (1) distribution rho(t)
+        #------------------------
+        # compute rho(t|k), probability to exit at time t
+        rho_t = -np.sum(np.dot(subrate,mat),0)
+        rho.append(rho_t[middle])
+        #print "t",t,"rho",rho_t[middle]
+
+        # (2) cumulative distribution int(rho(t'),t'=0..t)
+        #-------------------------------------------------
+        # compute CDF of rho(t|k), probability to exit < time t
+        # int( R e^Rt, 0..t) = [e^Rt]_0..t = e^Rt-1
+        cdf_t = np.diag(np.ones(len(subrate)))-mat
+        cdf_t = np.sum(cdf_t,0)
+        cdf.append(cdf_t[middle])
+        #print "t",t,"cdf",cdf_t[middle]
+
+    rho = np.array(rho)
+    # rho contains rho(t|k) for all t values in trange
+    print "trange",len(trange),"len",len(rho),"rho_t",rho_t.shape, "rho",rho.shape
+
+    cdf = np.array(cdf)
+    # cdf contains cdf(t|k) for all t values in trange
+
+    print "trange",len(trange),"len",len(cdf),"cdf_t",cdf_t.shape, "cdf",cdf.shape
+
+    # Writing data to file
+    #----------------------
+    filename = "t_rho.dat"
+    data = np.zeros((len(trange),3))
+    data[:,0] = trange
+    data[:,1] = rho
+    data[:,2] = cdf
+    np.savetxt(filename,data)
+    print "file written...", filename
+
+    if True:
+        # Plot rho(t|k)   HERE k = MIDDLE
+        #--------------------------------
+        plt.figure()
+        plt.subplot(2,1,1)
+        plt.title("P(exit at time t)")
+        plt.plot(trange,rho,"o")
+        plt.xlabel("t [ps]")
+
+        plt.subplot(2,1,2)
+        plt.semilogx(trange,rho,"o")
+        plt.xlabel("t [ps]")
+        plt.savefig("t_rho.png")
+
+    if True:
+        # Plot CDF(t|k)   HERE k = MIDDLE
+        #--------------------------------
+        fig = plt.figure()
+        plt.subplot(2,1,1)
+        plt.title("P(exit < time t)")
+        plt.plot(trange,cdf,"o")
+        plt.xlabel("t [ps]")
+
+        plt.subplot(2,1,2)
+        plt.semilogx(trange,cdf,"o")
+        plt.xlabel("t [ps]")
+        plt.savefig("t_rho_cdf.png")
+
+    calc_statistics_rho(trange,rho)
+
+    return rho,cdf
+
+def calc_statistics_rho(trange,rho):
+    print "--"
+    print "statistics"
+    print "--"
+    # mean
+    dtrange = trange[1:]-trange[:-1]
+    norm = np.sum(rho[1:]*dtrange)                  # not perfect, binning
+    m = np.sum(((trange*rho)[1:])*dtrange)/norm
+    # std
+    m2 = np.sum(((trange**2*rho)[1:])*dtrange)/norm
+    std = np.sqrt(m2-m**2)
+    std2_a = np.sum((((trange-m)**2*rho)[1:])*dtrange)/norm
+    std_a = np.sqrt(std2_a)
+    print "norm", norm
+    print "mean", m
+    print "std", std,std_a
+    return m,std
+
+
+
+def get_inverse_cdf(trange,cdf):
+    """function that computes the inverse CDF based on the CDF
+    Input
+        trange -- array of t values
+        cdf -- array of CDF(t) values,
+               i.e. the cumulative distribution function (CDF)
+    Output
+        inverse_cdf -- array with Nrl times
+                    inverse_cdf[0] minimum considered time, cdf is 0 = 0/Nrl
+                    inverse_cdf[-1] largest considered time, cdf is 1 = Nrl/Nrl
+                    cdf[inverse_cdf[i]] = i/Nrl, in interval [0,1]
+        delta_inverse_cdf -- array with differences between subsequent elements
+                             of inverse_cdf, so inverse_cdf[1:]-inverse_cdf[:-1]
+    """
+    Nrl = len(cdf)
+    inverse_cdf = np.zeros(Nrl)
+    inverse_cdf[0] = trange[0]
+    k = 0
+    # uniform grid
+    #y = np.arange(0,1,0.00001)   # equal amount?
+    Ny = Nrl    # equal amount???   # TODO
+    y = np.arange(0,Ny)/float(Ny)
+    for n in xrange(1,Ny):
+        # check if value from uniform distr is in the next CDF interval
+        # find first k where cdf is bigger
+        while cdf[k] < y[n] and k < Nrl:
+            k += 1
+        # store corresponding time 
+        inverse_cdf[n] = trange[k]
+        # or interpolate
+        #inverse_cdf[n] = trange[k-1] + (trange[k] - trange[k-1]) * (y[n] - cdf[k-1])/(cdf[k] - cdf[k-1]) 
+        #if k >= Nrl:
+        #    break
+    delta_inverse_cdf = np.concatenate((np.diff(inverse_cdf), [0]))
+
+    #print "cdf",cdf
+    #print "inverse_cdf",inverse_cdf
+    #print "delta_inverse_cdf",delta_inverse_cdf
+    #print "0, 1/4, 1/2, 3/4, -1"
+    #print inverse_cdf[0],inverse_cdf[Nrl/4],inverse_cdf[Nrl/2],inverse_cdf[3*Nrl/4],inverse_cdf[-1]
+    #print trange[0],trange[Nrl/4],trange[Nrl/2],trange[3*Nrl/4],trange[-1]   # this is very different
+    return inverse_cdf,delta_inverse_cdf
+
+def draw_from_cdf(N,inverse_cdf,delta_inverse_cdf):
+    """Draw from a ???? distribution
+    Input
+        N -- how many draws
+        inverse_cdf -- array with Nrl times,
+                        with cdf[inverse_cdf[i]] = i/Nrl, in interval [0,1]
+        delta_inverse_cdf -- array with differences between subsequent elements
+                             of inverse_cdf, so inverse_cdf[1:]-inverse_cdf[:-1]
+    Output
+        y -- array of N draws
+    """
+    Nrl = len(inverse_cdf)
+    indices_float = np.random.uniform(size=N, high=Nrl-1)   # draw from uniform distrib
+    indices = np.array(indices_float,'i')   # floor / ceil ?
+    # interpolate around inverse_cdf[indices]
+    y = inverse_cdf[indices] + (indices_float-indices)*delta_inverse_cdf[indices]
+    # note: the simple formula would be:   y = inverse_cdf[indices]
+    return y
+
+def statistics_from_distribution(trange,rho,cdf):
+    # distribution t by drawing myself
+    #---------------------------------
+    inverse_cdf,delta_inverse_cdf = get_inverse_cdf(trange,cdf)
+
+    def get_quantile(inverse_cdf,percent):
+        # 0% -> not in array
+        # few% -> [0]
+        # almost100% -> [-1]
+        # 100% -> not in array
+        # approximate as follows:
+        # 0% -> [0]
+        # 100% -> [-1]
+        N = len(inverse_cdf)
+        indexlow = np.floor((N-1)*percent)
+        indexhigh = np.ceil((N-1)*percent)
+        frac = N*percent - np.floor(N*percent)
+        select = inverse_cdf[indexlow]*(1-frac) + frac*inverse_cdf[indexhigh]
+        return select
+
+    print "--"
+    print "statistics"
+    print "--"
+    Nrl = len(inverse_cdf)
+    for percent in np.arange(0.,1.001, 0.1):
+        quant = get_quantile(inverse_cdf,percent)
+        print percent, quant
+    print "--"
+
+    print "Getting the 90% quantile figured out"
+    t90 = get_quantile(inverse_cdf,0.9)
+    print "t90",t90
+
+    # where is t90 located?
+    index = np.digitize([t90],trange)
+    index = index[0]
+    print "bin-t90, trange[bin-t90]:  ",index,trange[index]
+
+    r = rho[index:]
+    tr = trange[index:]
+    # normalize rho[index:]
+    #dtrange = tr[1:]-tr[:-1]
+    #norm = np.sum(r[1:]*dtrange)                  # not perfect, binning
+    #r /= norm
+    # use this for statistics
+    m90,std90 = calc_statistics_rho(tr,r)     # YES!!! THIS IS IT!!!
+
+
+
+def draw_from_distribution(trange,cdf):
+
+    print done
+    inverse_cdf,delta_inverse_cdf = get_inverse_cdf(trange,cdf)
+
+    ally = []
+    for i in range(10000):
+        N = 40000
+        N = 1
+        y = draw_from_cdf(N,inverse_cdf,delta_inverse_cdf)
+        #print y
+        #print "y",np.mean(y),np.std(y)
+        ally.append(np.mean(y))
+
+    print "statistics"
+    print "mean, mean90"
+    print np.mean(ally), np.mean(sorted(ally)[int(len(ally)*0.9):])
+
+
+    # statistics of average of N=40
+    hist,levels = np.histogram(ally,bins=30,)
+    histcdf = np.zeros(hist.shape)
+    for i in range(len(hist)):
+        histcdf[i] = np.sum(hist[:i])
+    histcdf /= np.sum(hist)
+    mid = (levels[:-1]+levels[1:])/2.
+    mid /= 1000   # from ps to ns
+    print len(hist),len(levels)
+
+    #if True:
+    if False:
+        # Plot
+        #--------------------------------
+        plt.figure()
+        plt.subplot(211)
+        plt.plot(mid,hist)
+        plt.xlabel("time [ns]")
+        plt.ylabel("prob")
+        plt.subplot(212)
+        plt.plot(mid,histcdf)
+        plt.plot(mid,np.ones(mid.shape)*0.25,'k')
+        plt.plot(mid,np.ones(mid.shape)*0.75,'k')
+        plt.plot(mid,np.ones(mid.shape)*0.975,'r')
+        plt.plot(mid,np.ones(mid.shape)*0.025,'r')
+        plt.plot(mid,np.ones(mid.shape)*0.5,'g')
+        #plt.plot(np.ones(2)*mean, [0.,1.],'g')
+        #plt.plot(np.ones(2)*(mean-2*ste), [0.,1.],'r')
+        #plt.plot(np.ones(2)*(mean+2*ste), [0.,1.],'r')
+        plt.ylim(ymin=0.)
+        plt.xlabel("time [ns]")
+        plt.ylabel("CDF")
+
+        plt.savefig("t_rho_histogram_40000samples.png")
+
 
 
 
