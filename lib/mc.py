@@ -9,7 +9,7 @@ import numpy as np
 
 from MCState import MCState
 from transitions import Transitions, RadTransitions
-from log import Logger
+from log import Logger, write_average_from_pic
 
 
 def do_mc_cycles(MC,logger):
@@ -106,5 +106,10 @@ def find_parameters(filenames,pbc,model,
     logger.model = MC.model   # this is not a hard copy
     logger.dump(picfile)
     logger.statistics(MC)  #st=1000)
+
+    # write average of pic file
+    ave_file = picfile+".ave.dat"
+    write_average_from_pic(picfile,ave_file)
+
     return()
 
