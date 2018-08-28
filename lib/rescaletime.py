@@ -27,39 +27,50 @@ def plotsettingsax(ax):
 
 
 import sys
-list_filenames = sys.argv[1:]
+assert len(sys.argv)>=3
+system = sys.argv[1]
+assert "/" not in system
+list_filenames = sys.argv[2:]
+assert len(list_filenames)>0
 print list_filenames
 
+figname = "figs-rescale/fig_"+system+"_"
 # guess name
-figname="fig_"
-if len(list_filenames) > 0:
-    name = list_filenames[0]
-    if "HexdWat" in name: figname = "fig_HexdWat_"
-    elif "Hexd" in name:  figname = "fig_Hexd_"
-    elif "Wat" in name:   figname = "fig_Wat_"
-    elif "popc" in name:  figname = "fig_popc_"
-    elif "mito" in name:  figname = "fig_mito_"
-    elif "uwat" in name:  figname = "fig_uwat_"
-    if "rad" in name:
-        figname += "rad_"
-        doradial = True
-    else: doradial = False
-        
+#figname="fig_"
+#if len(list_filenames) > 0:
+#    name = list_filenames[0]
+#    if "HexdWat" in name: figname = "fig_HexdWat_"
+#    elif "Hexd" in name:  figname = "fig_Hexd_"
+#    elif "Wat" in name:   figname = "fig_Wat_"
+#    elif "popc" in name:  figname = "fig_popc_"
+#    elif "mito" in name:  figname = "fig_mito_"
+#    elif "uwat" in name:  figname = "fig_uwat_"
+#if "rad" in name:
+    #figname += "rad_"
+    #doradial = True
+#else: doradial = False
+if "rad" in system:
+    doradial = True
+else: doradial = False
 
-# lagtimes?
-lts = []
+
+def extract_lagtimes_from_filenames(list_filenames):
+    # lagtimes?
+    lts = []
+    for filename in list_filenames:
+        words = filename.split("/")
+        parts = words[-1].split(".")
+        #if "outrad" in filename:
+        #    shift = int(parts[4])
+        #else:
+        shift = int(parts[2])
+        #lts.extend([shift*dtc for i in range(nbins)])
+        lts.extend([shift*dtc])
+    lts = np.array(lts)
+    return lts
+
 dtc = 1.
-nbins = 100
-for filename in list_filenames:
-    words = filename.split("/")
-    parts = words[-1].split(".")
-    #if "outrad" in filename:   
-    #    shift = int(parts[4])
-    #else:
-    shift = int(parts[2])
-    #lts.extend([shift*dtc for i in range(nbins)])
-    lts.extend([shift*dtc])
-lts = np.array(lts)
+lts = extract_lagtimes_from_filenames(list_filenames)
 
 # read profiles
 F,D,edges,Fst,Dst = read_many_profiles(list_filenames)   # Fst=None, Dst=None
@@ -77,6 +88,7 @@ print "F  ",F.shape
 print "D  ",D.shape
 print "lts",lts
 # F has shape nbins x nprofiles
+nbins = len(F)
 
 #######
 
@@ -126,10 +138,50 @@ def fit_line_inverse(lt,D):
     # extract profiles from fit
     Dreal = x[:nbins]
     t0 = x[nbins:]/x[:nbins]
+
+    # error analysis
+    ## Calculate vector of residuals
+    #res = as.matrix(women$weight-bh[1]-bh[2]*women$height)
+    #res = Y-(bh[0]+X[:,1]*bh[1])
+    # residues
+    ## Define n and k parameters
+    n = len(D)
+    n = len(A)   # number of data points ???
+    n = 4
+    k = 2   # number of fitted parameters
+
+
+    #data = np.array(list(df1))[1:,3:5].astype('float')
+    #data = data with two columns
+ #   data = np.concatenate(????,res,1)
+ #   nrow = len(nbins)   #data.shape[0]
+ #
+ #   intercept = np.ones( (nrow,1) )
+ #   b2 = data[:,0].reshape(-1, 1)
+ #
+ #   X = np.concatenate((intercept, b2), axis=1)
+ #   Y = data[:,1].T
+ #
+ #   ## X and Y arrays must have the same number of columns for the matrix multiplication to work:
+ #   print(X.shape)
+ #   print(Y.shape)
+
+    ## Calculate Variance-Covariance Matrix
+ #   VCV = np.true_divide(1,n-k)*np.dot(np.dot(residues.T,residues),np.linalg.inv(np.dot(X.T,X)))
+    VCV = np.true_divide(1,n-k)*np.dot(np.dot(residues.T,residues),np.linalg.inv(np.dot(A.T,A)))
+
+    ## Standard errors of the estimated coefficients
+    stderr = np.sqrt(np.diagonal(VCV))
+
+    #print VCV.shape
+    #print stderr
+
     return Dreal, t0
 
+"""
 def fit_line_gerhard(lt,D):
-    """
+=> No, this suggestion is not okay
+
     Fitting SECOND
     D[i](lt) = 1 / (A[i] + B[i]*lt)
              = c[i] / (1.+d[i]*lt)   = Dreal / (1 + lt/t0)
@@ -138,7 +190,7 @@ def fit_line_gerhard(lt,D):
     with two coefficients (profiles) A and B that are determined with least square fit
     Dreal = 1/A
     B = 1/(t0*Dreal), so t0 = 1/B/Dreal = A/B
-    """
+
 
     nlt = len(lts)
     nbins = D.shape[0]
@@ -165,15 +217,13 @@ def fit_line_gerhard(lt,D):
     t0 = x[:nbins]/x[nbins:]
     return Dreal, t0
 
+=> No, this suggestion is not okay
+ """
 
-if True:  #False:
-    # Do fit
-    Dreal,t0 = fit_line_inverse(lts,D)
-else:
-    #figname2 = figname+"_fit2"
-    #figname = figname2
-    # Do fit
-    Dreal,t0 = fit_line_gerhard(lts,D)
+
+Dreal,t0 = fit_line_inverse(lts,D)
+
+
 
 print "Dreal",Dreal.shape
 print "Dreal[:10]",Dreal[:10]

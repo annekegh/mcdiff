@@ -69,7 +69,7 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$F$ ($k_BT$)")
     plt.title(title)
-    plt.ylim(0,4)
+    plt.ylim(0,4.5)
     if legend is not None: plt.legend(legend)
     plt.savefig(filename,transparent=transparent)
 
@@ -114,7 +114,7 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
     #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
-    #plt.ylim(0.,0.7)
+    plt.ylim(0.,0.6)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
