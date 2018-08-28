@@ -177,5 +177,125 @@ def calc_Dinh(F,D,dx,dt):
     #print "Dinh",Dinh
     return Dinh
 
+#====================================
+# TRYING
+# Jan 2018
+#====================================
 
+# TODO clean up implementation try-out formula of Hummer
+
+def calc_Dpar_logs(F,D,Drad,dz,dt,st=None,end=None,edges=None):
+    """Compute average diffusion constant, in parallel layers, e.g. Drad
+         Dave = sum_i  D_i  exp(-F_i) ,
+
+    where D_i is actually D_(i+1/2)
+    not shifting F nor D to the middle of the bins
+
+    using bins [st:end] = [st,st+1,...,end-1]
+    number of used bins = end-st
+    when st=None,end=None, then this means [:]"""
+    # F in units kBT, D in units A^2/ps
+    assert len(F) == len(D)
+    #v = F[st:end]     # when st=None,end=None, then this means [:]
+    #d = D[st:end]
+    #drad = Drad[st:end]
+
+    # average Drad:
+    #part = np.exp(-(v-min(v)))
+    #Dave = np.sum(d*part)/np.sum(part)   # a weighted sum, normalized
+    drad = Drad[st+1:end]
+    # absorbing boundaries
+    rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=False,st=st,end=end,side="both")  # in 1/dt
+    #rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=False,st=st,end=end,side=None)  # in 1/dt
+    print "rate",rate.shape
+    vals,U = np.linalg.eig(rate)  # U contains eigenvectors as columns
+    print vals
+    U1 = np.linalg.inv(U)
+    Ddiag = np.diag(drad)
+    UDdiagU1 = np.dot(U,np.dot(Ddiag,U1))
+
+    "o-ow, I have three positive eigenvals?????"
+
+    Dpar = 0.
+    # first term
+    Dpar_1 = 0.
+    for i in range(len(vals)):
+        Dpar_1 += 1./vals[i]*U1[-1,i]*UDdiagU1[i,i]*U[i,0]
+    print "part1",Dpar_1
+    # second term
+    Dpar_2 = 0.
+    for i in range(len(vals)):
+        for j in range(len(vals)):
+              if i != j:
+                  term = np.log(abs(vals[i]/vals[j]))/(vals[i]-vals[j])
+                  term *= U1[-1,i]*UDdiagU1[i,j]*U[j,0]
+                  Dpar_2 += term
+    print "part2",Dpar_2
+    Dpar = Dpar_1 + Dpar_2
+    print "sum",Dpar
+    rate1 = np.linalg.inv(rate)
+    Dpar /= rate1[-1,0]
+    print "final",Dpar
+    return Dpar
+
+
+def calc_Dpar_ratios(F,D,Drad,t,dz,dt,st=None,end=None,edges=None):
+    """Compute average diffusion constant, in parallel layers, e.g. Drad
+         Dave = sum_i  D_i  percentage-time-spent-in-bin-i
+
+    where D_i is actually D_(i+1/2)
+
+    using bins [st:end] = [st,st+1,...,end-1]
+    number of used bins = end-st
+    when st=None,end=None, then this means [:]"""
+    # F in units kBT, D in units A^2/ps
+    assert len(F) == len(D)
+    v = F[st:end]     # when st=None,end=None, then this means [:]
+    d = D[st:end]
+    drad = Drad[st:end]
+
+    # average Drad:
+    #part = np.exp(-(v-min(v)))
+    #Dave = np.sum(d*part)/np.sum(part)   # a weighted sum, normalized
+
+    # ow.... watch out !!!
+    drad = Drad[st+1:end]
+
+    # absorbing boundaries
+    rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=False,st=st,end=end,side="both")  # in 1/dt
+    # reflective boundaries
+    #rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=False,st=st,end=end,side=None)  # in 1/dt
+
+    #print "rate",rate.shape
+    n = len(rate)
+    vals,U = np.linalg.eig(rate)  # U contains eigenvectors as columns
+    #print "vals",vals
+    U1 = np.linalg.inv(U)
+    Ddiag = np.diag(drad)
+    #UDdiagU1 = np.dot(U,np.dot(Ddiag,U1))
+    U1DdiagU = np.dot(U1,np.dot(Ddiag,U))
+
+    maxval = max(vals)
+    exp_valt = np.exp((vals-maxval)*t)
+    Deff_t = np.zeros((n,n),)
+    for i in range(n):
+        for j in range(n):
+          #  for k in range(n):
+          #      Deff_t[i,j] += drad[k] * np.sum(     # summation over l
+          #           U[k,:]*U1[:,j]*U[i,:]*U1[:,k] * t * exp_valt )
+            Deff_t[i,j] = np.sum(U1[:,j]*U[i,:]* np.diag(U1DdiagU) * t * exp_valt )
+#    print Deff_t
+    for i in range(n):
+        for j in range(n):
+                for l in range(n):
+                  for m in range(n):
+                    if m != l:
+                       Deff_t[i,j] += U1[l,j]*U[i,m]*U1DdiagU[m,l] * (exp_valt[l]-exp_valt[m])/(vals[l]-vals[m])
+
+#    print Deff_t
+    import scipy.linalg
+    Deff_t /= scipy.linalg.expm2((rate-np.diag(np.ones(n))*maxval)*t) * t
+    print "t",t
+    print Deff_t
+    return Deff_t
 
