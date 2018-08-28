@@ -120,34 +120,367 @@ def calc_oxygentransportparameter(F,D,edges):
     return product,edges_mid
 
 
+########
 ### 4) EQUILIBRIUM DISTRIBUTION PROFILE WHEN MEASURING PERMEABILITY
 
-def calc_permeability_distribution(F,D,dx,dt,st,end,figname=None):
+def calc_flux(rate,prob,dt):
+    """compute flux through bin borders
+
+    fluxp -- fluxp[i] = flux from bin i to bin i+1
+    fluxn -- fluxn[i] = flux from bin i+1 to bin i (absolute value)
+    flux  -- flux[i] = nett flux = fluxp - fluxn
+
+    len(flux) vector is len(prob)-1
+    rate matrix can be larger, but first bin of prob and first
+    bin of rate matrix should match"""
+    fluxp = np.zeros(len(prob)-1,float)  # positive, left to right
+    fluxn = np.zeros(len(prob)-1,float)  # negative, right to left
+    for i in range(len(fluxp)):
+        # flux through border between bin i and bin i+1
+        # two parts: (1) from bin i to i+1   minus  (2) from bin i+1 to i
+        fluxp[i] = rate[i+1,i]*prob[i]
+        fluxn[i] = rate[i,i+1]*prob[i+1]
+    fluxp /= dt   # dt in ps, so flux in 1/ps
+    fluxn /= dt   # dt in ps, so flux in 1/ps
+    flux = fluxp-fluxn
+    return flux,fluxp,fluxn  # in 1/ps
+
+def calc_permeability_distribution(F,D,dx,dt,st,end,A,B,figname=None,ref=0,doprint=True):
+    """Compute the permeability from the rate matrix and the steady-state solution
+
+    ref -- reference bin, standard bin 0 (ASSUME BULK water)
+    doprint -- whether to print partitioning
+
+    prob[st]  = A.  (no units)
+    prob[end] = B.  (no units)
+
+    so difference is Delta = A-B (no units) 
+    """
     # F in units kBT, D in units A^2/ps, dx in units A
+
+    # check
+    assert st>=0
+    assert end<len(F)
+    assert ref>-1 and ref<len(F)
+    #assert A!=0. or B!=0.
+
     rate = construct_rate_matrix_from_F_D(F,D,dx,dt)   # in 1/dt, PBC
 
-    rate = rate[st:end,st:end]
-
+    # compute steady-state solution prob
+    #-----------------------------------
+    # prob (no units) is not normalized
     # solve subrate*p = vec
-    subrate = rate[1:-1,1:-1]
-    # rhs of equation 
-    vec = np.zeros(len(subrate),float)
-    vec[0] = -rate[1,0]
-    # p = subrate^-1 * p
+    subrate = rate[st+1:end,st+1:end]    # covers bins [st+1,...,end-1]
     r1 = np.linalg.inv(subrate)
-    p = np.dot(r1,vec)
+
+    # rhs of equation 
+    vec1 = np.zeros(len(subrate),float)
+    vec2 = np.zeros(len(subrate),float)
+    vec1[0]  = -rate[st+1,st]    #vec[0]  = -rate[1,0]
+    vec2[-1] = -rate[end-1,end]  #vec[-1] = -rate[N,N+1]
+
+    # p = subrate^-1 * vec
+    p1 = np.dot(r1,vec1)
+    p2 = np.dot(r1,vec2)
+
     # plug in vector of original size, with boundaries
-    P = np.zeros(len(rate),float)
-    P[1:-1] = p
-    P[0] = 1.
-    #print "prob",P
+    # end points of vector prob are kept constant at A and B
+    prob1 = np.zeros(len(subrate)+2,float)
+    prob2 = np.zeros(len(subrate)+2,float)
+    prob1[1:-1] = p1
+    prob2[1:-1] = p2
+    prob1[0]  = 1.
+    prob2[-1] = 1.
+    prob = A*prob1 + B*prob2
+
+    # compute flux (here constant)
+    #-----------------------------
+    flux1,fluxp1,fluxn1 = calc_flux(rate[st:,st:],prob1,dt)  # in 1/ps
+    flux2,fluxp2,fluxn2 = calc_flux(rate[st:,st:],prob2,dt)  # in 1/ps
+    flux, fluxp, fluxn  = calc_flux(rate[st:,st:],prob, dt)  # in 1/ps   # with A,B
+    # check flux is constant in steady-state with fixed boundaries
+    #print np.all(flux==flux[0])  # not True, because of very small differences
+    assert np.all(np.isclose(flux1, np.ones(len(flux1))*flux1[0], rtol=1e-04,) )
+    assert np.all(np.isclose(flux2, np.ones(len(flux2))*flux2[0], rtol=1e-04,) )
+    assert np.all(np.isclose(flux,  np.ones(len(flux)) *flux[0],  rtol=1e-04,) )
+    #print "flux1 (in 1/ps)",flux1[0]
+    #print "flux2 (in 1/ps)",flux2[0]
+    #print "flux  (in 1/ps)",flux[0]
+
+    # compute permeability
+    #---------------------
+    # particles/time = flux J = permeability * Delta-concentration-per-length
+    # solve for permeability:   P = flux*dx
+    P =  flux1[0]*dx     # in A/ps, assume flux is constant
+    # reference is naturally in bin st, put in bin ref
+    P *= np.exp(F[ref]-F[st])
+
+ #   # this is the same as the following:
+ #   P2 = -flux2[0]*dx     # in A/ps, assume flux is constant
+ #   # reference is naturally in bin end, put in bin end
+ #   P2 *= np.exp(F[ref]-F[end])
+ #   # verify
+ #   assert np.isclose(P,P2,rtol=1e-06,)
+
+    h = dx*(len(prob)-1)  # membrane thickness, boundaries bin 0 and bin -1, in A
+    R = 1./P              # resistance to permeability, in ps/A
+    Deff = h*P            # effective D, in A**2/ps
+
+    if doprint:
+        #print "permeability (in A/ps)",P
+        print "h %7.2f  P %10.5f  Deff %10.5f  R %10.5f"%(h,P,Deff,R)
+
+    # Now consider steady-state, but actually imitate equilibrium
+    #------------------------------------------------------------
+    # by choosing A and B wisely
+
+    # recalculate prob_equil for plotting
+    # prob1: ref is st, prob2: ref is end, prob: not really ref
+    # prob_equil: reference in bin ref, i.e. prob_equil[ref]=1.  # this is a choice
+    prob_equil = prob1*np.exp(-F[st]+F[ref]) + prob2*np.exp(-F[end]+F[ref])
+
+    if doprint:
+        analyze_partitioning_steadystate(F,st,end,prob1,prob2,prob,ref,)
+
     if figname is not None:
         plt.figure()
-        plt.plot(P)
-        plt.xlabel("bins")
-        plt.ylabel("prob")
+        #plt.subplot(2,1,1)
+        plt.plot(prob1,label='left')
+        plt.plot(prob2,label='right')
+        rescale = max(max(prob1),max(prob2))/max(prob_equil)
+        #rescale=1.
+        plt.plot(prob_equil*rescale,'-',color='grey',label='equil')
+        plt.plot(prob,'--',color='k',lw='2',label="A=%.2f B=%.2f"%(A,B))
+        plt.xlabel("bin number")
+        plt.ylabel("prob (no unit)")
+        plt.legend(loc='best')
+        plt.title("steady-state A*left+B*right")
+
         plt.savefig(figname)
         print "file written...",figname
-    return P
+
+        plt.figure()
+        #plt.subplot(2,1,2)
+        plt.plot(fluxp,label='pos')
+        plt.plot(fluxn,'--',label='neg')
+        plt.xlabel("bin number")
+        plt.ylabel("flux (1/ps)")
+        plt.title("flux[0]=%f.4"%(flux[0]))
+        plt.legend(loc='best')
+        plt.savefig(figname+"flux.png")
+        print "file written...",figname+"flux.png"
+
+    return P,Deff,R,h,prob
 
 
+########
+### 5) PARTITIONING
+###    in steady-state, equilibrium, transient regime
+
+def calc_mean_prob(prob):
+    # membrane = everything except first and last bin
+    prob_mem = np.sum(prob[1:-1])/(len(prob)-2)    # = mean condentration in membrane
+    prob_wat = (prob[0]+prob[-1])/2.               # = mean concentration in water (borders)
+    return prob_mem,prob_wat
+
+def analyze_partitioning_steadystate(F,st,end,prob1,prob2,prob,ref,):
+    """Compare the membrane/water partitioning beteen steady-state and equilibrium"""
+
+    # partitioning in steady-state
+    #-----------------------------
+    # steady-state, but actually imitates equilibrium
+    # prob1: ref is st, prob2: ref is end, prob: not really ref
+    # probE: put probE[ref]=1.  # this is a choice
+    probE = prob1*np.exp(-F[st]+F[ref]) + prob2*np.exp(-F[end]+F[ref])
+
+    prob1_mem,prob1_wat = calc_mean_prob(prob1)
+    prob2_mem,prob2_wat = calc_mean_prob(prob2)
+    prob_mem, prob_wat  = calc_mean_prob(prob)   # with A,B
+    probE_mem,probE_wat = calc_mean_prob(probE)  # steady-state imitates equilibrium
+
+    # partitioning in equilibrium
+    #-----------------------------
+    part = np.exp(-(F-F[ref]))   # put reference in bin ref
+
+    part_mem,part_wat = calc_mean_prob(part[st:end+1])
+
+    print "--- analyze partitioning steady state ---"
+    print "st  end    prob[st]   prob[end]    prob_mem   prob_wat prob_mem/prob_wat"
+    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob[0],
+          prob[-1],prob_mem,prob_wat,prob_mem/prob_wat, "prob-A-B")
+    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob1[0],
+          prob1[-1],prob1_mem,prob1_wat,prob1_mem/prob1_wat, "prob-right")
+    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob2[0],
+          prob2[-1],prob2_mem,prob1_wat,prob2_mem/prob1_wat, "prob-left")
+    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,probE[0],
+          probE[-1],probE_mem,probE_wat,probE_mem/probE_wat, "prob-steady-state-equil")
+    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,part[st],
+          part[end],part_mem,part_wat,part_mem/part_wat, "prob-equilibr")
+    print "-"*3
+
+
+# TODO type comments for this function
+def calc_partition_coefficient(F,st,end,doprint=True):
+    assert st>0 or end < len(F)-1
+    F0 = F[0]
+    F1 = np.mean(F[:st])     # left
+    F2 = np.mean(F[st:end])  # center
+    F3 = np.mean(F[end:])    # right
+    DeltaF_10 = F1-F0   #
+    DeltaF_20 = F2-F0   #
+    K = np.exp(-DeltaF_20)
+
+    v = F-min(F)
+    c0 = np.exp(-v[0])
+    c1 = np.mean(np.exp(-v[:st]))
+    c2 = np.mean(np.exp(-v[st:end]))
+    c3 = np.mean(np.exp(-v[end:]))
+    K_10 = c1/c0
+    K_20 = c2/c0
+
+    if doprint:
+        print "st,end",
+        print "F0-left-cent",
+        print "DF_left-0",
+        print "DF_cent-0",
+        print "K=exp(-DF)",
+        print "K=left/0",
+        print "K=cent/0"
+
+    if True:
+        print st,end,
+        print F0,F1,F2,
+        print DeltaF_10,
+        print DeltaF_20,
+        print K,
+        print K_10,
+        print K_20
+
+    if False:
+        print "st,end",st,end,
+        print "F0-left-cent",F0,F1,F2,
+        print "DF_left-0",DeltaF_10,
+        print "DF_cent-0",DeltaF_20,
+        print "K=exp(-DF)",K,
+        print "K=left/0",K_10,
+        print "K=cent/0",K_20
+
+    return K_20
+
+def analyze_partitioning_transient(F,D,pbc,dt,st,end,times,p_0,figname):
+    from mcdiff.utils import init_rate_matrix
+    import scipy
+    import scipy.linalg
+    import numpy.linalg
+    #from mcdiff.permeability.perm import calc_flux, calc_mean_prob
+
+    # store profiles
+    plt.figure()
+    ax = plt.subplot(211)
+    plt.plot(F,"o")
+    plt.plot([st,st],[min(F)-0.1,max(F)+0.1],color='r',lw='2')
+    plt.plot([end,end],[min(F)-0.1,max(F)+0.1],color='r')
+    plt.ylabel("F (kBT)")
+    ax = plt.subplot(212)
+    plt.plot(np.arange(len(D))+0.5,D,"o")
+    plt.plot([st,st],[min(D)-0.1,max(D)+0.1],color='r')
+    plt.plot([end,end],[min(D)-0.1,max(D)+0.1],color='r')
+    plt.ylabel("D (A/ps)")
+    plt.xlabel("bin number")
+    plt.savefig(figname+".FD.png")
+    plt.close()
+
+    data = np.zeros((len(times),7))
+    plt.figure(1)
+    plt.figure(2)
+    for i,lagtime in enumerate(times):
+        rate = init_rate_matrix(len(F),F,np.log(D),pbc,)
+        prop = scipy.linalg.expm2(lagtime*rate)
+        prob = np.dot(prop,p_0)
+        plt.figure(1)
+        plt.plot(prob)
+        p_mem,p_wat = calc_mean_prob(prob[st:end+1])   # p_wat is only border
+        p_wat2 = (np.sum(prob[:st+1]) + np.sum(prob[end:]))/(len(F)-end+st+1)  # all water
+        flux,fluxp,fluxn = calc_flux(rate,prob,dt)
+        plt.figure(2)
+        plt.plot(flux)
+        data[i,0] = p_mem
+        data[i,1] = p_wat
+        data[i,2] = prob[st]
+        data[i,3] = prob[end]
+        data[i,4] = flux[st]    # st to st+1
+        data[i,5] = flux[end-1] # end-1 to end
+        data[i,6] = p_wat2
+
+    plt.figure(1)
+    plt.xlabel("bin number")
+    plt.ylabel("concentration")
+    plt.savefig(figname+".profiles.png")
+    plt.figure(2)
+    plt.xlabel("bin number")
+    plt.ylabel("flux (1/ps)")
+    plt.savefig(figname+".fluxes.png")
+
+    # equilibrium
+    equil = np.exp(-(F-min(F)))
+    # rescale to match
+    equil *= np.sum(p_0)/np.sum(equil)
+    equil_mem,equil_wat = calc_mean_prob(equil[st:end+1])
+    equil_wat2 = (np.sum(equil[:st+1]) + np.sum(equil[end:]))/(len(F)-end+st+1)
+    equil_st  = equil[st]
+    equil_end = equil[end]
+    equil_memwat  = equil_mem / equil_wat
+    equil_memwat2 = equil_mem / equil_wat2
+
+    # for plots
+    p_mem = data[:,0]
+    p_wat = data[:,1]
+    p_st  = data[:,2]
+    p_end = data[:,3]
+    flux_st  = data[:,4]
+    flux_end = data[:,5]
+    p_wat2= data[:,6]
+
+    plt.figure(3)
+    ax = plt.subplot(111)
+    plt.plot(times,p_mem,'s-',label='m')
+    plt.plot(times,p_wat2,'s-',label='w')
+    plt.plot(times,p_st, 'o',label='b1')
+    plt.plot(times,p_end,'o',label='b2')
+    plt.plot(times,p_wat,'o-',label='b12')
+    plt.plot(times,np.ones(len(times))*equil_wat2,'-',color='grey')
+    plt.plot(times,np.ones(len(times))*equil_wat,'-',color='grey')
+    plt.plot(times,np.ones(len(times))*equil_mem,'-',color='grey')
+    plt.legend(loc='best')
+    plt.xlabel("lag times (ps)")
+    plt.ylabel("concentration")
+    plt.title("membrane, water, borders")
+    ax.set_xscale("log", nonposx='clip')
+    #ax.set_yscale("log", nonposy='clip')
+    plt.savefig(figname+".conc.png")
+
+    plt.figure(4)
+    ax = plt.subplot(111)
+    plt.plot(times,p_mem/p_wat2,'s-',label='m/w')
+    plt.plot(times,p_mem/p_wat,'o-',label='m/b12')
+    plt.plot(times,np.ones(len(times))*equil_memwat2,'-',color='grey') #label='equil2')
+    plt.plot(times,np.ones(len(times))*equil_memwat,'-',color='grey') #label='equil')
+    plt.legend(loc='best')
+    plt.xlabel("lag times (ps)")
+    plt.ylabel("ratio conc")
+    ax.set_xscale("log", nonposx='clip')
+    #ax.set_yscale("log", nonposy='clip')
+    plt.title("ratio membrane, water, borders")
+    plt.savefig(figname+".concratio.png")
+
+    plt.figure(5)
+    ax = plt.subplot(111)
+    plt.plot(times,flux_st, label='fl-st (1/ps)')
+    plt.plot(times,flux_end,label='fl-end (1/ps)')
+    #plt.plot(times,p_end-p_st, label='Deltap')
+    plt.legend(loc='best')
+    plt.xlabel("lag times (ps)")
+    ax.set_xscale("log", nonposx='clip')
+    ax.set_yscale("log", nonposy='clip')
+    plt.savefig(figname+".fluxDeltap.png")
+    plt.close('all')
