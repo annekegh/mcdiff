@@ -113,6 +113,33 @@ def cut_transitions_square(filename,start,end,outfile,count="cut"):
     assert filename != outfile  # do not overwrite
     write_Tmat_square(A,outfile,lt,count,edges=edges,dt=dt,dn=dn)
 
+def clean_corners_transitions_square(filename,outfile,cut,count="cut"):
+    from mcdiff.tools.extract import write_Tmat_square
+    dim_trans = guess_dim_transition_square(filename)
+    header = read_transition_header(filename)
+    transmatrix = read_transition_square(filename,dim_trans)
+
+    if 'edges' in header:
+        edges = header['edges']
+    else:
+        edges = None
+    #count = header['count']
+    lt = header['lt']
+    dt = header['dt']
+    dn = header['dn']
+
+    # cut the corners
+    n = len(transmatrix)
+    for i in range(n):
+        for j in range(n):
+            #if i+j < cut:             # left-upper
+            #if i+j > len(tmat)+cut:   # right-down
+            if abs(i-j)>cut:           # left-down and right-upper
+                  transmatrix[i,j]=0.
+
+    assert filename != outfile  # do not overwrite
+    write_Tmat_square(transmatrix,outfile,lt,count,edges=edges,dt=dt,dn=dn)
+
 def cyclic_permuation_transitions_square(filename,shift,outfile,): #count=None):
     """Shift indices periodically
     Read transitions from file and cut out the piece [shift:] and paste it behind [:shift],

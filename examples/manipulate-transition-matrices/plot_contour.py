@@ -2,7 +2,6 @@
 
 from mcdiff.tools.ffmc import read_transition_square
 from mcdiff.tools.transplot import plot_transition
-import numpy as np
 
 shift = 20  # lag time, or "dn"
 nbins = 100
