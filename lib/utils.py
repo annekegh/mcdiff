@@ -25,18 +25,29 @@ import numpy.linalg
 # EXTRA FUNCTIONS
 #------------------------
 
-def init_rate_matrix(n,v,w,pbc,st=None,end=None,side=None):
-    # st -- absorbing or reflective bin to the left
-    # end -- absorbing or reflective bin to the right
-    # side -- which side is absorbing (both, left, right)
+def init_rate_matrix(n,v,w,pbc,pull,st=None,end=None,side=None):
+    """initialize the rate matrix
+    pull -- external force in kBT/Angstrom
+            pull>0 (<0) if force to the right (left), so adds neg (pos) slope to F
+    st -- absorbing or reflective bin to the left
+    end -- absorbing or reflective bin to the right
+    side -- which side is absorbing (both, left, right)
+    """
     if pbc:
         if st is not None or end is not None or side is not None:
             print "you are asking too much:"
             print "asking for rate matrix with pbc=True AND with absorption/reflection in bins=",st,end
             raise NotImplemented
-        return init_rate_matrix_pbc(n,v,w,)  # PBC
+        if abs(pull)>1.e-8:
+            return init_rate_matrix_pbc_pull(n,v,w,pull)  # PBC PULL
+        else:
+            return init_rate_matrix_pbc(n,v,w,)  # PBC
 
     else:
+        if abs(pull)>1.e-8:
+            print "you are asking too much:"
+            print "asking for rate matrix with pbc=False AND with pull=",pull
+            raise NotImplemented
         if st is None and end is None and side is None:
             rate = init_rate_matrix_nopbc(n,v,w)  # NOPBC, left=right=reflective
         else:
@@ -117,6 +128,52 @@ def init_rate_matrix_nopbc(n,v,w):
         rate[i,i] = - rate[i-1,i] - rate[i+1,i]
     return rate
 
+def init_rate_matrix_pbc_pull(n,v,w,pull):
+    """initialize rate matrix from potential vector v and diffusion
+    vector w = log(D(i)/delta^2)
+    and pull = difference between bins due to extra force"""
+    assert len(v) == n  # number of bins
+    assert len(w) == n
+    rate = np.float64(np.zeros((n,n)))  # high precision
+
+    # pull has already been converted to dF between bins
+    #pull in kBT/angstrom
+    #dz   in angstrom
+    #pull = -dF/dz => dF = -dz*pull  in kBT
+    #dF = -dz*pull
+    dF = pull  # renamed
+
+    # off-diagonal elements
+    diffv = v[1:]-v[:-1] #length n-1  # diffv[i] = v[i+1]-v[i]
+    diffv += dF      # EXTRA: adapt for pull
+    exp1 = w[:n-1]-0.5*diffv
+    exp2 = w[:n-1]+0.5*diffv
+    rate.ravel()[n::n+1] = np.exp(exp1)[:n-1]
+    rate.ravel()[1::n+1] = np.exp(exp2)[:n-1]
+    #this amounts to doing:
+    #for i in range(n-1):
+    #    rate[i+1,i] = np.exp(w[i]-0.5*(v[i+1]-v[i]))  # EXTRA dF
+    #    rate[i,i+1] = np.exp(w[i]-0.5*(v[i]-v[i+1]))  # EXTRA -dF
+
+    # EXTRA correct the energy difference in the corners
+    # because v[i] = F[i] + i*dF
+    # so we have v[0]-v[-1] = F[0]-F[-1] + 0 - (N-1)dF
+    # so very large difference downwards -(N-1)*dF = dF-N*dF
+    # we replace this by difference upwards dF by adding N*dF
+
+    # corners
+    rate[0,-1] = np.exp(w[-1])*np.exp(-(v[0]-v[-1]+len(v)*dF)/2.)
+    rate[-1,0] = np.exp(w[-1])*np.exp(+(v[0]-v[-1]-len(v)*dF)/2.)
+    # fix conservation of probability
+    rate[0,0]   = - rate[1,0] - rate[-1,0]
+    rate[-1,-1] = - rate[-2,-1] - rate[0,-1]
+
+    # diagonal elements
+    for i in range(1,n-1):
+        rate[i,i] = - rate[i-1,i] - rate[i+1,i]
+    return rate
+
+
 ##### CONSTRUCT #####
 # in the following:
 ##### UNITS #####
@@ -133,7 +190,7 @@ def init_rate_matrix_nopbc(n,v,w):
 # input: F and D profiles
 # output: rate matrix, propagator, extra matrices
 
-def construct_rate_matrix_from_F_D(F,D,dx,dt,pbc=True,st=None,end=None,side=None):
+def construct_rate_matrix_from_F_D(F,D,dx,dt,pbc=True,pull=0,st=None,end=None,side=None):
     """compute the rate matrix"""
     # dx in angstrom
     # dt in ps
@@ -146,9 +203,9 @@ def construct_rate_matrix_from_F_D(F,D,dx,dt,pbc=True,st=None,end=None,side=None
     v = F                   # v in unit kBT
 
     if pbc or st is not None or end is not None or side is not None:
-        rate = init_rate_matrix(n,v,w,pbc,st=st,end=end,side=side)  # PBC or ABSORBING
+        rate = init_rate_matrix(n,v,w,pbc,pull=pull,st=st,end=end,side=side)  # PBC or ABSORBING
     else:
-        rate = init_rate_matrix(n,v,w[:-1],False,st=st,end=end,side=side)  # NOPBC
+        rate = init_rate_matrix(n,v,w[:-1],False,pull=pull,st=st,end=end,side=side)  # NOPBC
 
     # check: verify normalization
     #print "norm prop: np.sum(norm**2)", np.sum(np.sum(rate,0)**2)
@@ -286,10 +343,10 @@ def log_likelihood(n,ilag,transition,lagtime,rate):
     return log_like
 
 
-def log_like_lag(num_bin,num_lag, v,w,lagtimes,transition, pbc):
+def log_like_lag(num_bin,num_lag, v,w,lagtimes,transition, pbc,pull):
     """calculate log-likelihood summed over all umbrella windows"""
     log_like = np.float64(0.0)
-    rate = init_rate_matrix(num_bin,v,w,pbc)
+    rate = init_rate_matrix(num_bin,v,w,pbc,pull)
 
     for ilag in range(num_lag):
         # add several contributions

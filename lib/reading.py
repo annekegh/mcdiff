@@ -51,6 +51,7 @@ def read_transition_header(filename):
             if words[0] == "#edges":
                 edges = [float(word) for word in words[1:]]  # skip first
                 header['edges'] = np.array(edges)   # bin edges
+                header['dz'] = (edges[-1]-edges[0])/float(len(edges)-1)  # bin width
             elif words[0] == "#dt":
                 header['dt'] = float(words[1])
             elif words[0] == "#dn":

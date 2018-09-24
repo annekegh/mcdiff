@@ -60,8 +60,10 @@ class MCState(object):
 
         self.k = k  # spring constant in function spring
 
-    def set_model(self,model,data,ncosF,ncosD,ncosDrad):
-        self.data = data   # transitions etc        
+    def set_model(self,model,data,ncosF,ncosD,ncosDrad,pull):
+        self.data = data   # transitions etc
+        # convert pull (kBT/angstrom) to dF (kBT) between bins
+        self.pull = -pull*self.data.dz   # dF/dz = -pull
 
         ncosP = 0
 
@@ -76,7 +78,7 @@ class MCState(object):
             bessel0_zeros,bessels = setup_bessel_functions(self.lmax,self.model.dim_rad,)
             self.model.bessels = bessels
             self.model.bessel0_zeros = bessel0_zeros
-            self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc)
+            self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc,self.pull)
         else:
             if model == "CosinusModel":
                 self.model = CosinusModel(self.data,self.D0,ncosF,ncosD,ncosP)
@@ -96,7 +98,7 @@ class MCState(object):
     def init_log_like(self):
         # initialize log_like
         if self.do_radial:
-            self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc)
+            self.model.rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.pbc,self.pull)
             log_like = rad_log_like_lag(self.model.dim_v, self.model.dim_rad,
                   self.data.dim_lt, self.model.rate, self.model.wrad,
                   self.data.list_lt, self.data.list_trans, self.model.redges,
@@ -104,7 +106,7 @@ class MCState(object):
         else:
             log_like = log_like_lag(self.model.dim_v, self.data.dim_lt,
                   self.model.v, self.model.w, self.model.list_lt,
-                  self.data.list_trans, self.pbc)
+                  self.data.list_trans, self.pbc,self.pull)
         
         if log_like is None:
             raise ValueError("Initial propagator has non-positive elements")
@@ -202,7 +204,7 @@ class MCState(object):
         if timezero_try > -0.5*self.data.min_lt:     # ensure that shortest lagtime shrinks to no less than 1/2
             lagtimes_try = self.data.list_lt + timezero_try
             log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt,
-                self.model.v, self.model.w, lagtimes_try, self.data.list_trans, self.pbc)
+                self.model.v, self.model.w, lagtimes_try, self.data.list_trans, self.pbc, self.pull)
 
             # Metropolis acceptance
             if log_like_try is not None and not np.isnan(log_like_try):  # propagator is well behaved
@@ -240,7 +242,7 @@ class MCState(object):
             vt = self.model.calc_profile(coefft, self.model.v_basis)
 
         log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt,
-                vt, self.model.w, self.model.list_lt, self.data.list_trans, self.pbc)
+                vt, self.model.w, self.model.list_lt, self.data.list_trans, self.pbc, self.pull)
 
         # Metropolis acceptance
         if log_like_try is not None and not np.isnan(log_like_try):  # propagator is well behaved
@@ -275,7 +277,7 @@ class MCState(object):
             wt = self.model.calc_profile(coefft, self.model.w_basis)
 
         log_like_try = log_like_lag(self.model.dim_v, self.data.dim_lt,
-                self.model.v, wt, self.model.list_lt, self.data.list_trans, self.pbc)
+                self.model.v, wt, self.model.list_lt, self.data.list_trans, self.pbc, self.pull)
 
         if log_like_try is not None and not np.isnan(log_like_try):   # propagator is well behaved
             # add restraints to smoothen
@@ -337,7 +339,7 @@ class MCState(object):
 
     def check_propagator(self,lagtime):
         import scipy
-        rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.model.pbc)
+        rate = init_rate_matrix(self.model.dim_v,self.model.v,self.model.w,self.model.pbc,self.pull)
         vals,vecs = np.linalg.eig(rate)
         line = ""
         for v in vals:

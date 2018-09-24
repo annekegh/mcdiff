@@ -50,7 +50,7 @@ def do_mc_cycles(MC,logger):
 def find_parameters(filenames,pbc,model,
       dv,dw,dwrad,D0,dtimezero,temp,temp_end,nmc,nmc_update,seed,outfile, ncosF,ncosD,ncosDrad,
       move_timezero,initfile,k,
-      lmax,reduction): 
+      lmax,reduction,pull): 
     print "python program to extract diffusion coefficient and free energy from transition counts"
     print "copyright: Gerhard Hummer (NIH, July 2012)"
     print "adapted by An Ghysels (August 2012)\n"
@@ -69,7 +69,7 @@ def find_parameters(filenames,pbc,model,
         data = RadTransitions(filenames)
     else:
         data = Transitions(filenames,reduction=reduction)
-    MC.set_model(model,data,ncosF,ncosD,ncosDrad)
+    MC.set_model(model,data,ncosF,ncosD,ncosDrad,pull)
 
     # USE INFO from INITFILE
     if initfile is not None:

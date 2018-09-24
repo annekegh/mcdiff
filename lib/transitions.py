@@ -53,13 +53,16 @@ class Transitions(object):
             self.dim_trans = dim_trans
             if 'edges' in header:
                 self.edges = header['edges']
+                self.dz = header['dz']
             else:
                 self.edges = np.arange(self.dim_trans+1.)
+                self.dz = 1.
         else: # assert same settings
             assert self.count == header['count']
             assert self.dim_trans == dim_trans
             if 'edges' in header:
                 assert (self.edges == header['edges']).all()
+                assert self.dz == header['dz']
 
         self.list_lt.append(header['lt'])
         self.list_dt.append(header['dt'])

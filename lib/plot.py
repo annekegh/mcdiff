@@ -114,7 +114,8 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
     #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
-    plt.ylim(0.,0.6)
+    #plt.ylim(0.,0.6)
+    plt.ylim(ymin=0)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
