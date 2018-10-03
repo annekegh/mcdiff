@@ -372,7 +372,6 @@ def analyze_partitioning_transient(F,D,pbc,dt,st,end,times,p_0,figname):
     import scipy
     import scipy.linalg
     import numpy.linalg
-    #from mcdiff.permeability.perm import calc_flux, calc_mean_prob
 
     # store profiles
     plt.figure()

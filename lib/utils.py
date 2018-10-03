@@ -25,10 +25,12 @@ import numpy.linalg
 # EXTRA FUNCTIONS
 #------------------------
 
-def init_rate_matrix(n,v,w,pbc,pull,st=None,end=None,side=None):
+def init_rate_matrix(n,v,w,pbc,pull=None,st=None,end=None,side=None):
     """initialize the rate matrix
     pull -- external force in kBT/Angstrom
             pull>0 (<0) if force to the right (left), so adds neg (pos) slope to F
+    ! assume unit conversion has happened
+    pull -- now refers to -dz*pull = dF, in unit kBT
     st -- absorbing or reflective bin to the left
     end -- absorbing or reflective bin to the right
     side -- which side is absorbing (both, left, right)
@@ -38,13 +40,13 @@ def init_rate_matrix(n,v,w,pbc,pull,st=None,end=None,side=None):
             print "you are asking too much:"
             print "asking for rate matrix with pbc=True AND with absorption/reflection in bins=",st,end
             raise NotImplemented
-        if abs(pull)>1.e-8:
+        if pull is not None:
             return init_rate_matrix_pbc_pull(n,v,w,pull)  # PBC PULL
         else:
             return init_rate_matrix_pbc(n,v,w,)  # PBC
 
     else:
-        if abs(pull)>1.e-8:
+        if pull is not None:
             print "you are asking too much:"
             print "asking for rate matrix with pbc=False AND with pull=",pull
             raise NotImplemented
@@ -146,24 +148,31 @@ def init_rate_matrix_pbc_pull(n,v,w,pull):
     # off-diagonal elements
     diffv = v[1:]-v[:-1] #length n-1  # diffv[i] = v[i+1]-v[i]
     diffv += dF      # EXTRA: adapt for pull
+                     # diffv'[i] = v'[i+1]-v'[i] = v[i+1]-v[i] +dF
     exp1 = w[:n-1]-0.5*diffv
     exp2 = w[:n-1]+0.5*diffv
     rate.ravel()[n::n+1] = np.exp(exp1)[:n-1]
     rate.ravel()[1::n+1] = np.exp(exp2)[:n-1]
     #this amounts to doing:
     #for i in range(n-1):
-    #    rate[i+1,i] = np.exp(w[i]-0.5*(v[i+1]-v[i]))  # EXTRA dF
-    #    rate[i,i+1] = np.exp(w[i]-0.5*(v[i]-v[i+1]))  # EXTRA -dF
+    #    rate[i+1,i] = np.exp(w[i]-0.5*(v'[i+1]-v'[i]))  # EXTRA dF
+    #    rate[i,i+1] = np.exp(w[i]-0.5*(v'[i]-v'[i+1]))  # EXTRA -dF
 
     # EXTRA correct the energy difference in the corners
-    # because v[i] = F[i] + i*dF
-    # so we have v[0]-v[-1] = F[0]-F[-1] + 0 - (N-1)dF
-    # so very large difference downwards -(N-1)*dF = dF-N*dF
-    # we replace this by difference upwards dF by adding N*dF
+    ## in case one starts from v', then:
+    ## because v'[i] = v[i] + i*dF
+    ## so we have v'[0]-v'[-1] = v[0]-v[-1] + 0 - (N-1)dF
+    ## so very large difference downwards -(N-1)*dF = dF-N*dF
+    ## we replace this by difference upwards dF by adding N*dF
+    #rate[0,-1] = np.exp(w[-1])*np.exp(-(v'[0]-v'[-1]+len(v)*dF)/2.)
+    #rate[-1,0] = np.exp(w[-1])*np.exp(+(v'[0]-v'[-1]-len(v)*dF)/2.)
 
+    # in case one starts from v, then:
+    # we want v'[0]-v'[-1] -> v[0]-v[-1]+dF, so EXTRA dF
+    # we want v'[-1]-v'[0] -> v[-1]-v[0]+dF, so EXTRA -dF
     # corners
-    rate[0,-1] = np.exp(w[-1])*np.exp(-(v[0]-v[-1]+len(v)*dF)/2.)
-    rate[-1,0] = np.exp(w[-1])*np.exp(+(v[0]-v[-1]-len(v)*dF)/2.)
+    rate[0,-1] = np.exp(w[-1]-0.5*(v[0]-v[-1]+dF))
+    rate[-1,0] = np.exp(w[-1]-0.5*(v[0]-v[-1]-dF))
     # fix conservation of probability
     rate[0,0]   = - rate[1,0] - rate[-1,0]
     rate[-1,-1] = - rate[-2,-1] - rate[0,-1]
@@ -190,7 +199,7 @@ def init_rate_matrix_pbc_pull(n,v,w,pull):
 # input: F and D profiles
 # output: rate matrix, propagator, extra matrices
 
-def construct_rate_matrix_from_F_D(F,D,dx,dt,pbc=True,pull=0,st=None,end=None,side=None):
+def construct_rate_matrix_from_F_D(F,D,dx,dt,pbc=True,pull=None,st=None,end=None,side=None):
     """compute the rate matrix"""
     # dx in angstrom
     # dt in ps

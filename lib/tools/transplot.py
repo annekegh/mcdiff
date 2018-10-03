@@ -16,6 +16,8 @@ def plot_transition(trans,shift,figname=None):
     plt.figure()
     plt.contourf(X,Y,trans)
     plt.axis('equal')
+    plt.xlabel("start")
+    plt.ylabel("end")
     plt.title("dn=%i" %shift)
     plt.savefig(figname)
     print "file written:",figname
