@@ -137,30 +137,40 @@ def calc_Deff_1(F,D,st=None,end=None,ave=0,dz=None):
     #print "Deff_1",Deff
     return Deff
 
-def calc_Deff_2(F,D,dx,dt):
+def calc_Deff_2(F,D,dx,dt,zero=1.e-12):
     """Compute effective D through series of layers, formula Ghysels 2016"""
     # F in units kBT, D in units A^2/ps
+    # zero -- cutoff for the pseudo-inverse of the rate matrix
     assert len(F) == len(D)
     assert len(F) > 1  # can't take Fmidst otherwise
     # effective D
     # 1) part average D
     Dave = calc_Dave_midF(F,D)
     # 2) part with rate matrix
-    Dinh = calc_Dinh(F,D,dx,dt)
+    Dinh = calc_Dinh(F,D,dx,dt,zero)
     return Dave + Dinh
 
 
-def calc_Dinh(F,D,dx,dt):
+def calc_Dinh(F,D,dx,dt,zero):
     """Compute inhomogeneous contribution to Deff"""
+    # F in units kBT, D in units A^2/ps
+    # zero -- cutoff for the pseudo-inverse of the rate matrix
     # compute the rate matrix
     rate = construct_rate_matrix_from_F_D(F,D,dx,dt)  # in 1/dt
-    # compute pseudo-inverse
     # symmetrize and pseudo-inverse
     a = np.exp(-(F-min(F))/2.)
     M = np.diag(a)   #/ np.sum(a**2)
     M1 = np.diag(1./a) #* np.sum(a**2)
     rateS = np.dot(np.dot(M1,rate),M)      # symmetrized rate, in 1/dt
-    rateS1 = np.linalg.pinv(rateS,1.e-7)   # pseudo-inverse, in dt
+    rateS1 = np.linalg.pinv(rateS,zero)    # pseudo-inverse, in dt
+
+    # verification numerical stability
+    #vals,vecs = np.linalg.eigh(rateS)
+    #vals1,vecs = np.linalg.eigh(rateS1)
+    #vals= np.sort(vals)  # okay, has highest eigenvalue equal to 1e-16   # NOOOO numerical
+    
+    #vals1= np.sort(abs(vals1))  # okay, has highest eigenvalue equal to 1e-16
+    #print "vals",vals[-2:],vals1[:2]
     #print "rateS",rateS[:4,:4]
 
     # gradient-like vector
