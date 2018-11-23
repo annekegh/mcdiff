@@ -4,22 +4,25 @@
 # $1 is the run
 # $2 is the lag time
 # how to run:
-#    chmod u+x example.sh     # to make the file executable
-#    ./example.sh 1 20        # run=1, lagtime=20
+#    chmod u+x example.sh        # to make the file executable
+#    ./example.sh HexdWat 1 20   # system=HexdWat, run=1, lagtime=20
+#    ./example.sh HexdWat 2 20   # continue the previous Monte Carlo run
 
 export PYTHONPATH=$HOME/lib/python/:$PYTHONPATH
 
 nmc=2000    # test run
 #nmc=50000   # equilibration of parameters, more could be needed
 #nmc=100000  # production run
-system=HexdWat  # popc
+
+system=$1       # the system, here HexdWat
 run=$1          # run  (if you do multiple after each other)
 lt=$2           # lag time
+
 nbins=100       # number of bins
 fk=10    # basis set for F
 dk=6     # basis set for D
 
-letter=A
+letter=A  # you could make this the 4th argument of the script...
 
 # manage dirs/files
 #------------------
@@ -29,6 +32,7 @@ if [ ! -d "output/$system" ];  then mkdir output/$system ;  fi
 if [ ! -d "$outdir" ]; then mkdir $outdir ; fi 
 
 if [ "$run" -gt 1 ]; then
+  # when continuing previous run, point to the previous directory
   initrun=`echo "$run-1" | bc`   # compute the previous run
   initdir=output/$system/out.ncosf${fk}d${dk}.run$initrun/
 fi
