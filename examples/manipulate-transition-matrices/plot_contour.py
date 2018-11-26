@@ -1,4 +1,8 @@
-"""How to plot the transition matrix (square)"""
+"""How to plot the transition matrix (square)
+
+usage:
+  python plot_contour.py
+"""
 
 from mcdiff.tools.ffmc import read_transition_square
 from mcdiff.tools.transplot import plot_transition

@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Script to run package mcdiff
-# $1 is the run
-# $2 is the lag time
+# $1 is the name of the system (to find directories)
+# $2 is the run
+# $3 is the lag time
+#
 # how to run:
 #    chmod u+x example.sh        # to make the file executable
 #    ./example.sh HexdWat 1 20   # system=HexdWat, run=1, lagtime=20
@@ -10,19 +12,17 @@
 
 export PYTHONPATH=$HOME/lib/python/:$PYTHONPATH
 
-nmc=2000    # test run
+#nmc=2000    # test run
 #nmc=50000   # equilibration of parameters, more could be needed
-#nmc=100000  # production run
+nmc=100000  # production run
 
 system=$1       # the system, here HexdWat
-run=$1          # run  (if you do multiple after each other)
-lt=$2           # lag time
+run=$2          # run  (if you do multiple after each other)
+lt=$3           # lag time
 
 nbins=100       # number of bins
 fk=10    # basis set for F
 dk=6     # basis set for D
-
-letter=A  # you could make this the 4th argument of the script...
 
 # manage dirs/files
 #------------------
@@ -49,17 +49,23 @@ echo initdir $initdir
 #------------------------------------------------
 ## use all replicas
 #line=""
-#for letter in / #A B C D
+#for letter in A B C D
 #do
-#  dir=~/diffusion/RICK/$system-charmm/pbctrans/
-#  line="$line $dir/transitions.nbins$nbins.$lt.pbc.dat"
+#  #extend the line
+#  dir="data/$system/"
+#  line="$line $dir/transitions.nbins$nbins.$lt.pbc.$letter.dat"
 #done
 
-# ... or, just use one replica with letter
-line="data/$system/transitions.nbins$nbins.$lt.pbc.$letter.dat"
+# ... or, just use one file with letter  # this is PREFERRED!
+# after having executed merge.py in directory manipulate-transition-matrices/
+line="manipulate-transition-matrices/transitions.merge.dat"
 echo LINE $line
 # this line will be fed to the Monte Carlo
 
+# advice: Merge the transition matrices of the different replicates first,
+# to a new merged transition matrix, and then run the Monte Carlo.
+# This is faster + more accurate than running Monte Carlo with
+# a set of transition matrices.
 
 # run the Monte Carlo (Bayesian Analysis)
 #----------------------------------------
