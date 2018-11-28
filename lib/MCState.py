@@ -347,7 +347,7 @@ class MCState(object):
             else: VAL = v
             line += str(VAL)+" "
 
-        propagator = scipy.linalg.expm2(lagtime*rate)
+        propagator = scipy.linalg.expm(lagtime*rate)
         vals,vecs = np.linalg.eig(propagator)
         line2 = ""
         for v in vals:

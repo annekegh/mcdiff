@@ -310,7 +310,7 @@ def log_likelihood(n,ilag,transition,lagtime,rate):
     # lagtime -- in dt  # TODO confirm elders
     # rate -- rate matrix, in 1/dt
     # calc propagator as matrix exponential
-    propagator = scipy.linalg.expm2(lagtime*rate)
+    propagator = scipy.linalg.expm(lagtime*rate)
     # sum over all transitions
     # GH: in case of numerical issues try: np.log(np.abs(propagator[i,j]))
     log_like = np.float64(0.0)  # use high precision

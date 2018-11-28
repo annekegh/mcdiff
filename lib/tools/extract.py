@@ -7,7 +7,7 @@ AG, August 21, 2013"""
 import numpy as np
 
 def count_2D(B,X,Y,Z,edges,redges,shift=1):
-    print B.shape
+    print(B.shape)
     assert len(B.shape) == 3
     assert B.shape[0] == len(redges)
     assert B.shape[1] == len(edges)+1
@@ -24,25 +24,13 @@ def count_2D(B,X,Y,Z,edges,redges,shift=1):
     dR = np.sqrt(dX**2+dY**2)
     dr = np.digitize(dR,redges)
 
-    #print max(digitized)
-    #print max(dr)
-
+    #print(max(digitized))
+    #print(max(dr))
     assert len(dr) == len(zstart)
     assert len(dr) == len(zend)
 
-#    i=0
     for start,end,r in zip(zstart,zend,dr):
-        B[r-1,end,start] += 1 
-
-#        if r > 10:
-        #nbins = len(edges)-1
-        #D = min( abs(end-start), abs(end-start-nbins), abs(end-start+nbins) )
-        #if D >= 5:
-#           print "step", i
-#           print shift, start, end
-           #print stop
-#        i+=1
-
+        B[r-1,end,start] += 1
     return B
 
 
@@ -61,21 +49,20 @@ def write_Tmat_square(A,filename,lt,count,edges=None,dt=None,dn=None):
     lt  --  lag time in ps
     edges  --  bin edges
     """
-    f = file(filename,"w+")
     L = len(A)  # number of bins + 1
-    print >> f, "#lt   ", lt  # lag time
-    print >> f, "#count", count # how transitions were counted
+    with open(filename,"w+") as f:
+        f.write("#lt    {}\n".format(lt))  # lag time
+        f.write("#count {}\n".format(count)) # how transitions were counted
+    
+        if dt != None:
+            f.write("#dt    {}\n".format(dt))
+        if dn != None:
+            f.write("#dn    {}\n".format(dn))
+        if edges is not None:
+            f.write("#edges  "+" ".join([str(b) for b in edges])+"\n")
 
-    if dt != None:
-        print >> f, "#dt   ", dt
-    if dn != None:
-        print >> f, "#dn   ", dn
-    if edges != None:
-        print >> f, "#edges ", " ".join([str(b) for b in edges])
-
-    for i in xrange(L):
-        print >> f, " ".join([str(val) for val in A[i,:]])
-    f.close()
+        for i in range(L):
+            f.write(" ".join([str(val) for val in A[i,:]])+"\n")
 
 def write_Tmat_cube(B,filename,lt,count,edges=None,redges=None,dt=None,dn=None):
     """Write the transition matrix counts in fixed format
@@ -83,29 +70,28 @@ def write_Tmat_cube(B,filename,lt,count,edges=None,redges=None,dt=None,dn=None):
     edges  --  bin edges
     redges  --  bin edges of radial bins
     """
-    f = file(filename,"w+")
     size_r = B.shape[0]  # number of bins + 1
     size_z = B.shape[1]
     assert B.shape[2] == B.shape[1]
-    
-    print >> f, "#lt   ", lt  # lag time
-    print >> f, "#count", count # how transitions were counted
 
-    if dt != None:
-        print >> f, "#dt   ", dt
-    if dn != None:
-        print >> f, "#dn   ", dn
-    if edges != None:
-        print >> f, "#edges ", " ".join([str(b) for b in edges])
-    if redges != None:
-        print >> f, "#redges ", " ".join([str(b) for b in redges])
+    with open(filename,"w+") as f:
 
-    for i in xrange(size_r):
-      for j in xrange(size_z):
-        print >> f, " ".join([str(val) for val in B[i,j,:]])
-      print >> f, "-"
-    f.close()
+        f.write("#lt    {}\n".format(lt))  # lag time
+        f.write("#count {}\n".format(count)) # how transitions were counted
 
+        if dt != None:
+            f.write("#dt    {}\n".format(dt))
+        if dn != None:
+            f.write("#dn    {}\n".format(dn))
+        if edges is not None:
+            f.write("#edges  "+" ".join([str(b) for b in edges])+"\n")
+        if redges is not None:
+            f.write("#redges  "+" ".join([str(b) for b in redges])+"\n")
+
+        for i in range(size_r):
+            for j in range(size_z):
+                f.write(" ".join([str(val) for val in B[i,j,:]])+"\n")
+            f.write("-")
 
 def transition_matrix_add1(A,x,edges,shift=1):
     assert len(x.shape) == 1
@@ -116,22 +102,14 @@ def transition_matrix_add1(A,x,edges,shift=1):
     #  for i in digitized:
     #    assert i > 0
     #    assert i < len(edges)
-    #print "min,max,A.shape"
-    #print min(digitized),max(digitized),A.shape
-    #print "min,max",
-    #print min(x),max(x)
+    #print("min,max,A.shape")
+    #print(min(digitized),max(digitized),A.shape)
+    #print("min,max",min(x),max(x))
     # periodic boundary conditions: just checking
-    print "check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1])
-    #i = 0
+    print("check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1]))
+
     for start,end in zip(digitized[:-shift],digitized[shift:]):
-        #nbins = len(edges)-1
-        #D = min( abs(end-start), abs(end-start-nbins), abs(end-start+nbins) )
-        #if D >= 5:
-        #   print "step", i
-        #   print shift, start, end
-        #   #print stop
         A[end,start]+=1
-        #i += 1
     return A
 
 def transition_matrix_add1_npt(A,x,zpbc,nbins,shift=1):
@@ -143,27 +121,11 @@ def transition_matrix_add1_npt(A,x,zpbc,nbins,shift=1):
     digitized = np.zeros(x.shape)
     for i in xrange(len(digitized)):
         digitized[i] = np.digitize([x[i]],(arr*zpbc[i]/nbins))
-    #digitized = np.digitize(x,edges)
-    #if False:  # pbc
-    #  for i in digitized:
-    #    assert i > 0
-    #    assert i < len(edges)
-    #print "min,max,A.shape"
-    #print min(digitized),max(digitized),A.shape
-    #print "min,max",
-    #print min(x),max(x)
     # periodic boundary conditions: just checking
-    print "check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1])
-    #i = 0
+    print("check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1]))
+
     for start,end in zip(digitized[:-shift],digitized[shift:]):
-        #nbins = len(edges)-1
-        #D = min( abs(end-start), abs(end-start-nbins), abs(end-start+nbins) )
-        #if D >= 5:
-        #   print "step", i
-        #   print shift, start, end
-        #   #print stop
         A[end,start]+=1
-        #i += 1
     return A
 
 
@@ -174,10 +136,10 @@ def transition_matrix_add2(A,x,edges,shift=1):
     assert (x<edges[-1]).all()
     N = len(edges)-1
     L = edges[-1]-edges[0]
-    print edges[0], edges[-1], "L",L, "L/2",L/2.
+    print(edges[0], edges[-1], "L",L, "L/2",L/2.)
     digitized = [min(int(N*(L/2.+xi)/L),N-1) for xi in x]
-    #print digitized
-    print x
+    #print(digitized)
+    print(x)
     for i in range(len(x)-shift):
         A[digitized[i+shift],digitized[i]] += 1
     return A
@@ -209,7 +171,7 @@ def calc_survival_probability_add(initial,survived,x,edges,shift=1):
     for i in range(len(digitized)-shift):
         start = digitized[i]
         same = (digitized[i:i+shift+1]==start).all()
-        #print start,same,int(same),digitized[i:i+shift+1]
+        #print(start,same,int(same),digitized[i:i+shift+1])
         initial[start] += 1.    # should be float
         survived[start] += float(same)   # should be float
 
@@ -231,13 +193,13 @@ def indices_survived(x,edges,shift=1):
 
 #=========== OLDER =========
 def write_Tmat_linebyline(A,filename,edges=None):
-    f = file(filename,"w+")
     L = len(A)  # number of bins + 1
-    if edges != None:
-        print >> f, "#edges ", " ".join([str(b) for b in edges])
-    for i in xrange(L):
-        for j in xrange(L):
-            print >> f, A[i,j]
-    f.close()
+    with open(filename,"w+") as f:
+        if edges is not None:
+            f.write("#edges  "+" ".join([str(b) for b in edges])+"\n")
+        for i in xrange(L):
+            for j in xrange(L):
+                f.write(str(A[i,j]))
+
 
 
