@@ -17,7 +17,7 @@ import copy
 
 def guess_num_bin(filename):
     """get number of histogram bins from transition matrix file"""
-    print "Reading...", filename
+    print("Reading...", filename)
     f = file(filename)
     count = 0
     for line in f:   # skip lines starting with #
@@ -53,7 +53,7 @@ def read_transition(filename,num_bin):
             #print k1, k2, transition[k1,k2,j]
             k += 1
     if k != num_bin**2:
-        print "wrong number of entries in ", filename
+        print("wrong number of entries in ", filename)
         quit()
     f.close()
     if len(bins) == 0:
@@ -61,10 +61,10 @@ def read_transition(filename,num_bin):
     return transition,bins
 
 def read_all_transitions(argv):
-    print argv
+    print(argv)
     """read all input from sys.argv: lagtimes and transitions"""
     num_lag = ( len ( argv ) - 2 ) / 2
-    print "number of lagtimes:", num_lag
+    print("number of lagtimes:", num_lag)
     lagtimes = np.zeros((num_lag),dtype=np.float64)
 
     num_bin = guess_num_bin(argv[3])
@@ -72,7 +72,7 @@ def read_all_transitions(argv):
     # read lagtimes and transition files
     for i in range(2,len(sys.argv),2):
         j = i / 2 - 1
-        print "window ", j, ":", sys.argv[i], sys.argv[i+1]
+        print("window ", j, ":", sys.argv[i], sys.argv[i+1])
         lagtimes[j] = np.float64(sys.argv[i])
 
         filename = sys.argv[i+1]
@@ -99,11 +99,11 @@ class MCState(object):
         self.num_MC_update = num_MC_update
 
     def print_MC_params(self):
-        print "dv(MC-potential)=", self.dv
-        print "dw(MC-logD)=", self.dw
-        print "temp=", self.temp
-        print "n(MC)=", self.nmc
-        print "n(update)=", self.num_MC_update
+        print("dv(MC-potential)=", self.dv)
+        print("dw(MC-logD)=", self.dw)
+        print("temp=", self.temp)
+        print("n(MC)=", self.nmc)
+        print("n(update)=", self.num_MC_update)
 
     def init_MC(self,num_bin):
         self.num_bin = num_bin
@@ -127,7 +127,7 @@ class MCState(object):
         self.log_like = log_like_lag ( self.num_bin, self.num_lag, self.v, self.w, self.lagtimes, self.transition )
         if np.isnan(self.log_like):
             raise Error("Initial likelihood diverges")
-        print "initial log-likelihood:", self.log_like
+        print("initial log-likelihood:", self.log_like)
 
     def add_transitions(self,lagtimes,transition,bins):
         self.lagtimes = lagtimes
@@ -169,7 +169,7 @@ class MCState(object):
 
     def print_intermediate(self,imc,printfreq):
         if  (imc%printfreq == 0) | (imc == self.nmc-1):
-            print imc, self.log_like, self.naccv / ( imc + 1. ), self.naccw / ( imc + 1. )
+            print(imc, self.log_like, self.naccv / ( imc + 1. ), self.naccw / ( imc + 1. ))
 
     def update_movewidth(self,imc):
         if ( self.num_MC_update > 0 ):
@@ -178,12 +178,12 @@ class MCState(object):
                 self.dw *= np.exp ( 0.1 * ( self.naccw_update / self.num_MC_update - 0.3 ) )
                 self.naccv_update = 0.
                 self.naccw_update = 0.
-                print "new MC steps:", imc, self.dv, self.dw
+                print("new MC steps:", imc, self.dv, self.dw)
 
 
     def print_final(self): 
         # print final results ( potential and diffusion coefficient)
-        print "\n     index  potential  diffusion-coefficient(shifted-by-half-bin)  bin  binmiddle"
+        print("\n     index  potential  diffusion-coefficient(shifted-by-half-bin)  bin  binmiddle")
         for i in range(self.num_bin):
             #print i, v[i], np.exp(w[i])
             sys.stdout.write("%8d %13.5e %13.5e  %13.5f\n"%( i,self.v[i],np.exp(self.w[i]),self.bins[i], ) )

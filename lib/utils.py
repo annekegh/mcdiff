@@ -37,8 +37,8 @@ def init_rate_matrix(n,v,w,pbc,pull=None,st=None,end=None,side=None):
     """
     if pbc:
         if st is not None or end is not None or side is not None:
-            print "you are asking too much:"
-            print "asking for rate matrix with pbc=True AND with absorption/reflection in bins=",st,end
+            print("you are asking too much:")
+            print("asking for rate matrix with pbc=True AND with absorption/reflection in bins=",st,end)
             raise NotImplemented
         if pull is not None:
             return init_rate_matrix_pbc_pull(n,v,w,pull)  # PBC PULL
@@ -47,8 +47,8 @@ def init_rate_matrix(n,v,w,pbc,pull=None,st=None,end=None,side=None):
 
     else:
         if pull is not None:
-            print "you are asking too much:"
-            print "asking for rate matrix with pbc=False AND with pull=",pull
+            print("you are asking too much:")
+            print("asking for rate matrix with pbc=False AND with pull=",pull)
             raise NotImplemented
         if st is None and end is None and side is None:
             rate = init_rate_matrix_nopbc(n,v,w)  # NOPBC, left=right=reflective
@@ -372,7 +372,7 @@ def log_like_lag(num_bin,num_lag, v,w,lagtimes,transition, pbc,pull):
 def calc_overlap_basis(p_basis):
     L = len(p_basis)
     overlap = np.zeros((L,L),float)
-    for i in xrange(L):
+    for i in range(L):
         for j in np.arange(j,L):
             a = np.sum(p_basis[:,i]*p_basis[:,j])
             overlap[i,j] = a
@@ -382,8 +382,8 @@ def calc_overlap_basis(p_basis):
 def calc_rhs_diffusionequation_basisfunctions(p_basis,rate):
     L = len(p_basis)
     rhs = np.zeros((L,L),float)
-    for i in xrange(L):
-        for j in xrange(L):
+    for i in range(L):
+        for j in range(L):
             a = np.sum(p_basis[:,i]*p_basis[:,j]*rate[:,j])  # I can do this better  TODO might be wrong
             rhs[i,j] = a
     return rhs

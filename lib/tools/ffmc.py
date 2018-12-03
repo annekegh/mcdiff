@@ -66,7 +66,7 @@ def read_transition_linebyline(filename,dim_trans):
             transition[k1,k2] = np.float64(line)
             k += 1
     if k != dim_trans**2:
-        print "wrong number of entries in ", filename
+        print("wrong number of entries in ", filename)
         quit()
     f.close()
 
@@ -101,7 +101,7 @@ def read_transition_square(filename,dim_trans):
             transition[row,:] = [int(word) for word in words]
             row += 1
     if row != dim_trans:
-        print "wrong number of entries in ", filename
+        print("wrong number of entries in ", filename)
         quit()
     f.close()
 
@@ -113,12 +113,12 @@ def read_transition_square(filename,dim_trans):
 
 def read_all_transitions(args,form="square"):
     """read all input: lagtimes and transitions"""
-    print "args:", args
+    print("args:", args)
 
     # number of lag times
     num_lag = len(args)/2
     lagtimes = np.zeros((num_lag),dtype=np.float64)
-    print "number of lagtimes:", num_lag
+    print("number of lagtimes:", num_lag)
 
     # dimension of transition matrix
     if form == "square":
@@ -127,7 +127,7 @@ def read_all_transitions(args,form="square"):
         dim_trans = guess_dim_transition_linebyline(args[1])
 
     transition = np.zeros((num_lag,dim_trans,dim_trans),np.float64)
-    print "dimension trans:", dim_trans
+    print("dimension trans:", dim_trans)
 
     # read lagtimes and transition files
     for i in range(num_lag):
@@ -141,7 +141,7 @@ def read_all_transitions(args,form="square"):
         else:
             trans,bins = read_transition_linebyline(filename,dim_trans)
         transition[i,:,:] = trans
-        print "window ", i, ": lagtime", lagtimes[i], "or",args[2*i], "from file", args[2*i+1]
+        print("window ", i, ": lagtime", lagtimes[i], "or",args[2*i], "from file", args[2*i+1])
 
     #### TODO let's hope I have the same bins every time!!!!
     ###  TODO add quality checks: bins, lagtime, dim_trans
@@ -180,15 +180,15 @@ class MCState(object):
             #self.fdtemp = (self.temp_end/self.temp_start)**(1./nupdate)  #if changing by multiplying
 
     def print_MC_params(self):
-        print "----- Settings MC -----"
-        print "dv(MC-potential)=", self.dv
-        print "dw(MC-logD)=", self.dw
-        print "temp=", self.temp
-        print "n(MC)=", self.nmc
-        print "n(update)=", self.num_MC_update
-        print "dt=",self.dt
+        print("----- Settings MC -----")
+        print("dv(MC-potential)=", self.dv)
+        print("dw(MC-logD)=", self.dw)
+        print("temp=", self.temp)
+        print("n(MC)=", self.nmc)
+        print("n(update)=", self.num_MC_update)
+        print("dt=",self.dt)
         #print "k=", self.k
-        print "-"*20
+        print("-"*20)
 
     def init_MC(self):
         self.num_F = self.num_bin
@@ -212,7 +212,7 @@ class MCState(object):
         # Smoothing
         #------------
         self.k = 10.*2./np.log(1.05)**2 * 0.01  # TODO make this a setting
-        print "k, ik", self.k
+        print("k, ik", self.k)
         # as in paper GH:
         #self.k = 1./0.05 # in units s/angstrom**2
         #self.k /= unit  # in units 'unit'
@@ -230,7 +230,7 @@ class MCState(object):
         # add smoothing
         E_w = string_energy(self.w,self.k,self.pbc)
         self.log_like = log_like - E_w  # because
-        print "initial log-likelihood:", self.log_like
+        print("initial log-likelihood:", self.log_like)
         self.all_log_like = np.zeros(self.nmc,float)
 
     def add_transitions(self,lagtimes,transition,bins):
@@ -267,7 +267,7 @@ class MCState(object):
         # add restraints to smoothen
         E_wt = string_energy(wt,self.k,self.pbc)
         log_like_try -= E_wt  # because
-        print "L,E", log_like_try, E_wt, log_like_try+E_wt
+        print("L,E", log_like_try, E_wt, log_like_try+E_wt)
         return wt,log_like_try
 
     def mcmetropolis_diffusion(self,wt,log_like_try):
@@ -282,14 +282,14 @@ class MCState(object):
     def print_intermediate(self,imc,printfreq):
         step = imc+1
         if  (imc%printfreq == 0) | (step == self.nmc):
-            print imc, self.log_like, float(self.naccv)/step, float(self.naccw)/step
+            print(imc, self.log_like, float(self.naccv)/step, float(self.naccw)/step)
 
     def update_temp(self,imc):
         if self.num_MC_update > 0:
             if (imc+1)%self.num_MC_update == 0:
                 self.temp += self.dtemp
                 #self.temp *= self.fdtemp
-                print "new MC temp:", imc, self.temp
+                print("new MC temp:", imc, self.temp)
 
     def update_movewidth(self,imc):
         "adapt dv and dw such that acceptance ratio stays around 30 procent, or so"  # TODO
@@ -299,27 +299,27 @@ class MCState(object):
                 self.dw *= np.exp ( 0.1 * ( float(self.naccw_update) / self.num_MC_update - 0.3 ) )
                 self.naccv_update = 0
                 self.naccw_update = 0
-                print "new MC steps:", imc, self.dv, self.dw
+                print("new MC steps:", imc, self.dv, self.dw)
 
     def print_log_like(self):
-        print "===== log_like ====="
+        print("===== log_like =====")
         for i in range(self.nmc/20):
-             print " ".join([str(val) for val in self.all_log_like[20*i:20*(i+1)]])
-        print "="*10
+             print(" ".join([str(val) for val in self.all_log_like[20*i:20*(i+1)]]))
+        print("="*10)
 
     def print_statistics(self):
-        print "===== Statistics ====="
-        print "nmc       ", self.nmc
-        print "naccv     ", self.naccv
-        print "naccw     ", self.naccw
-        print "accv ratio", "%5.1f" %(float(self.naccv)/self.nmc*100),"%"
-        print "accw ratio", "%5.1f" %(float(self.naccw)/self.nmc*100),"%"
-        print "="*10
+        print("===== Statistics =====")
+        print("nmc       ", self.nmc)
+        print("naccv     ", self.naccv)
+        print("naccw     ", self.naccw)
+        print("accv ratio", "%5.1f" %(float(self.naccv)/self.nmc*100),"%")
+        print("accw ratio", "%5.1f" %(float(self.naccw)/self.nmc*100),"%")
+        print("="*10)
 
     def print_final(self): 
         """print final results (potential and diffusion coefficient)"""
         #print "\n     index  bin  potential  diffusion-coefficient(shifted-by-half-bin)"
-        print "\n%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)")
+        print("\n%8s %8s %8s  %13s %s" % ("index","bin-str","bin-end","potential","diffusion-coefficient(shifted-by-half-bin)"))
         if self.pbc:
             for i in range(self.num_bin):
                 sys.stdout.write("%8d %8.3f %8.3f  %13.5e %13.5e\n"%( i,self.bins[i],self.bins[i+1],self.v[i],np.exp(self.w[i]) ) )

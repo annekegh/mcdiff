@@ -10,7 +10,7 @@ def plot_transition(trans,shift,figname=None):
 
     import matplotlib.pyplot as plt
     n = len(trans)
-    x = range(n)
+    x = list(range(n))
     X, Y = np.meshgrid(x, x)
     #print "plotting",X.shape, Y.shape, trans.shape
     plt.figure()
@@ -20,7 +20,7 @@ def plot_transition(trans,shift,figname=None):
     plt.ylabel("end")
     plt.title("dn=%i" %shift)
     plt.savefig(figname)
-    print "file written:",figname
+    print("file written:",figname)
 
     #print "transition",transition.shape
     # in case it is needed to convert the format:

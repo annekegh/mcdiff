@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from outreading import read_F_D_edges,read_many_profiles,read_many_profiles_Drad
+from .outreading import read_F_D_edges,read_many_profiles,read_many_profiles_Drad
 
 def plotsettings():
     plt.rc(('xtick','ytick','axes'), labelsize=24.0)
@@ -32,7 +32,7 @@ system = sys.argv[1]
 assert "/" not in system
 list_filenames = sys.argv[2:]
 assert len(list_filenames)>0
-print list_filenames
+print(list_filenames)
 
 figname = "figs-rescale/fig_"+system+"_"
 # guess name
@@ -83,10 +83,10 @@ if doradial:
     D = np.array(Drad).T    # !!!!!!! I am overwriting !!!!
 edges = np.array(edges).T
 
-print "Inputdata:"
-print "F  ",F.shape
-print "D  ",D.shape
-print "lts",lts
+print("Inputdata:")
+print("F  ",F.shape)
+print("D  ",D.shape)
+print("lts",lts)
 # F has shape nbins x nprofiles
 nbins = len(F)
 
@@ -118,23 +118,23 @@ def fit_line_inverse(lt,D):
             A[i*nbins+j,j] = 1.
             A[i*nbins+j,j+nbins] = 1./lt
     if False:
-        print "A"
+        print("A")
         #print "A",A
-        print A[:6,:6]
-        print A[-6:,-6:]
-        print A[:6,-6:]
+        print(A[:6,:6])
+        print(A[-6:,-6:])
+        print(A[:6,-6:])
         #print "res",res
 
-    print "--"*10
-    print "Doing least square fit"
-    print "A",A.shape, "res",res.shape
+    print("--"*10)
+    print("Doing least square fit")
+    print("A",A.shape, "res",res.shape)
     x,residues,rank,s = np.linalg.lstsq(A,res)
 
-    print "x",x.shape
-    print "residues",residues.shape
-    print "rank",rank
+    print("x",x.shape)
+    print("residues",residues.shape)
+    print("rank",rank)
     #print "s",s
-    print "--"*10
+    print("--"*10)
     # extract profiles from fit
     Dreal = x[:nbins]
     t0 = x[nbins:]/x[:nbins]
@@ -225,14 +225,14 @@ Dreal,t0 = fit_line_inverse(lts,D)
 
 
 
-print "Dreal",Dreal.shape
-print "Dreal[:10]",Dreal[:10]
+print("Dreal",Dreal.shape)
+print("Dreal[:10]",Dreal[:10])
 
 ##################################
 # Do some plotting
 ##################################
 xD = edges[:nbins,0]
-print "--"*20
+print("--"*20)
 plt.figure()
 plt.plot(xD,D,label="various lt")
 plt.plot(xD,Dreal,lw=5,color='black',label="lt to infty (Dreal)")
@@ -265,7 +265,7 @@ plt.savefig(figname+"lts1.png")
 
 # do not plot all
 
-from plot import plotsettings
+from .plot import plotsettings
 plotsettings()
 plotx = np.zeros(len(lts)+1)
 plotx[-1] = 0.
@@ -326,22 +326,22 @@ p = np.polyfit(1./lts,D.T,1)
 def print_profile(filename,v,edges,startline="None"):
     f = file(filename,"w+")
     if startline is not None:
-        print >> f,startline
+        print(startline, file=f)
     for i in range(len(v)):
-        print >> f, "%8d %13.5e %13.5e  %13.5f"%( i,edges[i],edges[i+1],v[i])
-    print >> f, "="*10
-    print "file written...",filename
+        print("%8d %13.5e %13.5e  %13.5f"%( i,edges[i],edges[i+1],v[i]), file=f)
+    print("="*10, file=f)
+    print("file written...",filename)
     f.close()
 
 def print_profile_2vecs(filename,v,d,edges,startline=None):
     assert len(v)==len(d)   # doing PBC
     f = file(filename,"w+")
     if startline is not None:
-        print >> f,startline
+        print(startline, file=f)
     for i in range(len(v)):
-        print >> f, "%8d %13.5e %13.5e  %13.5f  %13.5f"%( i,edges[i],edges[i+1],v[i],d[i])
-    print >> f, "="*10
-    print "file written...",filename
+        print("%8d %13.5e %13.5e  %13.5f  %13.5f"%( i,edges[i],edges[i+1],v[i],d[i]), file=f)
+    print("="*10, file=f)
+    print("file written...",filename)
     f.close()
 
 ##################################

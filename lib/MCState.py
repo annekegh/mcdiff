@@ -7,13 +7,13 @@
 import numpy as np
 import copy
 
-from utils import init_rate_matrix, string_energy, string_vecs, log_likelihood, log_like_lag
-from twod import rad_log_like_lag, setup_bessel_functions
+from .utils import init_rate_matrix, string_energy, string_vecs, log_likelihood, log_like_lag
+from .twod import rad_log_like_lag, setup_bessel_functions
 
-from model import Model, RadModel
-from model import SinusCosinusModel,CosinusModel, RadCosinusModel
-from model import StepModel, OneStepModel
-from outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw, read_F_D_edges
+from .model import Model, RadModel
+from .model import SinusCosinusModel,CosinusModel, RadCosinusModel
+from .model import StepModel, OneStepModel
+from .outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw, read_F_D_edges
 
 
 #------------------------
@@ -120,7 +120,7 @@ class MCState(object):
             self.string_vecs = string_vecs(len(self.model.w),self.pbc)
             self.log_like = log_like - E_w  # minus sign because surface=log_like
 
-        print "initial log-likelihood:", self.log_like
+        print("initial log-likelihood:", self.log_like)
         self.all_log_like = np.zeros(self.nmc,float)
 
         # TODO make nicer
@@ -138,7 +138,7 @@ class MCState(object):
             v_coeff = read_Fcoeffs(initfile,final=True) # unit: v_coeff[0] in kBT
             nc = len(v_coeff)
             if nc > 0:
-                print "USING initfile for v_coeff",initfile,nc,"coeffs"
+                print("USING initfile for v_coeff",initfile,nc,"coeffs")
                 n = min(nc,self.model.ncosF)
                 self.model.v_coeff[:n] = v_coeff[:n]
                 self.model.update_v()
@@ -146,14 +146,14 @@ class MCState(object):
             F,D,edges = read_F_D_edges(initfile) # unit: F in kBT
             nc = len(F)
             assert nc == len(self.model.v)
-            print "USING initfile for v",initfile,nc,"values"
+            print("USING initfile for v",initfile,nc,"values")
             self.model.v = F   # unit: always in kBT
 
         if self.model.ncosD > 0:
             w_coeff = read_Dcoeffs(initfile,final=True) # unit: w_coeff[0] in angstrom**2/ps
             nc = len(w_coeff)
             if nc > 0:
-                print "USING initfile for w_coeff",initfile,nc,"coeffs"
+                print("USING initfile for w_coeff",initfile,nc,"coeffs")
                 n = min(nc,self.model.ncosD)
                 self.model.w_coeff[:n] = w_coeff[:n]
                 self.model.w_coeff[0] -= self.model.wunit
@@ -162,7 +162,7 @@ class MCState(object):
             F,D,edges = read_F_D_edges(initfile) # unit: D in angstrom**2/ps
             nc = len(D)
             assert nc == len(self.model.w)
-            print "USING initfile for w",initfile,nc,"values"
+            print("USING initfile for w",initfile,nc,"values")
             self.model.w = np.log(D)-self.model.wunit
 
         if self.do_radial:
@@ -170,7 +170,7 @@ class MCState(object):
             coeff = read_Dradcoeffs(initfile,final=True) # unit: wrad_coeff[0] in angstrom**2/ps
             nc = len(coeff)
             if nc > 0:
-                    print "USING initfile for wrad_coeff",initfile,nc,"coeffs"
+                    print("USING initfile for wrad_coeff",initfile,nc,"coeffs")
                     n = min(nc,self.model.ncosDrad)
                     self.model.wrad_coeff[:n] = coeff[:n]
                     self.model.wrad_coeff[0] -= self.model.wradunit
@@ -180,7 +180,7 @@ class MCState(object):
                 coeff = read_Dcoeffs(initfile,final=True) # unit: w_coeff[0] in angstrom**2/ps
                 nc = len(coeff)
                 if nc > 0:
-                    print "USING initfile for wrad_coeff",initfile,nc,"coeffs, using w_coeff!"
+                    print("USING initfile for wrad_coeff",initfile,nc,"coeffs, using w_coeff!")
                     n = min(nc,self.model.ncosDrad)
                     self.model.wrad_coeff[:n] = coeff[:n]
                     self.model.wrad_coeff[0] -= self.model.wradunit
@@ -190,7 +190,7 @@ class MCState(object):
             Drad,redges = read_Drad(initfile) # unit: Drad in angstrom**2/ps
             nc = len(Drad)
             assert nc == len(self.model.wrad)
-            print "USING initfile for wrad",initfile,nc,"values"
+            print("USING initfile for wrad",initfile,nc,"values")
             self.model.wrad = np.log(Drad)-self.model.wradunit
 
         dv,dw = read_dv_dw(initfile,final=True)
@@ -258,7 +258,7 @@ class MCState(object):
                 self.log_like = log_like_try
         if False:
             self.check_propagator(self.model.list_lt[0])
-            print "loglike",self.log_like
+            print("loglike",self.log_like)
 
     def mcmove_diffusion(self):
         # propose temporary w vector: wt
@@ -298,7 +298,7 @@ class MCState(object):
                 self.log_like = log_like_try
         if False:
             self.check_propagator(self.model.list_lt[0])
-            print "loglike",self.log_like
+            print("loglike",self.log_like)
 
     def mcmove_diffusion_radial(self):
         # propose temporary wrad
@@ -334,7 +334,7 @@ class MCState(object):
                 self.naccwrad += 1
                 self.naccwrad_update += 1
                 self.log_like = log_like_try
-        else: print "WARNING: log_like_try behaves badly"
+        else: print("WARNING: log_like_try behaves badly")
 
 
     def check_propagator(self,lagtime):
@@ -359,9 +359,9 @@ class MCState(object):
         #log_like = np.float64(0.0)  # use high precision
         #b = transition[ilag,:,:]*np.log(propagator.clip(tiny))
         #log_like += np.sum(b)
-        print "count",count
-        print "ratematrix",line
-        print "propagatormatrix",line2
+        print("count",count)
+        print("ratematrix",line)
+        print("propagatormatrix",line2)
 
 
     #======== UPDATE MC PARAMS ========
@@ -371,7 +371,7 @@ class MCState(object):
             if (imc+1)%self.num_MC_update == 0:
                 self.temp += self.dtemp
                 #self.temp *= self.fdtemp
-                print "new MC temp:", imc, self.temp
+                print("new MC temp:", imc, self.temp)
 
     def update_movewidth(self,imc):
         """adapt dv and dw such that acceptance ratio stays around 30 procent, or so"""  # TODO
@@ -387,7 +387,7 @@ class MCState(object):
                     self.dw *= np.exp ( 0.1 * ( float(self.naccw_update) / self.num_MC_update - 0.3 ) )
                     self.naccv_update = 0
                     self.naccw_update = 0
-                print "new MC steps:", imc, self.dv, self.dw, self.dwrad
+                print("new MC steps:", imc, self.dv, self.dw, self.dwrad)
 
 
     #======== PRINTING ========
@@ -395,60 +395,60 @@ class MCState(object):
         if f is None:
             import sys
             f = sys.stdout
-        if final: print >>f, "----- final Settings MC -----"
-        else:     print >>f, "----- Settings MC -----"
-        print >>f, "dv(MC-potential)=", self.dv
-        print >>f, "dw(MC-logD)=", self.dw
-        print >>f, "dwrad(MC-logDrad)=", self.dwrad
-        print >>f, "temp=", self.temp
-        print >>f, "n(MC)=", self.nmc
-        print >>f, "n(update)=", self.num_MC_update
-        print >>f, "k=", self.k
-        print >>f, "-"*20
+        if final: print("----- final Settings MC -----", file=f)
+        else:     print("----- Settings MC -----", file=f)
+        print("dv(MC-potential)=", self.dv, file=f)
+        print("dw(MC-logD)=", self.dw, file=f)
+        print("dwrad(MC-logDrad)=", self.dwrad, file=f)
+        print("temp=", self.temp, file=f)
+        print("n(MC)=", self.nmc, file=f)
+        print("n(update)=", self.num_MC_update, file=f)
+        print("k=", self.k, file=f)
+        print("-"*20, file=f)
 
     def print_intermediate(self,imc,printfreq):
         step = imc+1
         if  (imc%printfreq == 0) | (step == self.nmc):
-            print imc, self.log_like, float(self.naccv)/step, float(self.naccw)/step, float(self.naccwrad)/step
+            print(imc, self.log_like, float(self.naccv)/step, float(self.naccw)/step, float(self.naccwrad)/step)
 
     def print_log_like(self):
         # will only work if I actually filled it in
-        print "===== log_like ====="
+        print("===== log_like =====")
         for i in range(self.nmc/20):
-             print " ".join([str(val) for val in self.all_log_like[20*i:20*(i+1)]])
-        print "="*10
+             print(" ".join([str(val) for val in self.all_log_like[20*i:20*(i+1)]]))
+        print("="*10)
 
     def print_statistics(self,f=None,):
         if f is None:
            import sys
            f = sys.stdout
-        print >>f, "===== Statistics ====="
-        print >>f, "nmc         ", self.nmc
-        print >>f, "naccv       ", self.naccv
-        print >>f, "naccw       ", self.naccw
-        print >>f, "naccwrad    ", self.naccwrad
-        print >>f, "nacctimezero", self.nacctimezero
-        print >>f, "accv ratio       ", "%5.1f" %(float(self.naccv)/self.nmc*100),"%"
-        print >>f, "accw ratio       ", "%5.1f" %(float(self.naccw)/self.nmc*100),"%"
-        print >>f, "accwrad ratio    ", "%5.1f" %(float(self.naccwrad)/self.nmc*100),"%"
-        print >>f, "acctimezero ratio", "%5.1f" %(float(self.nacctimezero)/self.nmc*100),"%"
-        print >>f, "="*10
+        print("===== Statistics =====", file=f)
+        print("nmc         ", self.nmc, file=f)
+        print("naccv       ", self.naccv, file=f)
+        print("naccw       ", self.naccw, file=f)
+        print("naccwrad    ", self.naccwrad, file=f)
+        print("nacctimezero", self.nacctimezero, file=f)
+        print("accv ratio       ", "%5.1f" %(float(self.naccv)/self.nmc*100),"%", file=f)
+        print("accw ratio       ", "%5.1f" %(float(self.naccw)/self.nmc*100),"%", file=f)
+        print("accwrad ratio    ", "%5.1f" %(float(self.naccwrad)/self.nmc*100),"%", file=f)
+        print("acctimezero ratio", "%5.1f" %(float(self.nacctimezero)/self.nmc*100),"%", file=f)
+        print("="*10, file=f)
         if self.model.ncosF > 0:
             tot = max(1,np.sum(self.naccv_coeff))  # if all val are zero and sum is zero, then take 1
-            print >>f, "naccv_coeff"
+            print("naccv_coeff", file=f)
             for i,val in enumerate(self.naccv_coeff):
-                print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
+                print("%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%"), file=f)
         if self.model.ncosD > 0:
             tot = max(1,np.sum(self.naccw_coeff))
-            print >>f, "naccw_coeff"
+            print("naccw_coeff", file=f)
             for i,val in enumerate(self.naccw_coeff):
-                print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
+                print("%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%"), file=f)
         if self.do_radial:
           if self.model.ncosDrad > 0:
             tot = max(1,np.sum(self.naccwrad_coeff))
-            print >>f, "naccwrad_coeff"
+            print("naccwrad_coeff", file=f)
             for i,val in enumerate(self.naccwrad_coeff):
-                print >>f, "%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%")
+                print("%8d %8d %5.1f %s %5.1f %s" %(i,val,float(val)/tot*100,"%",float(val)/self.nmc*100,"%"), file=f)
 
     def print_coeffs_laststate(self,f,final=False):
         """print basis functions and other model parameters"""

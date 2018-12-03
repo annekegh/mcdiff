@@ -171,7 +171,7 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
 def plot_both(F,D,filename,edges,transparent=False):
     # assume F,D,edges are lists of arrays, each array is a profile
     plt.figure()
-    for i in xrange(len(F)):
+    for i in range(len(F)):
         f = F[i]
         d = D[i]
         dx = edges[i][1]-edges[i][0]
@@ -192,7 +192,7 @@ def plot_both(F,D,filename,edges,transparent=False):
 def plot_three(F,D,Drad,filename,edges,transparent=False):
     # assume F,D,edges are lists of arrays, each array is a profile
     plt.figure()
-    for i in xrange(len(F)):
+    for i in range(len(F)):
         f = F[i]
         d = D[i]
         drad = Drad[i]
@@ -223,7 +223,7 @@ def plot_ratio(D,Drad,filename,edges,title="anisotropy",transparent=False):
     # assume F,D,edges are lists of arrays, each list is a profile
     plt.figure()
     plt.title(title)
-    for i in xrange(len(D)):
+    for i in range(len(D)):
         d = D[i]
         drad = Drad[i]
         dx = edges[i][1]-edges[i][0]

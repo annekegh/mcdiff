@@ -6,8 +6,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from histogram import read_coor
-from functionsdiffusion import fit_sqrt_vs_time
+from .histogram import read_coor
+from .functionsdiffusion import fit_sqrt_vs_time
 
 
 def plotsettings():
@@ -45,7 +45,7 @@ def store_msd(t,msd,filename,error=None):
         assert len(t) == len(error)
     f = open(filename,"w+")
     for t1,msd1,error1 in zip(t,msd,error):
-        print >> f, t1, msd1, error1
+        print(t1, msd1, error1, file=f)
     f.close()
 
 
@@ -63,10 +63,10 @@ def analyze_dist_1D(list_x,nstep,outdir,dtc):
     alldist2 = np.zeros((nstep,nfiles),float)
     allD = np.zeros((nfiles),float)
 
-    print "="*5
-    print "Results"
-    print "making %i fits" %nfiles
-    print "fit from %i steps, i.e. time %f ps, actually time %f ps" %(nstep,nstep*dtc,(nstep-1)*dtc)
+    print("="*5)
+    print("Results")
+    print("making %i fits" %nfiles)
+    print("fit from %i steps, i.e. time %f ps, actually time %f ps" %(nstep,nstep*dtc,(nstep-1)*dtc))
     for i in range(nfiles):
         dist2 = calc_dist_1D(np.array(list_x[i]))
         # only fit the first nstep time steps (use all atoms)
@@ -125,14 +125,14 @@ def analyze_dist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitcell=Non
     alldist2 = np.zeros((nlags,nfiles,3),float)
     allD = np.zeros((nfiles,3),float)
 
-    print "="*5
-    print "Results"
-    print "making %i fits" %nfiles, "(number of trajectories)"
-    print "fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
-             nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc)
-    print "calculating..."
+    print("="*5)
+    print("Results")
+    print("making %i fits" %nfiles, "(number of trajectories)")
+    print("fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
+             nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc))
+    print("calculating...")
     for i in range(nfiles):
-        print "file",i
+        print("file",i)
         if unitcell is None:
             dist2_xy,dist2_z,dist2_r,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns)
         else:
@@ -210,14 +210,14 @@ def analyze_matrixdist(list_x,list_y,list_z,dn1,outdir,dtc,dn2=None,ddn=1,unitce
     alldist2 = np.zeros((nlags,nfiles,6),float)
     allD = np.zeros((nfiles,6),float)
 
-    print "="*5
-    print "Results"
-    print "making %i fits" %nfiles, "(number of trajectories)"
-    print "fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
-             nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc)
-    print "calculating..."
+    print("="*5)
+    print("Results")
+    print("making %i fits" %nfiles, "(number of trajectories)")
+    print("fit from %i lagtimes, i.e. time %f ps to time %f ps, actually time %f ps" %(
+             nlags,lagtimes[0],lagtimes[-1],(dn2-dn1)*dtc))
+    print("calculating...")
     for i in range(nfiles):
-        print "file",i
+        print("file",i)
         # matrix A contains 6 components of correlation matrix
         if unitcell is None:
             A,weight = calc_dist(list_x[i],list_y[i],list_z[i],shifts=dns,matrix=True)
@@ -269,8 +269,8 @@ def analyze_dist_BIS1(list_x,list_y,list_z,dtc):
     assert len(list_x) == len(list_z)
     nfiles = len(list_x)
 
-    print "="*5
-    print "Results"
+    print("="*5)
+    print("Results")
     #alllagtimes = []
     #alldist_xy = []
     #alldist_z = []
@@ -279,7 +279,7 @@ def analyze_dist_BIS1(list_x,list_y,list_z,dtc):
 
     for i in range(nfiles):
         lagtimes,dist2_xy,dist2_z,dist2_r = collect_dist(list_x[i],list_y[i],list_z[i],dtc)
-        print "file",i,"shape",dist2_xy.shape
+        print("file",i,"shape",dist2_xy.shape)
         for it,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
 
             p = np.polyfit(lagtimes,dist2,1)
@@ -309,15 +309,15 @@ def analyze_dist_timedependent(list_x,list_y,list_z,dtc,nstep,figname,zoom=50,sh
     nfiles = len(list_x)
 
     nstep = 1000
-    print "="*5
-    print "Results"
+    print("="*5)
+    print("Results")
 
     allddr = np.zeros((nstep,nfiles,6),float)  # six of those    
     for i in range(nfiles):
         ddr,weight = calc_timedependent_D(list_x[i],list_y[i],list_z[i],dtc,shift=shift)
         for it,ddist in enumerate(ddr):
             allddr[:,i,it] = np.mean(ddr[it],axis=1)
-            print "file",i,"type",it,"ddr",ddr[it].shape
+            print("file",i,"type",it,"ddr",ddr[it].shape)
 
     for it,label in enumerate(["xy1","xy2","z1","z2","r1","r2"]):
         dim = [2,2,1,1,3,3,][it]
@@ -414,7 +414,7 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     # construct bins - I can play here with resolution
     edges = (np.arange(nbins+1)/float(nbins)-0.5)*zpbc
     mids = ((np.arange(nbins)+0.5)/float(nbins)-0.5)*zpbc
-    print "edges condz",edges
+    print("edges condz",edges)
 
     # fill up count and dz arrays
     count = np.zeros((nfiles,3,nbins,nlags),int)
@@ -440,7 +440,7 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
                 if surv:
                     indices = indices_survived(pbccrd_z[:,at],edges,shift=dn)
                 else:
-                    indices = range(len(zinit_digi))
+                    indices = list(range(len(zinit_digi)))
                 for i in indices:
                     digi = zinit_digi[i]
                     for j,dist2 in enumerate([dist2_xy,dist2_z,dist2_r]):
@@ -454,7 +454,7 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
     # FIT  <r^2> = 2 dim D dn dtc
 
     if plain:  #use the last lagtime (endpoint)
-        print "plain condz: use the last lagtime"
+        print("plain condz: use the last lagtime")
         DD = dz/count
         allD = DD[:,:,:,-1]/2./lagtimes[-1]
         allD[:,0,:] /= 2.   # dimension adapt
@@ -470,7 +470,7 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
         mean[2,:]/=3.
 
     else:
-        print "fit condz: using multiple lagtimes"
+        print("fit condz: using multiple lagtimes")
         DD = dz/count
         allD = np.zeros((nfiles,3,nbins),float)
         for j in range(3):
@@ -496,27 +496,27 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
         mean[0,:]/=2.
         mean[2,:]/=3.
 
-    print "===== Results ====="
-    print "lagtimes",lagtimes
-    print "count",count.shape
-    print "dz",dz.shape
-    print "allD",allD.shape
+    print("===== Results =====")
+    print("lagtimes",lagtimes)
+    print("count",count.shape)
+    print("dz",dz.shape)
+    print("allD",allD.shape)
     #print "====="
     #print "count",count
     #print "dz",dz
     #print "ratio",dz/count
     #print "allD",allD
-    print "====="
+    print("=====")
     if surv:
         survivalprob = surviveds[1:-1,:]/initials[1:-1,:]
-        print "surviveds",surviveds
-        print "initials",initials
-        print "survival probability",survivalprob
+        print("surviveds",surviveds)
+        print("initials",initials)
+        print("survival probability",survivalprob)
     if surv == "divide":
-        print "===== MSD is divided by survival probability ====="
+        print("===== MSD is divided by survival probability =====")
         mean[0,:] = mean[0,:]/survivalprob[:,-1]
         std[0,:]  = std[0,:]/survivalprob[:,-1]
-    print "mean D",mean
+    print("mean D",mean)
 
     import matplotlib.pyplot as plt
     plt.figure()
@@ -534,17 +534,17 @@ def analyze_dist_condz_traditional(list_x,list_y,list_z,dn1,dtc,zpbc,figname,dn2
 
     # print to a file for later use
     f = file(figname+".txt","w+")
-    print >> f, "#diffusion xy z r"
-    print >> f, "#lagtimes",lagtimes
-    print >> f, "#nfiles",nfiles
-    print >> f, "#zpbc", zpbc
+    print("#diffusion xy z r", file=f)
+    print("#lagtimes",lagtimes, file=f)
+    print("#nfiles",nfiles, file=f)
+    print("#zpbc", zpbc, file=f)
     #print >> f, "#edges", edges  #### TODO does not fit on one line
-    print >> f, "#nbins", nbins
+    print("#nbins", nbins, file=f)
     for i in range(nbins):
         if surv:
-            print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i],survivalprob[i]
+            print(mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i],survivalprob[i], file=f)
         else:
-            print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
+            print(mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i], file=f)
     f.close()
 
 
@@ -558,7 +558,7 @@ def analyze_dist_condz_traditional_2(list_x,list_y,list_z,dn,dtc,zpbc,figname,nb
 
     # construct bins - I can play here with resolution
     bins = np.arange(-zpbc/2.,zpbc/2.+0.0001,zpbc/nbins)
-    print "bins",bins
+    print("bins",bins)
     dz = [[[[] for i in range(nbins)] for i in range(3)] for i in range(nfiles)]
     # fill up count and dz arrays
     for n in range(nfiles):
@@ -591,16 +591,16 @@ def analyze_dist_condz_traditional_2(list_x,list_y,list_z,dn,dtc,zpbc,figname,nb
                 allD[n,j,i] = M/2./lt # a_1 this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
                                 # = 1e-8 meter**2/second = 1e-4 cm**2/s
 
-    print "===== Results ====="
-    print "allD",allD.shape
-    print allD
+    print("===== Results =====")
+    print("allD",allD.shape)
+    print(allD)
  
     mean = np.mean(allD,axis=0)
     std = np.std(allD,axis=0)
-    print "mean D"
-    print mean
-    print "std D"
-    print std
+    print("mean D")
+    print(mean)
+    print("std D")
+    print(std)
 
     x = bins[:-1] + zpbc/(2.*nbins)
     import matplotlib.pyplot as plt
@@ -618,11 +618,11 @@ def analyze_dist_condz_traditional_2(list_x,list_y,list_z,dn,dtc,zpbc,figname,nb
 
     # print to a file for later use
     f = file(figname+".txt","w+")
-    print >> f, "#diffusion xy z r"
-    print >> f, "#nfiles",nfiles
-    print >> f, "#zpbc", zpbc
+    print("#diffusion xy z r", file=f)
+    print("#nfiles",nfiles, file=f)
+    print("#zpbc", zpbc, file=f)
     for i in range(nbins):
-        print >> f, mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i]
+        print(mean[0,i],mean[1,i],mean[2,i],std[0,i],std[1,i],std[2,i], file=f)
     f.close()
 
 
@@ -637,8 +637,8 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
     assert len(list_x) == len(list_z)
     nfiles = len(list_x)
 
-    print "="*5
-    print "Results"
+    print("="*5)
+    print("Results")
 
     alldist2_xy = []
     alldist2_z = []
@@ -665,7 +665,7 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
         allz_final.append(zfinal)
 
     zbins = np.arange(nbins+1)*zpbc/float(nbins) -zpbc/2.
-    print "zbins",zbins
+    print("zbins",zbins)
     rbins = np.arange(0,50.1,0.5)  ################ hard coded TODO
 
     #if not tradition:
@@ -679,7 +679,7 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
 #    zpbc = zbins[-1]-zbins[0]
 
     lt = dn*dtc
-    print "dn*dtc",lt
+    print("dn*dtc",lt)
     if lt < 0.6:
         distmax = 2.
     elif lt < 6.:  #ps
@@ -693,9 +693,9 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
     for c,allz in enumerate([allz_init]): #,allz_final]):
       mean = np.zeros((3,len(zbins)-1),float)
       std = np.zeros((3,len(zbins)-1),float)
-      print "="*10
+      print("="*10)
       labelz = ["zinit","zfinal"][c]
-      print "labelz",labelz
+      print("labelz",labelz)
 
       for i,dist2 in enumerate([alldist2_xy,alldist2_z,alldist2_r]):
         label = labelz+"-"+["xy","z","r"][i]
@@ -710,10 +710,10 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
             #bins = zbins[len(zbins)/2:]
         #    k2,xedges,yedges = np.histogram2d(np.array(dist2).ravel(),np.array(allz).ravel(),[len(zbins),len(zbins)],normed=True)
         #print dist2_r.shape,z.shape
-        print "hist,xedges,yedges",k2.shape, xedges.shape, yedges.shape
+        print("hist,xedges,yedges",k2.shape, xedges.shape, yedges.shape)
         for n,donorm in enumerate([False,True]):
             Label = label+"-%s" %(["nonorm","norm"][n])
-            print "Label",Label
+            print("Label",Label)
             import copy
             kk = copy.deepcopy(k2)
             if donorm:  # normalized
@@ -724,7 +724,7 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
             d2 = ((xedges[1:]+xedges[:-1]).reshape((-1,1))/2.)   # these are rbins**2 in middle
             xmiddle = (xedges[1:]+xedges[:-1])/2.    # these are rbins**2 in middle
             ymiddle = (yedges[1:]+yedges[:-1])/2.    # these are zbins in middle
-            print "d2",d2.shape, "k2",k2.shape, "mean",mean.shape, "x",xmiddle.shape
+            print("d2",d2.shape, "k2",k2.shape, "mean",mean.shape, "x",xmiddle.shape)
             mean[i,:] = np.sum(d2*k2,axis=0)/np.sum(k2,axis=0)    # <r^2> is independent of "norm/nornorm"  ######
             std[i,:] = np.sum((d2-mean[i,:])**2*k2,axis=0)/np.sum(k2,axis=0)
 
@@ -745,13 +745,13 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
 
       # print to a file for later use
       f = file(figname+"_hist2d.%s.dn%i.txt"%(labelz,dn),"w+")
-      print >> f, "#diffusion xy z r"
-      print >> f, "#nfiles",nfiles
-      print >> f, "#zpbc", zpbc
-      print >> f, "#dn", dn
+      print("#diffusion xy z r", file=f)
+      print("#nfiles",nfiles, file=f)
+      print("#zpbc", zpbc, file=f)
+      print("#dn", dn, file=f)
       for i in range(len(zbins)-1):
         # mean = <r**2> = 6*D*lt, so D = <r**2>/2/dim/lt
-        print >> f, mean[0,i]/4./lt,mean[1,i]/2./lt,mean[2,i]/6./lt,std[0,i],std[1,i],std[2,i]
+        print(mean[0,i]/4./lt,mean[1,i]/2./lt,mean[2,i]/6./lt,std[0,i],std[1,i],std[2,i], file=f)
       f.close()
 
 #=========================================
@@ -760,58 +760,58 @@ def analyze_dist_condz(list_x,list_y,list_z,dtc,zpbc,dn,figname,nbins,tradition=
 
 
 def print_output_D_ave(allD):
-    print "="*20
-    print "Diffusion estimates"
-    print allD.shape
+    print("="*20)
+    print("Diffusion estimates")
+    print(allD.shape)
     #print "xy,  z,  r"
     #print allD
 
-    print "="*5
-    print "xy"
-    print allD[:,0]/4.  # 2D
-    print "z"
-    print allD[:,1]/2.  # 1D
-    print "r"
-    print allD[:,2]/6.  # 3D
+    print("="*5)
+    print("xy")
+    print(allD[:,0]/4.)  # 2D
+    print("z")
+    print(allD[:,1]/2.)  # 1D
+    print("r")
+    print(allD[:,2]/6.)  # 3D
 
-    print "="*5
-    print "Diffusion constant"
-    print "   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd")
-    print "xy %20.10f   %20.10f" %(np.mean(allD[:,0])/4., np.std(allD[:,0])/4.)
-    print "z  %20.10f   %20.10f" %(np.mean(allD[:,1])/2., np.std(allD[:,1])/2.)
-    print "r  %20.10f   %20.10f" %(np.mean(allD[:,2])/6., np.std(allD[:,2])/6.)
-    print "="*5
+    print("="*5)
+    print("Diffusion constant")
+    print("   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd"))
+    print("xy %20.10f   %20.10f" %(np.mean(allD[:,0])/4., np.std(allD[:,0])/4.))
+    print("z  %20.10f   %20.10f" %(np.mean(allD[:,1])/2., np.std(allD[:,1])/2.))
+    print("r  %20.10f   %20.10f" %(np.mean(allD[:,2])/6., np.std(allD[:,2])/6.))
+    print("="*5)
 
 def print_output_matrixD_ave(allD):
-    print "="*20
-    print "Diffusion estimates"
-    print allD.shape
+    print("="*20)
+    print("Diffusion estimates")
+    print(allD.shape)
 
-    print "="*5
+    print("="*5)
     labs = ["xx","yy","zz","xy","xz","yz"]
     for i in range(6):
-        print labs[i]
-        print allD[:,i]/2.  # 2D
-    print "="*5
-    print "yzplane"
-    print (allD[:,0]+allD[:,1])/4.  # 2D
-    print "r-3D"
-    print (allD[:,0]+allD[:,1]+allD[:,2])/6.  # 3D
+        print(labs[i])
+        print(allD[:,i]/2.)  # 2D
+    print("="*5)
+    print("yzplane")
+    print((allD[:,0]+allD[:,1])/4.)  # 2D
+    print("r-3D")
+    print((allD[:,0]+allD[:,1]+allD[:,2])/6.)  # 3D
 
-    print "="*5
-    print "Diffusion constant"
-    print "   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd")
-    print "xx %20.10f   %20.10f" %(np.mean(allD[:,0])/2., np.std(allD[:,0])/2.)
-    print "yy %20.10f   %20.10f" %(np.mean(allD[:,1])/2., np.std(allD[:,1])/2.)
-    print "zz %20.10f   %20.10f" %(np.mean(allD[:,2])/2., np.std(allD[:,2])/2.)
-    print "xy %20.10f   %20.10f" %(np.mean(allD[:,3])/2., np.std(allD[:,3])/2.)
-    print "xz %20.10f   %20.10f" %(np.mean(allD[:,4])/2., np.std(allD[:,4])/2.)
-    print "yz %20.10f   %20.10f" %(np.mean(allD[:,5])/2., np.std(allD[:,5])/2.)
-    print "="*5
-    print "XY %20.10f   %20.10f" %(np.mean(allD[:,0]+allD[:,1])/4., np.std(allD[:,0]+allD[:,1])/4.)
-    print "Z  %20.10f   %20.10f" %(np.mean(allD[:,2])/2., np.std(allD[:,2])/2.)
-    print "R  %20.10f   %20.10f" %(np.mean(allD[:,0]+allD[:,1]+allD[:,2])/6., np.std(allD[:,0]+allD[:,1]+allD[:,2])/6.)
-    print "="*5
+    print("="*5)
+    print("Diffusion constant")
+    print("   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd"))
+    print("xx %20.10f   %20.10f" %(np.mean(allD[:,0])/2., np.std(allD[:,0])/2.))
+    print("yy %20.10f   %20.10f" %(np.mean(allD[:,1])/2., np.std(allD[:,1])/2.))
+    print("zz %20.10f   %20.10f" %(np.mean(allD[:,2])/2., np.std(allD[:,2])/2.))
+    print("xy %20.10f   %20.10f" %(np.mean(allD[:,3])/2., np.std(allD[:,3])/2.))
+    print("xz %20.10f   %20.10f" %(np.mean(allD[:,4])/2., np.std(allD[:,4])/2.))
+    print("yz %20.10f   %20.10f" %(np.mean(allD[:,5])/2., np.std(allD[:,5])/2.))
+    print("="*5)
+    print("XY %20.10f   %20.10f" %(np.mean(allD[:,0]+allD[:,1])/4., np.std(allD[:,0]+allD[:,1])/4.))
+    print("Z  %20.10f   %20.10f" %(np.mean(allD[:,2])/2., np.std(allD[:,2])/2.))
+    print("R  %20.10f   %20.10f" %(np.mean(allD[:,0]+allD[:,1]+allD[:,2])/6., np.std(allD[:,0]+allD[:,1]+allD[:,2])/6.))
+    print("="*5)
     analyze_as_tensor(allD)
 
 # to convert
@@ -825,8 +825,8 @@ def print_output_matrixD_ave(allD):
 def tensor_list_to_matrix_2D(A):
     B = np.array([A[:,0],A[:,3],A[:,4],A[:,3],A[:,1],A[:,5],A[:,4],A[:,5],A[:,2]])
     C = np.reshape(B,(3,-1,len(A)))
-    print "list",A.shape
-    print "matrix",C.shape
+    print("list",A.shape)
+    print("matrix",C.shape)
     #aveC = np.mean(C,axis=-1)
     #print "matrix-average",aveC.shape
     #print aveC
@@ -838,17 +838,17 @@ def tensor_list_to_matrix_1D(A):
         B[i,i] = A[i]
     B[0,1]=A[3]; B[0,2]=A[4]; B[1,2]=A[5]
     B[1,0]=A[3]; B[2,0]=A[4]; B[2,1]=A[5]
-    print "list",A.shape
-    print "matrix",B.shape
+    print("list",A.shape)
+    print("matrix",B.shape)
     return B
 
 def analyze_as_tensor(allD):
-    print "="*5
-    print "Diffusion tensor - eigenvalues"
+    print("="*5)
+    print("Diffusion tensor - eigenvalues")
     H = tensor_list_to_matrix_2D(allD/2.)
     nruns = H.shape[-1]
-    print "="*5
-    print "1. average over eigenvalues"
+    print("="*5)
+    print("1. average over eigenvalues")
     vals0 = []
     for i in range(nruns):
         vals,vecs = np.linalg.eigh(H[:,:,i])
@@ -856,36 +856,36 @@ def analyze_as_tensor(allD):
     vals0 = np.array(vals0)
     mean = np.mean(vals0,axis=0)
     std = np.std(vals0,axis=0)
-    print "mean vals"
-    for i in range(3): print mean[i]
-    print "std vals"
-    for i in range(3): print std[i]
+    print("mean vals")
+    for i in range(3): print(mean[i])
+    print("std vals")
+    for i in range(3): print(std[i])
 
-    print "="*5
-    print "2. average matrices, then take eigenvalues"
+    print("="*5)
+    print("2. average matrices, then take eigenvalues")
     means = np.mean(allD,axis=0)
     A = tensor_list_to_matrix_1D(means/2.)
     vals,vecs = np.linalg.eigh(A)
-    print "vals mean"
-    for i in range(3): print vals[i]
-    print "vecs mean"
+    print("vals mean")
+    for i in range(3): print(vals[i])
+    print("vecs mean")
     for i in range(3):
-        print vecs[i,0],vecs[i,1],vecs[i,2]
+        print(vecs[i,0],vecs[i,1],vecs[i,2])
 
 def print_output_D_ave_1D(allD):
-    print "="*20
-    print "Diffusion estimates"
-    print allD.shape
+    print("="*20)
+    print("Diffusion estimates")
+    print(allD.shape)
     #print allD
 
-    print "="*5
-    print allD[:]/2.  # 1D
+    print("="*5)
+    print(allD[:]/2.)  # 1D
 
-    print "="*5
-    print "Diffusion constant"
-    print "   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd")
-    print "r  %20.10f   %20.10f" %(np.mean(allD[:])/2., np.std(allD[:])/2.)
-    print "="*5
+    print("="*5)
+    print("Diffusion constant")
+    print("   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd"))
+    print("r  %20.10f   %20.10f" %(np.mean(allD[:])/2., np.std(allD[:])/2.))
+    print("="*5)
 
 #=========================================
 
@@ -1049,7 +1049,7 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False,npt=False):
     dpos = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
     if len(dpos.shape) < 3:
         # in case I have just one atom, ore only 2 time steps
-        print "WARNING, RESHAPING dpos IN FUNCTION calc_dist_folded"
+        print("WARNING, RESHAPING dpos IN FUNCTION calc_dist_folded")
         dpos = np.reshape(dpos,(natom,ntime-1,3))
 
     # pbc manipulations
@@ -1087,10 +1087,10 @@ def calc_dist_folded(x,y,z,unitcells,shifts=None,matrix=False,npt=False):
         # put back or not: dpos = pos[:,1:,:]-pos[:,:-1,:]  # natom x (ntime-1) x 3
         f = file("differences_cart.dat","w+")
         g = file("differences_direct.dat","w+")
-        for i in xrange(len(dpos)):
-          for j in xrange(dpos.shape[1]):
-            print >> f, dpos[i,j,0],dpos[i,j,1],dpos[i,j,2],dpos[i,j,0],dpos[i,j,1],dpos[i,j,2]
-            print >> g, dpos_direct[i,j,0],dpos_direct[i,j,1],dpos_direct[i,j,2],dpos_direct[i,j,0],dpos_direct[i,j,1],dpos_direct[i,j,2]
+        for i in range(len(dpos)):
+          for j in range(dpos.shape[1]):
+            print(dpos[i,j,0],dpos[i,j,1],dpos[i,j,2],dpos[i,j,0],dpos[i,j,1],dpos[i,j,2], file=f)
+            print(dpos_direct[i,j,0],dpos_direct[i,j,1],dpos_direct[i,j,2],dpos_direct[i,j,0],dpos_direct[i,j,1],dpos_direct[i,j,2], file=g)
         f.close()
         g.close()
 

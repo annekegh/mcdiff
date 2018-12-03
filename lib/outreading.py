@@ -330,7 +330,7 @@ def read_F_D_edges_logger_individualprofiles(logger):
         #print "Fshape",F.shape
     else:
         a = np.zeros((logger.nf,logger.model.dim_v))
-        for i in xrange(len(a)):
+        for i in range(len(a)):
             a[i,:] = logger.model.calc_profile(logger.v_coeff[i,:],logger.model.v_basis)
         F = a*logger.model.vunit
         #print "Fshape",F.shape
@@ -340,7 +340,7 @@ def read_F_D_edges_logger_individualprofiles(logger):
         D = np.exp(W)   # in angstrom**2/ps
     else:
         a = np.zeros((logger.nf,logger.model.dim_w))
-        for i in xrange(len(a)):
+        for i in range(len(a)):
             a[i,:] = logger.model.calc_profile(logger.w_coeff[i,:],logger.model.w_basis)
         W = a+logger.model.wunit
         D = np.exp(W)   # in angstrom**2/ps
@@ -354,7 +354,7 @@ def read_Drad_logger_individualprofiles(logger):
         Drad = np.exp(Wrad)   # in angstrom**2/ps
     else:
         a = np.zeros((logger.nf,logger.model.dim_wrad))
-        for i in xrange(len(a)):
+        for i in range(len(a)):
             a[i,:] = logger.model.calc_profile(logger.wrad_coeff[i,:],logger.model.wrad_basis)
         Wrad = a+logger.model.wradunit
         Drad = np.exp(Wrad)   # in angstrom**2/ps

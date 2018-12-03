@@ -83,7 +83,7 @@ def plot_bessels(lmax,redges,figname,color=None):
     plt.ylabel("per r-bin bin, with dr = %5.2fA"%dr)
     plt.title("bessel functions")
     plt.savefig("%s.lmax%i.png"%(figname,lmax))
-    print "picture printed:...", figname
+    print("picture printed:...", figname)
 
 
 def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
@@ -160,7 +160,7 @@ def test_propagator_twod():
     bessel0_zeros,bessels = setup_bessel_functions(lmax,dim_rad)
     propagator = propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
            lmax,bessel0_zeros,bessels,)  # no unit, is 'per r-bin per z-bin'
-    print "propagator-2d",propagator
+    print("propagator-2d",propagator)
 
     # make plots
     if False:
@@ -201,10 +201,10 @@ def test_propagator_twod():
 
     # check normalization
     # propagator is 'per end-r-bin per end-z-bin', no unit
-    print "Normalization"
+    print("Normalization")
     a = np.sum(propagator,axis=0)  # is per end-z-bin
-    print "sum-axis-0  ",a
+    print("sum-axis-0  ",a)
     b = np.sum(a,axis=0)   # is total probability (for each initial z-bin) 
-    print "sum-axis-0-0",b
-    print "sum         ",np.sum(b)
+    print("sum-axis-0-0",b)
+    print("sum         ",np.sum(b))
 

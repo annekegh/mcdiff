@@ -61,7 +61,7 @@ class Logger(object):
         from pprint import pprint
         pprint (vars(self))
         for attr in dir(self):
-            print >> f, "obj.%s = %s" % (attr, getattr(self, attr))
+            print("obj.%s = %s" % (attr, getattr(self, attr)), file=f)
         #f.close()
 
     def dump(self,filename):
@@ -74,22 +74,22 @@ class Logger(object):
         if f is None:
             import sys
             f = sys.stdout
-        if final: print >>f, "----- final Settings MC -----"
-        else:     print >>f, "----- Settings MC -----"
-        print >>f, "dv(MC-potential)=", self.dv[-1]
-        print >>f, "dw(MC-logD)=", self.dw[-1]
+        if final: print("----- final Settings MC -----", file=f)
+        else:     print("----- Settings MC -----", file=f)
+        print("dv(MC-potential)=", self.dv[-1], file=f)
+        print("dw(MC-logD)=", self.dw[-1], file=f)
         if hasattr(self,"dwrad"):   # for older versions
-            print >>f, "dwrad(MC-logDrad)=", self.dwrad[-1]
+            print("dwrad(MC-logDrad)=", self.dwrad[-1], file=f)
         #print >>f, "temp=", self.temp
-        print >>f, "n(MC)=", self.nmc
+        print("n(MC)=", self.nmc, file=f)
         #print >>f, "n(update)=", self.num_MC_update
         #print >>f, "k=", self.k
-        print >>f, "-"*20
+        print("-"*20, file=f)
 
 
     def average_profile_v_from_coeff(self,):
         a = np.zeros((self.nf,self.model.dim_v))
-        for i in xrange(len(a)):
+        for i in range(len(a)):
             a[i,:] = self.model.calc_profile(self.v_coeff[i,:],self.model.v_basis)
         v = np.mean(a,0)
         vst = np.std(a,0)
@@ -97,7 +97,7 @@ class Logger(object):
 
     def average_profile_w_from_coeff(self,):
         a = np.zeros((self.nf,self.model.dim_w))
-        for i in xrange(len(a)):
+        for i in range(len(a)):
             a[i,:] = self.model.calc_profile(self.w_coeff[i,:],self.model.w_basis)
         w = np.mean(a,0)
         wst = np.std(a,0)
@@ -107,7 +107,7 @@ class Logger(object):
 
     def average_profile_wrad_from_coeff(self,):
         a = np.zeros((self.nf,self.model.dim_wrad))
-        for i in xrange(len(a)):
+        for i in range(len(a)):
             a[i,:] = self.model.calc_profile(self.wrad_coeff[i,:],self.model.wrad_basis)
         wrad = np.mean(a,0)
         wradst = np.std(a,0)
@@ -116,7 +116,7 @@ class Logger(object):
         return wrad,wradst,drad,dradst
 
     def print_average(self,model,st=0):
-        from outreading import read_F_D_edges_logger, read_Drad_logger, read_coeff_logger
+        from .outreading import read_F_D_edges_logger, read_Drad_logger, read_coeff_logger
         F,D,edges,Fst,Dst = read_F_D_edges_logger(self)
         Drad,redges,Dradst = read_Drad_logger(self)
         v_coeff,w_coeff,wrad_coeff,v_coeff_st,w_coeff_st,wrad_coeff_st, timezero,timezero_st = read_coeff_logger(self)
@@ -135,17 +135,17 @@ class Logger(object):
         # st  --  start (cutting out the first MC steps)
         s = st/self.freq
         if s >= self.nf:
-            print "WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s)
+            print("WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s))
 
         def print_vector(vec,s):
             # vec has dimension  nsamples-in-MC x len(profile)
-            print "VEC",vec.shape
+            print("VEC",vec.shape)
             assert len(vec.shape) == 2
             for i in range(vec.shape[1]):
-                print i, np.mean(vec[s:,i]),np.std(vec[s:,i])
+                print(i, np.mean(vec[s:,i]),np.std(vec[s:,i]))
 
         # Free energy
-        print "===== stat v ====="
+        print("===== stat v =====")
         if MC.model.ncosF <= 0:
             print_vector(self.v,s)
         else:
@@ -153,11 +153,11 @@ class Logger(object):
             for i in range(len(vec)):
                 vec[i,:] = MC.model.calc_profile(self.v_coeff[i,:],MC.model.v_basis)
             print_vector(vec,s)
-            print "===== stat v_coeff ====="
+            print("===== stat v_coeff =====")
             print_vector(self.v_coeff,s)
 
         # Diffusion profile
-        print "===== stat w ====="
+        print("===== stat w =====")
         if MC.model.ncosD <= 0:
             print_vector(self.w,s)
         else:
@@ -165,12 +165,12 @@ class Logger(object):
             for i in range(len(vec)):
                 vec[i,:] = MC.model.calc_profile(self.w_coeff[i,:],MC.model.w_basis)
             print_vector(vec,s)
-            print "===== stat w_coeff ====="
+            print("===== stat w_coeff =====")
             print_vector(self.w_coeff,s)
 
         # Radial diffusion profile
         if MC.do_radial:
-            print "===== stat wrad ====="
+            print("===== stat wrad =====")
             if MC.model.ncosDrad <= 0:
                 print_vector(self.wrad,s)
             else:
@@ -178,7 +178,7 @@ class Logger(object):
                 for i in range(len(vec)):
                     vec[i,:] = MC.model.calc_profile(self.wrad_coeff[i,:],MC.model.wrad_basis)
                 print_vector(vec,s)
-                print "===== stat wrad_coeff ====="
+                print("===== stat wrad_coeff =====")
                 print_vector(self.wrad_coeff,s)
 
 
@@ -228,17 +228,17 @@ class CombinedLogger(Logger):
         # st  --  start (cutting out the first MC steps)
         s = st/self.freq
         if s >= self.nf:
-            print "WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s)
+            print("WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s))
 
         def print_vector(vec,s):
             # vec has dimension  nsamples-in-MC x len(profile)
-            print "VEC",vec.shape
+            print("VEC",vec.shape)
             assert len(vec.shape) == 2
             for i in range(vec.shape[1]):
-                print i, np.mean(vec[s:,i]),np.std(vec[s:,i])
+                print(i, np.mean(vec[s:,i]),np.std(vec[s:,i]))
 
         # Free energy
-        print "===== stat v ====="
+        print("===== stat v =====")
         if model.ncosF <= 0:
             print_vector(self.v,s)
         else:
@@ -246,11 +246,11 @@ class CombinedLogger(Logger):
             for i in range(len(vec)):
                 vec[i,:] = model.calc_profile(self.v_coeff[i,:],model.v_basis)
             print_vector(vec,s)
-            print "===== stat v_coeff ====="
+            print("===== stat v_coeff =====")
             print_vector(self.v_coeff,s)
 
         # Diffusion profile
-        print "===== stat w ====="
+        print("===== stat w =====")
         if model.ncosD <= 0:
             print_vector(self.w,s)
         else:
@@ -258,12 +258,12 @@ class CombinedLogger(Logger):
             for i in range(len(vec)):
                 vec[i,:] = model.calc_profile(self.w_coeff[i,:],model.w_basis)
             print_vector(vec,s)
-            print "===== stat w_coeff ====="
+            print("===== stat w_coeff =====")
             print_vector(self.w_coeff,s)
 
         # Radial diffusion profile
         if self.do_radial:
-            print "===== stat wrad ====="
+            print("===== stat wrad =====")
             if model.ncosDrad <= 0:
                 print_vector(self.wrad,s)
             else:
@@ -271,7 +271,7 @@ class CombinedLogger(Logger):
                 for i in range(len(vec)):
                     vec[i,:] = model.calc_profile(self.wrad_coeff[i,:],model.wrad_basis)
                 print_vector(vec,s)
-                print "===== stat wrad_coeff ====="
+                print("===== stat wrad_coeff =====")
                 print_vector(self.wrad_coeff,s)
 
 #================================================
@@ -289,28 +289,28 @@ def load_logger(filename):
 def print_coeffs(f,model,v_coeff=None,w_coeff=None,wrad_coeff=None,timezero=None,final=False):
     """print basis functions and other model parameters"""
     if model.ncosF>0:
-        if final: print >>f,"===== final v_coeff ====="
-        else:     print >>f,"===== v_coeff ====="
+        if final: print("===== final v_coeff =====", file=f)
+        else:     print("===== v_coeff =====", file=f)
         for i,val in enumerate(v_coeff):
-            print >>f, "%8d %13.5e" %(i,val)
+            print("%8d %13.5e" %(i,val), file=f)
     if model.ncosD>0:
-        if final: print >>f,"===== final w_coeff ====="
-        else:     print >>f,"===== w_coeff ====="
-        print >>f, "%8d %13.5e" %(0,w_coeff[0]+model.wunit)  # only the first needs to be shifted
+        if final: print("===== final w_coeff =====", file=f)
+        else:     print("===== w_coeff =====", file=f)
+        print("%8d %13.5e" %(0,w_coeff[0]+model.wunit), file=f)  # only the first needs to be shifted
         for i,val in enumerate(w_coeff[1:]):
-            print >>f, "%8d %13.5e" %(i+1,val)
+            print("%8d %13.5e" %(i+1,val), file=f)
     if timezero is not None:
-        if final: print >>f,"===== final timezero ====="
-        else:     print >>f,"===== timezero ====="
-        print >>f, "%13.5e" %(timezero)
+        if final: print("===== final timezero =====", file=f)
+        else:     print("===== timezero =====", file=f)
+        print("%13.5e" %(timezero), file=f)
     if wrad_coeff is not None:
       if model.ncosDrad > 0:
-        if final: print >>f,"===== final wrad_coeff ====="
-        else:     print >>f,"===== wrad_coeff ====="
-        print >>f, "%8d %13.5e" %(0,wrad_coeff[0]+model.wradunit)  # only the first needs to be shifted
+        if final: print("===== final wrad_coeff =====", file=f)
+        else:     print("===== wrad_coeff =====", file=f)
+        print("%8d %13.5e" %(0,wrad_coeff[0]+model.wradunit), file=f)  # only the first needs to be shifted
         for i,val in enumerate(wrad_coeff[1:]):
-            print >>f, "%8d %13.5e" %(i+1,val)
-    print >>f, "="*10
+            print("%8d %13.5e" %(i+1,val), file=f)
+    print("="*10, file=f)
 
 
 
@@ -321,8 +321,8 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
     final -- whether flag 'final' should be written
     """
 
-    if final: print >>f,"===== final F D ====="
-    else:     print >>f,"===== F D ====="
+    if final: print("===== final F D =====", file=f)
+    else:     print("===== F D =====", file=f)
 
     # units:
     F = v  # in kBT
@@ -364,8 +364,8 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
     if wrad is not None:
         """print final results (radial diffusion coefficient)
         f is a writable object"""
-        if final: print >>f,"===== final Drad ====="
-        else:     print >>f,"===== Drad ====="
+        if final: print("===== final Drad =====", file=f)
+        else:     print("===== Drad =====", file=f)
         edges = model.edges   # same as bins in 1-D z-direction
         f.write("%8s %8s %8s  %s" % ("index","bin-str","bin-end","diffusion-coefficient-at[i]\n"))
         for i in range(model.dim_wrad):

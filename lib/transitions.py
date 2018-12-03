@@ -5,9 +5,9 @@
 #
 
 import numpy as np
-from reading import guess_dim_transition_square, read_transition_square
-from reading import read_transition_header
-from reading import guess_dim_transition_cube, read_transition_cube
+from .reading import guess_dim_transition_square, read_transition_square
+from .reading import read_transition_header
+from .reading import guess_dim_transition_cube, read_transition_cube
 
 """
 lt  --  lag time between snapshots [in ps]
@@ -75,9 +75,9 @@ def reduce_Tmat(dim_trans,header,transmatrix):
     for i in range(len(transmatrix)):
         if sum(transmatrix[i,:]) != 0 and sum(transmatrix[:,i]) != 0:
             select.append(i)
-    select = range(min(select),max(select)+1)   # I do not cut in the middle
+    select = list(range(min(select),max(select)+1))   # I do not cut in the middle
     if select[0]==0 and select[-1]==len(transmatrix):    # what if I cut off zeros???  TODO
-       print "reduction transition matrix: dim_trans from %i to %i, nothing happened" %(dim_trans+redux,dim_trans)
+       print("reduction transition matrix: dim_trans from %i to %i, nothing happened" %(dim_trans+redux,dim_trans))
        return dim_trans,header,transmatrix
     else: 
        redux = len(transmatrix)-len(select)
@@ -87,7 +87,7 @@ def reduce_Tmat(dim_trans,header,transmatrix):
        trans[:,:] = np.take(np.take(transmatrix,select,0),select,1)
        header["count"] = "cut"   # TODO this is necessary!!!
        header["edges"] = header["edges"][select+[select[-1]+1]]
-       print "reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans)
+       print("reduction transition matrix: dim_trans from %i to %i" %(dim_trans+redux,dim_trans))
     return dim_trans,header,trans
 
 def cut_transitions_square(filename,start,end,outfile,count="cut"):
@@ -215,7 +215,7 @@ class RadTransitions(object):
         self.list_dt = np.array(self.list_dt)
         self.list_dn = np.array(self.list_dn)
         self.list_trans = np.array(self.list_trans)
-        print "trans:",self.list_trans.shape
+        print("trans:",self.list_trans.shape)
         self.min_lt = min(self.list_lt)
 
     def read_transition(self,filename):

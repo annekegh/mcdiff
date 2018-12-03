@@ -70,8 +70,8 @@ def calc_permeability(F,D,dx,st,end,edges=None,ref=0,doprint=False):
     ratio_h = heff/h
     if doprint:
         ##print "st,end %3i %3i"%(st,end),
-        print "st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h),
-        print "P",P, "Deff",Deff, "heff",heff,"R",R, "dRdx",dRdx[st]
+        print("st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h), end=' ')
+        print("P",P, "Deff",Deff, "heff",heff,"R",R, "dRdx",dRdx[st])
     return P,Deff,heff,diff_h
 
 ### 2) RADIAL PERMEABILITY
@@ -94,8 +94,8 @@ def calc_permeability_radial_h(F,Drad,dx,radius,st,end,edges=None,doprint=True):
     R = radius/Deff                               # permeability resistance, unit ps/A
 
     if doprint:
-        print "st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h),
-        print "P",P, "Deff",Deff, "R",R
+        print("st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h), end=' ')
+        print("P",P, "Deff",Deff, "R",R)
 
     return P,Deff,R
 
@@ -228,7 +228,7 @@ def calc_permeability_distribution(F,D,dx,dt,st,end,A,B,figname=None,ref=0,dopri
 
     if doprint:
         #print "permeability (in A/ps)",P
-        print "h %7.2f  P %10.5f  Deff %10.5f  R %10.5f"%(h,P,Deff,R)
+        print("h %7.2f  P %10.5f  Deff %10.5f  R %10.5f"%(h,P,Deff,R))
 
     # Now consider steady-state, but actually imitate equilibrium
     #------------------------------------------------------------
@@ -257,7 +257,7 @@ def calc_permeability_distribution(F,D,dx,dt,st,end,A,B,figname=None,ref=0,dopri
         plt.title("steady-state A*left+B*right")
 
         plt.savefig(figname)
-        print "file written...",figname
+        print("file written...",figname)
 
         plt.figure()
         #plt.subplot(2,1,2)
@@ -268,7 +268,7 @@ def calc_permeability_distribution(F,D,dx,dt,st,end,A,B,figname=None,ref=0,dopri
         plt.title("flux[0]=%f.4"%(flux[0]))
         plt.legend(loc='best')
         plt.savefig(figname+"flux.png")
-        print "file written...",figname+"flux.png"
+        print("file written...",figname+"flux.png")
 
     return P,Deff,R,h,prob
 
@@ -304,19 +304,19 @@ def analyze_partitioning_steadystate(F,st,end,prob1,prob2,prob,ref,):
 
     part_mem,part_wat = calc_mean_prob(part[st:end+1])
 
-    print "--- analyze partitioning steady state ---"
-    print "st  end    prob[st]   prob[end]    prob_mem   prob_wat prob_mem/prob_wat"
-    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob[0],
-          prob[-1],prob_mem,prob_wat,prob_mem/prob_wat, "prob-A-B")
-    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob1[0],
-          prob1[-1],prob1_mem,prob1_wat,prob1_mem/prob1_wat, "prob-right")
-    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob2[0],
-          prob2[-1],prob2_mem,prob1_wat,prob2_mem/prob1_wat, "prob-left")
-    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,probE[0],
-          probE[-1],probE_mem,probE_wat,probE_mem/probE_wat, "prob-steady-state-equil")
-    print "%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,part[st],
-          part[end],part_mem,part_wat,part_mem/part_wat, "prob-equilibr")
-    print "-"*3
+    print("--- analyze partitioning steady state ---")
+    print("st  end    prob[st]   prob[end]    prob_mem   prob_wat prob_mem/prob_wat")
+    print("%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob[0],
+          prob[-1],prob_mem,prob_wat,prob_mem/prob_wat, "prob-A-B"))
+    print("%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob1[0],
+          prob1[-1],prob1_mem,prob1_wat,prob1_mem/prob1_wat, "prob-right"))
+    print("%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,prob2[0],
+          prob2[-1],prob2_mem,prob1_wat,prob2_mem/prob1_wat, "prob-left"))
+    print("%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,probE[0],
+          probE[-1],probE_mem,probE_wat,probE_mem/probE_wat, "prob-steady-state-equil"))
+    print("%i  %i       %7.2f     %7.2f     %7.4f    %7.4f    %7.4f        %s"%(st,end,part[st],
+          part[end],part_mem,part_wat,part_mem/part_wat, "prob-equilibr"))
+    print("-"*3)
 
 
 # TODO type comments for this function
@@ -339,31 +339,31 @@ def calc_partition_coefficient(F,st,end,doprint=True):
     K_20 = c2/c0
 
     if doprint:
-        print "st,end",
-        print "F0-left-cent",
-        print "DF_left-0",
-        print "DF_cent-0",
-        print "K=exp(-DF)",
-        print "K=left/0",
-        print "K=cent/0"
+        print("st,end", end=' ')
+        print("F0-left-cent", end=' ')
+        print("DF_left-0", end=' ')
+        print("DF_cent-0", end=' ')
+        print("K=exp(-DF)", end=' ')
+        print("K=left/0", end=' ')
+        print("K=cent/0")
 
     if True:
-        print st,end,
-        print F0,F1,F2,
-        print DeltaF_10,
-        print DeltaF_20,
-        print K,
-        print K_10,
-        print K_20
+        print(st,end, end=' ')
+        print(F0,F1,F2, end=' ')
+        print(DeltaF_10, end=' ')
+        print(DeltaF_20, end=' ')
+        print(K, end=' ')
+        print(K_10, end=' ')
+        print(K_20)
 
     if False:
-        print "st,end",st,end,
-        print "F0-left-cent",F0,F1,F2,
-        print "DF_left-0",DeltaF_10,
-        print "DF_cent-0",DeltaF_20,
-        print "K=exp(-DF)",K,
-        print "K=left/0",K_10,
-        print "K=cent/0",K_20
+        print("st,end",st,end, end=' ')
+        print("F0-left-cent",F0,F1,F2, end=' ')
+        print("DF_left-0",DeltaF_10, end=' ')
+        print("DF_cent-0",DeltaF_20, end=' ')
+        print("K=exp(-DF)",K, end=' ')
+        print("K=left/0",K_10, end=' ')
+        print("K=cent/0",K_20)
 
     return K_20
 

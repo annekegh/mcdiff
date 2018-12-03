@@ -51,8 +51,8 @@ def calc_Dave_notmidF(F,D,st=None,end=None,edges=None):
         x_end = edges[end]
         h = edges[end]-edges[st]
         # print for postprocessing
-        print "st,end %3i %3i"%(st,end),
-        print "st,end,h %7.2f %7.2f %7.2f"%(x_st,x_end,h),
+        print("st,end %3i %3i"%(st,end), end=' ')
+        print("st,end,h %7.2f %7.2f %7.2f"%(x_st,x_end,h), end=' ')
     #print "Dave",Dave
     return Dave
 
@@ -131,7 +131,7 @@ def calc_Deff_1(F,D,st=None,end=None,ave=0,dz=None):
     if dz is not None:
         h = dz*len(part)
         P = Deff/h
-        print "P ave",ave,P,
+        print("P ave",ave,P, end=' ')
 
     # effective D
     #print "Deff_1",Deff
@@ -217,9 +217,9 @@ def calc_Dpar_logs(F,D,Drad,dz,dt,st=None,end=None,edges=None):
     # absorbing boundaries
     rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=False,st=st,end=end,side="both")  # in 1/dt
     #rate = construct_rate_matrix_from_F_D(F,D,dz,dt,pbc=False,st=st,end=end,side=None)  # in 1/dt
-    print "rate",rate.shape
+    print("rate",rate.shape)
     vals,U = np.linalg.eig(rate)  # U contains eigenvectors as columns
-    print vals
+    print(vals)
     U1 = np.linalg.inv(U)
     Ddiag = np.diag(drad)
     UDdiagU1 = np.dot(U,np.dot(Ddiag,U1))
@@ -231,7 +231,7 @@ def calc_Dpar_logs(F,D,Drad,dz,dt,st=None,end=None,edges=None):
     Dpar_1 = 0.
     for i in range(len(vals)):
         Dpar_1 += 1./vals[i]*U1[-1,i]*UDdiagU1[i,i]*U[i,0]
-    print "part1",Dpar_1
+    print("part1",Dpar_1)
     # second term
     Dpar_2 = 0.
     for i in range(len(vals)):
@@ -240,12 +240,12 @@ def calc_Dpar_logs(F,D,Drad,dz,dt,st=None,end=None,edges=None):
                   term = np.log(abs(vals[i]/vals[j]))/(vals[i]-vals[j])
                   term *= U1[-1,i]*UDdiagU1[i,j]*U[j,0]
                   Dpar_2 += term
-    print "part2",Dpar_2
+    print("part2",Dpar_2)
     Dpar = Dpar_1 + Dpar_2
-    print "sum",Dpar
+    print("sum",Dpar)
     rate1 = np.linalg.inv(rate)
     Dpar /= rate1[-1,0]
-    print "final",Dpar
+    print("final",Dpar)
     return Dpar
 
 
@@ -305,7 +305,7 @@ def calc_Dpar_ratios(F,D,Drad,t,dz,dt,st=None,end=None,edges=None):
 #    print Deff_t
     import scipy.linalg
     Deff_t /= scipy.linalg.expm2((rate-np.diag(np.ones(n))*maxval)*t) * t
-    print "t",t
-    print Deff_t
+    print("t",t)
+    print(Deff_t)
     return Deff_t
 

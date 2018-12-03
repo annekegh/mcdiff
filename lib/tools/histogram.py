@@ -44,11 +44,11 @@ def read_coor(filename,rv=False,axis=2,com=False):
         return data   # this is an array
 
 def shift_wrt_layer(data1,data2):
-    print "shifting"
+    print("shifting")
     d2 = np.array(data2)[:,0]   # format: mu sd
 
-    print "d2",d2.shape
-    print "data1",data1.shape,data2.shape
+    print("d2",d2.shape)
+    print("data1",data1.shape,data2.shape)
     coor = np.zeros(data1.shape,float)
     for i in range(data1.shape[1]):
         coor[:,i] = data1[:,i] - d2  # shift
@@ -59,9 +59,9 @@ def store_hist(bin_edges,hist,filename,):
     bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
     f = open(filename,"w+")
     for i in range(len(hist)):
-        print >> f, bin_edges[i], bin_edges[i+1], bin_midst[i], hist[i]
+        print(bin_edges[i], bin_edges[i+1], bin_midst[i], hist[i], file=f)
     f.close()
-    print "file written...",filename
+    print("file written...",filename)
 
 def plot_histogram_pbc(coor,zpbc,figname,):
     nbins = 100
@@ -75,7 +75,7 @@ def plot_histogram_pbc(coor,zpbc,figname,):
     plt.plot(bin_midst,hist)
     plt.bar(np.array(bin_midst)+zpbc,hist)
     plt.savefig(figname+".png")
-    print "file written...",figname+".png"
+    print("file written...",figname+".png")
 
     plt.figure()
     maxloghist = max(np.log(hist))
@@ -83,21 +83,21 @@ def plot_histogram_pbc(coor,zpbc,figname,):
     plt.ylim(0,3.5)   # hard coded ########### TODO
     plt.ylabel("F in kBT")
     plt.savefig(figname+".one.log.png")
-    print "file written...",figname+".one.log.png"
+    print("file written...",figname+".one.log.png")
     
     # another period
     plt.plot(np.array(bin_midst)+zpbc,-np.log(hist)+maxloghist,color='blue')
     plt.savefig(figname+".log.png")
-    print "file written...",figname+".log.png"
+    print("file written...",figname+".log.png")
 
     # print to a file for later use
     f = file(figname+".log.txt","w+")
-    print >> f, "#freeenergy: binmidst F"
-    print >> f, "#zpbc", zpbc
+    print("#freeenergy: binmidst F", file=f)
+    print("#zpbc", zpbc, file=f)
     for i in range(len(bin_midst)):
-        print >> f, bin_midst[i], -np.log(hist[i])+maxloghist 
+        print(bin_midst[i], -np.log(hist[i])+maxloghist, file=f) 
     f.close()
-    print "file written...",figname+".log.txt"
+    print("file written...",figname+".log.txt")
 
 
 def plot_histogram(coor,figname,ymin=None,ymax=None):
@@ -108,7 +108,7 @@ def plot_histogram(coor,figname,ymin=None,ymax=None):
     plt.figure()
     plt.plot(bin_midst,hist)
     plt.savefig(figname+".png")
-    print "file written...",figname+".png"
+    print("file written...",figname+".png")
 
     plt.figure()
     maxloghist = max(np.log(hist))
@@ -116,7 +116,7 @@ def plot_histogram(coor,figname,ymin=None,ymax=None):
     plt.ylim(ymin,ymax)
     plt.ylabel("F in kBT")
     plt.savefig(figname+".log.png")
-    print "file written...",figname+".log.png"
+    print("file written...",figname+".log.png")
 
 def add_constant_tolist(list_vecs,list_c):
     list_tot = [vec for vec in list_vecs]  # a copy
@@ -152,8 +152,8 @@ def plotvecs(list_vecs):
 
 
 def plot_crd_z(data1,data2,dtc,outdir,zpbc):
-    print "data", data1.shape, data2.shape
-    from distance import plot_vs_time
+    print("data", data1.shape, data2.shape)
+    from .distance import plot_vs_time
 
     toplot = add_vec_toarray(data1[:,::2],[data2[:,0],data2[:,0]+zpbc/2.,data2[:,0]-zpbc/2.])
     plot_vs_time(toplot,dtc,outdir+"/fig_crd-z.png")
@@ -168,9 +168,9 @@ def plot_crd_z(data1,data2,dtc,outdir,zpbc):
     plot_vs_time(toplot,dtc,outdir+"/fig_pbccrd-z.shift.png",**kwargs)
 
 def plot_crd_z_hexd(data1,dtc,outdir,zpbc):
-    from distance import plot_vs_time
+    from .distance import plot_vs_time
 
-    print data1.shape
+    print(data1.shape)
     coor = data1[:,::2]
     toplot = coor
     plot_vs_time(toplot,dtc,outdir+"/fig_crd-z.png")

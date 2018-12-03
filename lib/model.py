@@ -57,7 +57,7 @@ class Model(object):
         self.init_model(D0)
 
     def init_model(self,D0):
-        print "INIT MODEL"
+        print("INIT MODEL")
         # initialize potential v[i] and w[i]=log(D(i))
         # initialize F and D (v and w) to a constant value
         self.v = np.float64(np.zeros(self.dim_v))  # in kBT
@@ -101,13 +101,13 @@ class CosinusModel(Model):
         return np.array(basis).transpose()
 
     def init_model_cosF(self):
-        print "INIT COS MODEL F", self.ncosF
+        print("INIT COS MODEL F", self.ncosF)
         self.v_coeff = np.zeros((self.ncosF),float)
         self.v_basis = self.create_basis_center(self.dim_v,self.ncosF)
         self.update_v()
 
     def init_model_cosD(self,D0):
-        print "INIT COS MODEL D", self.ncosD
+        print("INIT COS MODEL D", self.ncosD)
         self.w_coeff = np.zeros((self.ncosD),float)
         ###
         self.w_coeff[0] += (np.log(D0)-self.wunit)   # initialize to D = D0 A**2/ps
@@ -117,7 +117,7 @@ class CosinusModel(Model):
         self.update_w()
 
     def init_model_cosP(self):
-        print "INIT COS MODEL P", self.ncosP
+        print("INIT COS MODEL P", self.ncosP)
         self.p_coeff = np.zeros((self.ncosP),float)
         self.p_coeff[0] = 1.  # normalization TODO
         self.p_basis = self.create_basis_center(self.dim_v,self.ncosP)
@@ -170,7 +170,7 @@ class SinusCosinusModel(CosinusModel):
         basis1 = [np.cos(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range((ncos+1)/2)]
         basis2 = [np.sin(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range(1,(ncos+1)/2)]
         basis = basis1 + basis2
-        print "basis SIN center",len(basis)
+        print("basis SIN center",len(basis))
         return np.array(basis).transpose()
     def create_basis_border(self,dim,dim2,ncos):
         x = np.arange(dim)
@@ -178,18 +178,18 @@ class SinusCosinusModel(CosinusModel):
         basis2 = [np.sin(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range(1,(ncos+1)/2)]
         basis = basis1 + basis2
         #print "basis",basis
-        print "basis SIN border",len(basis)
+        print("basis SIN border",len(basis))
         basis = basis1 + basis2
         return np.array(basis).transpose()
 
     def init_model_cosF(self):
-        print "INIT SINCOS MODEL F", self.ncosF
+        print("INIT SINCOS MODEL F", self.ncosF)
         self.v_coeff = np.zeros((self.ncosF),float)
         self.v_basis = self.create_basis_center(self.dim_v,self.ncosF)
         CosinusModel.update_v(self)
 
     def init_model_cosD(self,D0):
-        print "INIT SINCOS MODEL D", self.ncosD
+        print("INIT SINCOS MODEL D", self.ncosD)
         self.w_coeff = np.zeros((self.ncosD),float)
         ###
         self.w_coeff[0] += (np.log(D0)-self.wunit)   # initialize to D = D0 A**2/ps
@@ -217,7 +217,7 @@ class StepModel(Model):
             self.init_model_P()
 
     def init_model_F(self,):
-        print "INIT STEP MODEL F", self.ncosF
+        print("INIT STEP MODEL F", self.ncosF)
         self.v_coeff = np.zeros((self.ncosF),float)  # heights
         dx = self.dim_v /2. /self.ncosF
         self.v_x0 = np.arange(0,self.ncosF*dx,dx)  # location
@@ -225,7 +225,7 @@ class StepModel(Model):
         self.update_v()
 
     def init_model_D(self,D0):
-        print "INIT STEP MODEL D", self.ncosD
+        print("INIT STEP MODEL D", self.ncosD)
         self.w_coeff = np.zeros((self.ncosD),float)  # heights
         dx = self.dim_v /2. /self.ncosD   # use length of v vector 
         self.w_x0 = np.arange(0,self.ncosD*dx,dx)
@@ -282,7 +282,7 @@ class OneStepModel(StepModel):
         StepModel.__init__(self,trans,D0,ncosF,ncosD,ncosP)
 
     def init_model_F(self,):
-        print "INIT ONESTEP MODEL F", self.ncosF
+        print("INIT ONESTEP MODEL F", self.ncosF)
         self.v_coeff = np.zeros((self.ncosF),float)  # heights
         dx = float(self.dim_v) /self.ncosF
         self.v_x0 = np.arange(0,self.ncosF*dx,dx)  # location
@@ -290,7 +290,7 @@ class OneStepModel(StepModel):
         self.update_v()
 
     def init_model_D(self,D0):
-        print "INIT ONESTEP MODEL D", self.ncosD
+        print("INIT ONESTEP MODEL D", self.ncosD)
         self.w_coeff = np.zeros((self.ncosD),float)  # heights
         dx = float(self.dim_v) /self.ncosD   # use length of v vector 
         self.w_x0 = np.arange(0,self.ncosD*dx,dx)
@@ -321,7 +321,7 @@ class RadModel(CosinusModel):
         self.init_model_rad(D0)
 
     def init_model_rad(self,D0):
-        print "INIT RADMODEL"
+        print("INIT RADMODEL")
         self.wrad = np.float64(np.zeros(self.dim_v))  # one for each bin, in dx**2/dt
         self.dim_wrad = len(self.wrad)
         # initialize wrad to a constant value of D = D0 angstrom**2/ps
@@ -345,7 +345,7 @@ class RadCosinusModel(RadModel):
             self.init_model_cosDrad(D0)
 
     def init_model_cosDrad(self,D0):
-        print "INIT COS MODEL Drad", self.ncosDrad
+        print("INIT COS MODEL Drad", self.ncosDrad)
         self.wrad_coeff = np.zeros((self.ncosDrad),float)
         self.wrad_coeff[0] = np.log(D0)-self.wradunit  # the constant term
 

@@ -74,8 +74,8 @@ def read_transition_header(filename):
                 header['redges'] = np.array(redges)   # bin redges
 
     f.close()
-    print "HEADER"
-    print header
+    print("HEADER")
+    print(header)
     check_content_header(header)
     return header
 
@@ -92,14 +92,14 @@ def check_content_header(header):
         if 'dt' in header: assert header['lt'] == (header['dn']*header['dt'])
         else: header['dt'] = (header['lt']*header['dn'])
     else:
-        print "Two out of the following have to be specified: dt, dn, lt."
+        print("Two out of the following have to be specified: dt, dn, lt.")
         raise ValueError("can not construct lag time lt")
 
-    print "lt", header['lt']
+    print("lt", header['lt'])
     if 'count' in header:
         assert header['count'] in ["pbc","cut"]  #so far what I know
     else:
-        print "counting method count is not specified correctly"
+        print("counting method count is not specified correctly")
         raise ValueError("count should be specified in transition matrix file")
 
     # TODO if not 'edges' in header:
@@ -122,7 +122,7 @@ def read_transition_square(filename,dim_trans):
             transition[row,:] = [int(word) for word in words]
             row += 1
     if row != dim_trans:
-        print "wrong number of entries in ", filename
+        print("wrong number of entries in ", filename)
         quit()
     f.close()
     return transition
@@ -138,7 +138,7 @@ def read_transition_cube(filename,dim_rad,dim_trans):
     for line in f:
         if line.startswith("-"):
             if row != dim_trans:
-                print "wrong number of entries in ", filename
+                print("wrong number of entries in ", filename)
                 quit()
             radbin += 1  # I reached next radial point
             row = 0
@@ -190,7 +190,7 @@ def read_transition_linebyline(filename,dim_trans):
             transition[k1,k2] = np.float64(line)
             k += 1
     if k != dim_trans**2:
-        print "wrong number of entries in ", filename
+        print("wrong number of entries in ", filename)
         quit()
     f.close()
 
@@ -227,7 +227,7 @@ def read_transition_square_bkp(filename,dim_trans):
             transition[row,:] = [int(word) for word in words]
             row += 1
     if row != dim_trans:
-        print "wrong number of entries in ", filename
+        print("wrong number of entries in ", filename)
         quit()
     f.close()
 
@@ -237,12 +237,12 @@ def read_transition_square_bkp(filename,dim_trans):
 
 def read_all_transitions_bkp(args,form="square"):
     """read all input: lagtimes and transitions"""
-    print "args:", args
+    print("args:", args)
 
     # number of lag times
     num_lag = len(args)/2
     lagtimes = np.zeros((num_lag),dtype=np.float64)
-    print "number of lagtimes:", num_lag
+    print("number of lagtimes:", num_lag)
 
     # dimension of transition matrix
     if form == "square":
@@ -251,7 +251,7 @@ def read_all_transitions_bkp(args,form="square"):
         dim_trans = guess_dim_transition_linebyline(args[1])
 
     transition = np.zeros((num_lag,dim_trans,dim_trans),np.float64)
-    print "dimension trans:", dim_trans
+    print("dimension trans:", dim_trans)
 
     # read lagtimes and transition files
     for i in range(num_lag):
@@ -265,7 +265,7 @@ def read_all_transitions_bkp(args,form="square"):
         else:
             trans,edges = read_transition_linebyline(filename,dim_trans)
         transition[i,:,:] = trans
-        print "window ", i, ": lagtime", lagtimes[i], "or",args[2*i], "from file", args[2*i+1]
+        print("window ", i, ": lagtime", lagtimes[i], "or",args[2*i], "from file", args[2*i+1])
 
     #### let's hope I have the same edges every time!!!!
     ###  add quality checks: edges, lagtime, dim_trans

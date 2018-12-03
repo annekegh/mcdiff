@@ -316,7 +316,7 @@ def do_theor_MSD(rate,prop,prop0,dz,n,edges,redges,measured,lagtime,fig):
         plt.figure(2)
         mid = nK/2
         st = mid+n/2; st = min(nK-1,st)   # hack
-        print mid,st,prop0.shape
+        print(mid,st,prop0.shape)
         plt.plot(prop0[:,st],color='blue')
         plt.plot(prop0[:,mid],color='red')
         plt.ylim([0,0.15])

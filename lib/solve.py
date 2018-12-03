@@ -3,8 +3,8 @@
 import numpy as np
 import scipy
 
-from outreading import read_F_D_edges,read_many_profiles
-from utils import init_rate_matrix
+from .outreading import read_F_D_edges,read_many_profiles
+from .utils import init_rate_matrix
 
 def propagate_with_sink(time,F,D,edges,sink_index):
     n = len(F)
@@ -102,10 +102,10 @@ def calc_unitD(edges):
     unitD = dx**2/dt  # in angstrom**2/ps
     return unitD
 
-print "Diffusion constants"
+print("Diffusion constants")
 unitD = calc_unitD(edges)
 n = len(D)
-print "unitD",unitD
-print "D[0]",D[0]*unitD
-print "D[n/2]",D[n/2]*unitD
-print "Deff",Deff(F,D)*unitD
+print("unitD",unitD)
+print("D[0]",D[0]*unitD)
+print("D[n/2]",D[n/2]*unitD)
+print("Deff",Deff(F,D)*unitD)

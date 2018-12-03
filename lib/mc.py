@@ -7,14 +7,14 @@
 
 import numpy as np
 
-from MCState import MCState
-from transitions import Transitions, RadTransitions
-from log import Logger, write_average_from_pic
+from .MCState import MCState
+from .transitions import Transitions, RadTransitions
+from .log import Logger, write_average_from_pic
 
 
 def do_mc_cycles(MC,logger):
     # MONTE CARLO OPTIMIZATION    # TODO this function can become function of MCState object
-    print "\n MC-move log-like acc(v) acc(w)"
+    print("\n MC-move log-like acc(v) acc(w)")
 
     MC.init_log_like()
     logger.log(0,MC)
@@ -51,9 +51,9 @@ def find_parameters(filenames,pbc,model,
       dv,dw,dwrad,D0,dtimezero,temp,temp_end,nmc,nmc_update,seed,outfile, ncosF,ncosD,ncosDrad,
       move_timezero,initfile,k,
       lmax,reduction,pull): 
-    print "python program to extract diffusion coefficient and free energy from transition counts"
-    print "copyright: Gerhard Hummer (NIH, July 2012)"
-    print "adapted by An Ghysels (August 2012)\n"
+    print("python program to extract diffusion coefficient and free energy from transition counts")
+    print("copyright: Gerhard Hummer (NIH, July 2012)")
+    print("adapted by An Ghysels (August 2012)\n")
 
     if seed is not None:
         np.random.seed(seed)

@@ -95,8 +95,8 @@ class RunData(object):
         self.zpbc = self.xtl[:,-1]
 
         self.nstep = self.x.shape[0]
-        print "Added: %15i Total: %15i CHARMM: nsteps/nsavc = %i/%i=%i" %(x.shape[0],
-                self.nstep,taco.nsteps,taco.nsavc,taco.nsteps/taco.nsavc)
+        print("Added: %15i Total: %15i CHARMM: nsteps/nsavc = %i/%i=%i" %(x.shape[0],
+                self.nstep,taco.nsteps,taco.nsavc,taco.nsteps/taco.nsavc))
 
     def read_charmm_out(self,filename):
 
@@ -117,11 +117,11 @@ class RunData(object):
             self.temp   = np.append(self.temp,outDict['dynatemp'])
 
     def print_settings(self):
-        print "Settings"
+        print("Settings")
         for attr in ["started","size","distdone",
                     "nstep","nsavc","nsavv",
                     "dt","dtc","del_t"]:
-            print "%12s " %attr, self.__dict__[attr]
+            print("%12s " %attr, self.__dict__[attr])
             
 
     def update(self,minstep=0):
@@ -158,7 +158,7 @@ class RunData(object):
         if moltypes == None:
             moltypes = rd.select
         for moltype in moltypes:
-            print "=====\n%s" % moltype
+            print("=====\n%s" % moltype)
             cor = self.z[:,self.select[moltype]]
             mu = np.mean(cor,1)
             sd = np.std(cor,1)
@@ -170,17 +170,17 @@ class RunData(object):
             sd1 = np.std(zshift,1)
             # shift other direction: this gives the same standard deviation
 
-            print "average of last 200 timesteps"
-            print "not shifted   ",
-            print "mean:", np.mean(mu[-100:]),  "sd", np.mean(sd[-100:])
-            print "when shifted  ",
-            print "mean:", np.mean(mu1[-100:]), "sd", np.mean(sd1[-100:])
+            print("average of last 200 timesteps")
+            print("not shifted   ", end=' ')
+            print("mean:", np.mean(mu[-100:]),  "sd", np.mean(sd[-100:]))
+            print("when shifted  ", end=' ')
+            print("mean:", np.mean(mu1[-100:]), "sd", np.mean(sd1[-100:]))
 
             if outfile is not None:
                 f = file(outfile+".%s.z" %moltype,"w+")
-                print >> f, "# average z-coor %s" %moltype
-                for i in xrange(len(mu)):
-                    print >> f, mu[i], sd[i]    
+                print("# average z-coor %s" %moltype, file=f)
+                for i in range(len(mu)):
+                    print(mu[i], sd[i], file=f)    
                 f.close()
 
             #plot_vs_time(np.array([mu,mu-sd,mu+sd,mu1,mu1-sd1,mu1+sd1]).transpose(),self.dtc,outdir+"/fig_musd.%s.png"%moltype)
@@ -217,7 +217,7 @@ class RunData(object):
     def preliminary_plots(self,outdir):
         histogram(self.x[:,0],outdir+"/fig_hist.x0.png")
         histogram(self.z[:,0],outdir+"/fig_hist.z0.png")
-        plot_vs_time(self.x[:,range(10)],self.dtc,outdir+"/fig_x0.png")
+        plot_vs_time(self.x[:,list(range(10))],self.dtc,outdir+"/fig_x0.png")
         plot_vs_time(self.ener,self.dt,outdir+"/fig_ener.png")
         plot_vs_time(self.temp,self.dt,outdir+"/fig_temp.png")
         plot_vs_time(self.pressi,self.dt,outdir+"/fig_pressi.png")
@@ -226,9 +226,9 @@ class RunData(object):
 
     def write_pbc(self,outfile):
         f = file(outfile,"w+")
-        print >> f, "# box parameters a b c"
+        print("# box parameters a b c", file=f)
         for t in range(self.nstep):
-            print >> f, self.xpbc[t], self.ypbc[t], self.zpbc[t]
+            print(self.xpbc[t], self.ypbc[t], self.zpbc[t], file=f)
         f.close()
 
     def write_coor(self,index,outfile,moltype,pbc=False):
@@ -249,13 +249,13 @@ class RunData(object):
                 pbccoor = self.zpbc
 
         f = file(outfile,"w+")
-        print >> f, "# coor[%i]" %index
+        print("# coor[%i]" %index, file=f)
         for step in range(coor.shape[0]):
             vec = coor[step,:]
             if pbc:
                 vec -= pbccoor[step]*np.floor(vec/pbccoor[step]+0.5)
             line = " ".join([str(vec[at]) for at in range(len(vec))])
-            print >> f, line
+            print(line, file=f)
         f.close()
 
     def calc_dist_normal(self):
@@ -293,21 +293,21 @@ class RunData(object):
     def autocorr_ave(self,select):
         if np.sum(self.acdone) == 0:
             self.ac = np.zeros((self.nstep,self.size,3),float)
-        for i,at in enumerate(xrange(self.size)):
+        for i,at in enumerate(range(self.size)):
             if not self.acdone[at]:
                 self.ac[:,i,0] = autocorr(self.x[:,at])
                 self.ac[:,i,1] = autocorr(self.y[:,at])
                 self.ac[:,i,2] = autocorr(self.z[:,at])
                 self.acdone[at] = True
         AC = np.mean(self.ac[:,select,:],1)
-        print "AC", AC.shape
+        print("AC", AC.shape)
         return AC
 
 
     def fit_r_vs_time(self,outdir):
         if not self.distdone: self.calc_dist()
         for moltype in self.select:
-            print "=====\n%s" % moltype
+            print("=====\n%s" % moltype)
             a = self.dist_r[:,self.select[moltype]]
             average = np.mean(a,1)
             #plot_vs_time(average,self.dtc,outdir+"/fig_distmean.%s.png"%moltype)
@@ -316,7 +316,7 @@ class RunData(object):
     def fit_z_vs_time(self,outdir):
         if not self.distdone: self.calc_dist()
         for moltype in self.select:
-            print "=====\n%s" % moltype
+            print("=====\n%s" % moltype)
             a = self.dist_z[:,self.select[moltype]]
             average = np.mean(a,1)
             #plot_vs_time(average,self.dtc,outdir+"/fig_distz.%s.png"%moltype)
@@ -325,7 +325,7 @@ class RunData(object):
     def fit_xy_vs_time(self,outdir):
         if not self.distdone: self.calc_dist()
         for moltype in self.select:
-            print "=====\n%s" % moltype
+            print("=====\n%s" % moltype)
             a = self.dist_xy[:,self.select[moltype]]
             average = np.mean(a,1)
             #plot_vs_time(average,self.dtc,outdir+"/fig_distxy.%s.png"%moltype)
@@ -346,7 +346,7 @@ class RunData(object):
     def create_histograms(self):
         """Assume used on trajectories that have NOT been expanded"""
         for moltype in self.select:
-            print "=====\n%s" % moltype
+            print("=====\n%s" % moltype)
             kwargs = {"range":(-40,40), "normed":True}
             histogram(self.x[:,self.select[moltype]].ravel(),"fig_hist.x.%s.png"%moltype,**kwargs)
             histogram(self.y[:,self.select[moltype]].ravel(),"fig_hist.y.%s.png"%moltype,**kwargs)
@@ -420,11 +420,11 @@ def fill_transition_matrix2(A,cor,bins,shift=1):
     for i,traj in enumerate(cor):
         class_ids[i,:] = np.digitize(traj,bins)
     n, t = class_ids.shape
-    js = range(t-1)
+    js = list(range(t-1))
 
     # all possible bin values
     k = len(bins)+1
-    classIds = range(k)
+    classIds = list(range(k))
 
     # fill matrix
     transitions = np.zeros((k,k))
@@ -449,9 +449,9 @@ def fill_transition_matrix2(A,cor,bins,shift=1):
 def write_Tmat(A,filename):
     f = file(filename,"w+")
     L = len(A)  # number of bins + 1
-    for i in xrange(L):
-        for j in xrange(L):
-            print >> f, A[i,j]
+    for i in range(L):
+        for j in range(L):
+            print(A[i,j], file=f)
     f.close()
 
 
@@ -477,7 +477,7 @@ def plot_vs_time(x,dt,filename,**kwargs):
     plt.plot(t,x,**kwargs)
     plt.xlabel("t [ps]")
     plt.savefig(filename)
-    print "file written...",filename
+    print("file written...",filename)
 
 def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sqrt=True):
     # use input data correctly
@@ -498,13 +498,13 @@ def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sq
     # fit distance
     p = np.polyfit(t[:50],r[:50],1)
     if verbose:
-        print "linear fit (50)"
-        print p
+        print("linear fit (50)")
+        print(p)
 
     p = np.polyfit(t,r2,1)   # this fit is plotted
     if verbose:
-        print "linear fit square dist"
-        print p
+        print("linear fit square dist")
+        print(p)
     p = np.poly1d(p)
     fitted_1 = p(t)
     a_1 = p.c[0]  # this is in angstrom**2/ps = 1e-20/1e-12 meter**2/second
@@ -514,8 +514,8 @@ def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sq
     A = np.power.outer(t,np.arange(0.5,1.,1.))
     outputs = np.linalg.lstsq(A,r)[0]
     if verbose:
-        print "fit root time"
-        print outputs
+        print("fit root time")
+        print(outputs)
     fitted_2 = outputs[0]**2*t
     a_2 = outputs[0]
 
@@ -533,7 +533,7 @@ def fit_sqrt_vs_time(rdata,dt,figname,title=None,verbose=False,t0=0.,std=None,sq
     title += ", a=%f [e-4cm**2/s]  b=%f" %(a_1,b_1)
     plt.title(title)
     plt.savefig(figname)
-    print "file written...",figname
+    print("file written...",figname)
     return a_1,b_1,a_2
 
 
@@ -547,16 +547,16 @@ def analyze_dist_multipleruns(list_rd,outdir):
     t = np.arange(0,nstep*dtc,dtc)
 
     allD = np.zeros((nrd,3,len(select)))
-    print "="*5
-    print "Results"
+    print("="*5)
+    print("Results")
 
     for it, moltype in enumerate(select):
-        print moltype
+        print(moltype)
         tot_xy = np.zeros((nstep,nrd),float)
         tot_z  = np.zeros((nstep,nrd),float)
         tot_r  = np.zeros((nstep,nrd),float)
         for i,rd in enumerate(list_rd):
-            print i
+            print(i)
             a = rd.dist_xy[:,rd.select[moltype]]
             average = np.mean(a,1)
             tot_xy[:,i] = average
@@ -589,30 +589,30 @@ def analyze_dist_multipleruns(list_rd,outdir):
         fit_sqrt_vs_time(m_r, dtc,outdir+"/fig_distmean.%s.average.png"%moltype,title=moltype)
 
     
-    print "="*20
-    print "Diffusion estimates"
-    print allD.shape
-    print allD
+    print("="*20)
+    print("Diffusion estimates")
+    print(allD.shape)
+    print(allD)
 
-    print "="*5
+    print("="*5)
     for it,moltype in enumerate(select):
-        print moltype
-        print "x"
-        print allD[:,0,it]
-        print "z"
-        print allD[:,1,it]
-        print "r"
-        print allD[:,2,it]
+        print(moltype)
+        print("x")
+        print(allD[:,0,it])
+        print("z")
+        print(allD[:,1,it])
+        print("r")
+        print(allD[:,2,it])
 
-    print "="*5
-    print "Diffusion constant"
+    print("="*5)
+    print("Diffusion constant")
     for it,moltype in enumerate(select):
-        print moltype
-        print "   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd")
-        print "x  %20.10f   %20.10f" %(np.mean(allD[:,0,it]), np.std(allD[:,0,it]))
-        print "z  %20.10f   %20.10f" %(np.mean(allD[:,1,it]), np.std(allD[:,1,it]))
-        print "r  %20.10f   %20.10f" %(np.mean(allD[:,2,it]), np.std(allD[:,2,it]))
-    print "="*5
+        print(moltype)
+        print("   %20s   %20s" %("Dmean[e-4cm^2/s]","Dstd"))
+        print("x  %20.10f   %20.10f" %(np.mean(allD[:,0,it]), np.std(allD[:,0,it])))
+        print("z  %20.10f   %20.10f" %(np.mean(allD[:,1,it]), np.std(allD[:,1,it])))
+        print("r  %20.10f   %20.10f" %(np.mean(allD[:,2,it]), np.std(allD[:,2,it])))
+    print("="*5)
 
    
 
@@ -629,7 +629,7 @@ def collect_data(indir,chunkstart,chunkend,outdir,outfile,smooth=True,ext='trj',
         else:
             filename = indir+"/dyn"+str(i)+"."+ext
         rd.read_charmm_traj(filename,dtc=dtc)
-        print "read:", filename
+        print("read:", filename)
 
 # TODO make optional
 #        filename = indir+"/dyn"+str(i)+".out"

@@ -80,8 +80,8 @@ def calc_mfpt_szabo(F,D,dx,dt,st,end,getmax=False):
         #print "partcum",partcum
         #print "tot partcum",np.sum(part)
         #print "mfpt",mfpt
-        print "st,end",st,end,
-        print "tau",tau,"maxmfpt",maxmfpt
+        print("st,end",st,end, end=' ')
+        print("tau",tau,"maxmfpt",maxmfpt)
 
     if getmax:
         return maxmfpt
@@ -154,7 +154,7 @@ def calc_mfpt(F,D,dx,dt,st,end,getmax=False,side=None):
     v = F-min(F)
 
     rate = construct_rate_matrix_from_F_D(v,D,dx,dt,pbc=False,st=st,end=end,side=side)  # in 1/dt
-    print "st,end",st,end,rate.shape
+    print("st,end",st,end,rate.shape)
     rate1 = np.linalg.inv(rate)  # in units dt
 
     # construct mfpt vector
@@ -175,12 +175,12 @@ def calc_mfpt(F,D,dx,dt,st,end,getmax=False,side=None):
     #----------
     if False:
         vals,vecs = np.linalg.eig(rate)
-        print "vals rate (1/dt)",vals
-        print "mfpt (ps)",mfpt
+        print("vals rate (1/dt)",vals)
+        print("mfpt (ps)",mfpt)
     if True:
-        print "st,end,side",st,end,side, 
-        print "tau (ps)",tau,
-        print "maxmfpt (ps)", max(mfpt)
+        print("st,end,side",st,end,side, end=' ') 
+        print("tau (ps)",tau, end=' ')
+        print("maxmfpt (ps)", max(mfpt))
 
     if False: #True:
         plt.figure()
@@ -300,7 +300,7 @@ def get_median_from_rate_k12(rate,prop,dt,k1,k2,part,):
     a3 = - k1*rate12_prop[0,:]  - k2*rate12_prop[-1,:]   # k*R^(-2)*e^(RT)
     a = a1+a2+a3
     mfpt = -np.log(2.)*(rate1[0,:]+rate1[-1,:])
-    print "median",mfpt
+    print("median",mfpt)
 
     # Compute variance of first passage time   # TODO not fixed yet
     b = - k1*rate13[0,:] - k2*rate13[-1,:]    ####   TODO correct?  # -k*R^(-3)
@@ -393,15 +393,15 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
     #----------
     if False:
         vals,vecs = np.linalg.eig(rate)
-        print "vals rate (1/dt)",vals
-        print "mfpt (ps)",mfpt
+        print("vals rate (1/dt)",vals)
+        print("mfpt (ps)",mfpt)
       
     if doprint:  #rlb = right left both    # This is nice printing!
-        print "b1,b2,init",b1,b2,init,
-        print "tau-rlb",tau1,tau2,tau3,
-        print "maxmfpt-r", max(mfpt1),
-        print "sel-rlb", sel_mfpt1, sel_mfpt2, sel_mfpt3,
-        print "std", sel_std1,sel_std2,sel_std3
+        print("b1,b2,init",b1,b2,init, end=' ')
+        print("tau-rlb",tau1,tau2,tau3, end=' ')
+        print("maxmfpt-r", max(mfpt1), end=' ')
+        print("sel-rlb", sel_mfpt1, sel_mfpt2, sel_mfpt3, end=' ')
+        print("std", sel_std1,sel_std2,sel_std3)
 
     if dofig:
         plt.figure()
@@ -493,12 +493,12 @@ def distribution_mfpt(F,D,dx,dt,b1,b2,trange):
 
     rho = np.array(rho)
     # rho contains rho(t|k) for all t values in trange
-    print "trange",len(trange),"len",len(rho),"rho_t",rho_t.shape, "rho",rho.shape
+    print("trange",len(trange),"len",len(rho),"rho_t",rho_t.shape, "rho",rho.shape)
 
     cdf = np.array(cdf)
     # cdf contains cdf(t|k) for all t values in trange
 
-    print "trange",len(trange),"len",len(cdf),"cdf_t",cdf_t.shape, "cdf",cdf.shape
+    print("trange",len(trange),"len",len(cdf),"cdf_t",cdf_t.shape, "cdf",cdf.shape)
 
     # Writing data to file
     #----------------------
@@ -508,7 +508,7 @@ def distribution_mfpt(F,D,dx,dt,b1,b2,trange):
     data[:,1] = rho
     data[:,2] = cdf
     np.savetxt(filename,data)
-    print "file written...", filename
+    print("file written...", filename)
 
     if True:
         # Plot rho(t|k)   HERE k = MIDDLE
@@ -543,9 +543,9 @@ def distribution_mfpt(F,D,dx,dt,b1,b2,trange):
     return rho,cdf
 
 def calc_statistics_rho(trange,rho):
-    print "--"
-    print "statistics"
-    print "--"
+    print("--")
+    print("statistics")
+    print("--")
     # mean
     dtrange = trange[1:]-trange[:-1]
     norm = np.sum(rho[1:]*dtrange)                  # not perfect, binning
@@ -555,9 +555,9 @@ def calc_statistics_rho(trange,rho):
     std = np.sqrt(m2-m**2)
     std2_a = np.sum((((trange-m)**2*rho)[1:])*dtrange)/norm
     std_a = np.sqrt(std2_a)
-    print "norm", norm
-    print "mean", m
-    print "std", std,std_a
+    print("norm", norm)
+    print("mean", m)
+    print("std", std,std_a)
     return m,std
 
 
@@ -584,7 +584,7 @@ def get_inverse_cdf(trange,cdf):
     #y = np.arange(0,1,0.00001)   # equal amount?
     Ny = Nrl    # equal amount???   # TODO
     y = np.arange(0,Ny)/float(Ny)
-    for n in xrange(1,Ny):
+    for n in range(1,Ny):
         # check if value from uniform distr is in the next CDF interval
         # find first k where cdf is bigger
         while cdf[k] < y[n] and k < Nrl:
@@ -644,23 +644,23 @@ def statistics_from_distribution(trange,rho,cdf):
         select = inverse_cdf[indexlow]*(1-frac) + frac*inverse_cdf[indexhigh]
         return select
 
-    print "--"
-    print "statistics"
-    print "--"
+    print("--")
+    print("statistics")
+    print("--")
     Nrl = len(inverse_cdf)
     for percent in np.arange(0.,1.001, 0.1):
         quant = get_quantile(inverse_cdf,percent)
-        print percent, quant
-    print "--"
+        print(percent, quant)
+    print("--")
 
-    print "Getting the 90% quantile figured out"
+    print("Getting the 90% quantile figured out")
     t90 = get_quantile(inverse_cdf,0.9)
-    print "t90",t90
+    print("t90",t90)
 
     # where is t90 located?
     index = np.digitize([t90],trange)
     index = index[0]
-    print "bin-t90, trange[bin-t90]:  ",index,trange[index]
+    print("bin-t90, trange[bin-t90]:  ",index,trange[index])
 
     r = rho[index:]
     tr = trange[index:]
@@ -675,7 +675,7 @@ def statistics_from_distribution(trange,rho,cdf):
 
 def draw_from_distribution(trange,cdf):
 
-    print done
+    print(done)
     inverse_cdf,delta_inverse_cdf = get_inverse_cdf(trange,cdf)
 
     ally = []
@@ -687,9 +687,9 @@ def draw_from_distribution(trange,cdf):
         #print "y",np.mean(y),np.std(y)
         ally.append(np.mean(y))
 
-    print "statistics"
-    print "mean, mean90"
-    print np.mean(ally), np.mean(sorted(ally)[int(len(ally)*0.9):])
+    print("statistics")
+    print("mean, mean90")
+    print(np.mean(ally), np.mean(sorted(ally)[int(len(ally)*0.9):]))
 
 
     # statistics of average of N=40
@@ -700,7 +700,7 @@ def draw_from_distribution(trange,cdf):
     histcdf /= np.sum(hist)
     mid = (levels[:-1]+levels[1:])/2.
     mid /= 1000   # from ps to ns
-    print len(hist),len(levels)
+    print(len(hist),len(levels))
 
     #if True:
     if False:
@@ -774,6 +774,6 @@ def whatever_construct_propagator_from_F_D(F,D,Drad,dz,dr,dt,lagtime,lmax,dim_ra
         plt.xlabel("bins")
         plt.ylabel("prob")
         plt.savefig(figname)
-        print "file written...",figname
+        print("file written...",figname)
     return P
 

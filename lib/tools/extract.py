@@ -7,7 +7,7 @@ AG, August 21, 2013"""
 import numpy as np
 
 def count_2D(B,X,Y,Z,edges,redges,shift=1):
-    print(B.shape)
+    print((B.shape))
     assert len(B.shape) == 3
     assert B.shape[0] == len(redges)
     assert B.shape[1] == len(edges)+1
@@ -106,7 +106,7 @@ def transition_matrix_add1(A,x,edges,shift=1):
     #print(min(digitized),max(digitized),A.shape)
     #print("min,max",min(x),max(x))
     # periodic boundary conditions: just checking
-    print("check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1]))
+    print(("check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1])))
 
     for start,end in zip(digitized[:-shift],digitized[shift:]):
         A[end,start]+=1
@@ -119,10 +119,10 @@ def transition_matrix_add1_npt(A,x,zpbc,nbins,shift=1):
     assert len(A) == nbins+2
     arr = np.arange(nbins+1)-nbins/2.
     digitized = np.zeros(x.shape)
-    for i in xrange(len(digitized)):
+    for i in range(len(digitized)):
         digitized[i] = np.digitize([x[i]],(arr*zpbc[i]/nbins))
     # periodic boundary conditions: just checking
-    print("check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1]))
+    print(("check boundary", sum(A[0,:]), sum(A[-1,:]), sum(A[:,0]), sum(A[:,-1])))
 
     for start,end in zip(digitized[:-shift],digitized[shift:]):
         A[end,start]+=1
@@ -136,7 +136,7 @@ def transition_matrix_add2(A,x,edges,shift=1):
     assert (x<edges[-1]).all()
     N = len(edges)-1
     L = edges[-1]-edges[0]
-    print(edges[0], edges[-1], "L",L, "L/2",L/2.)
+    print((edges[0], edges[-1], "L",L, "L/2",L/2.))
     digitized = [min(int(N*(L/2.+xi)/L),N-1) for xi in x]
     #print(digitized)
     print(x)
@@ -197,8 +197,8 @@ def write_Tmat_linebyline(A,filename,edges=None):
     with open(filename,"w+") as f:
         if edges is not None:
             f.write("#edges  "+" ".join([str(b) for b in edges])+"\n")
-        for i in xrange(L):
-            for j in xrange(L):
+        for i in range(L):
+            for j in range(L):
                 f.write(str(A[i,j]))
 
 
