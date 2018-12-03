@@ -58,7 +58,8 @@ echo initdir $initdir
 
 # ... or, just use one file with letter  # this is PREFERRED!
 # after having executed merge.py in directory manipulate-transition-matrices/
-line="manipulate-transition-matrices/transitions.merge.dat"
+#line="manipulate-transition-matrices/transitions.merge.dat"
+line="data/$system/transitions.dat"
 echo LINE $line
 # this line will be fed to the Monte Carlo
 
