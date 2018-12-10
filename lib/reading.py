@@ -14,12 +14,11 @@ import numpy as np
 def guess_dim_transition_square(filename):
     """get number of histogram bins from transition matrix file"""
     #print "Reading...", filename
-    f = file(filename)
-    for line in f:   # skip lines starting with #
-        if not line.startswith("#"):
-            dim_trans = len(line.split())
-            break
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:   # skip lines starting with #
+            if not line.startswith("#"):
+                dim_trans = len(line.split())
+                break
     return dim_trans
 
 def guess_dim_transition_cube(filename):
@@ -27,53 +26,51 @@ def guess_dim_transition_cube(filename):
     #print "Reading...", filename
     # Stored format: ...
     #   ...
-    f = file(filename)
     row = 0      # not really necessary
     dim_rad = 0  # dimension of transition matrix
     lenrow = 0   # dimension of transition matrix
-    for line in f:
-        if line.startswith("-"):
-            assert lenrow == row
-            dim_rad += 1  # I reached next radial point
-            row = 0
-        elif not line.startswith("#"):
-            lenrow = len(line.split())
-            row += 1
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith("-"):
+                assert lenrow == row
+                dim_rad += 1  # I reached next radial point
+                row = 0
+            elif not line.startswith("#"):
+                lenrow = len(line.split())
+                row += 1
     return dim_rad,lenrow
 
 def read_transition_header(filename):
-    f = file(filename)
     header = {}
-    for line in f:
-        if line.startswith("#"):
-            words = line.split()
-            if words[0] == "#edges":
-                edges = [float(word) for word in words[1:]]  # skip first
-                header['edges'] = np.array(edges)   # bin edges
-                header['dz'] = (edges[-1]-edges[0])/float(len(edges)-1)  # bin width
-            elif words[0] == "#dt":
-                header['dt'] = float(words[1])
-            elif words[0] == "#dn":
-                header['dn'] = int(words[1])
-            elif words[0] == "#lt":
-                header['lt'] = float(words[1])
-            elif words[0] == "#file":
-                filename = words[1]
-                header['file'] = filename
-            elif words[0] == "#count":
-                count = words[1]
-                header['count'] = count
-            elif words[0] == "#abc":
-                a = float(words[1])
-                b = float(words[2])
-                c = float(words[3])
-                header.update({'a':a,'b':b,'c':c})
-            elif words[0] == "#redges":
-                redges = [float(word) for word in words[1:]]  # skip first
-                header['redges'] = np.array(redges)   # bin redges
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith("#"):
+                words = line.split()
+                if words[0] == "#edges":
+                    edges = [float(word) for word in words[1:]]  # skip first
+                    header['edges'] = np.array(edges)   # bin edges
+                    header['dz'] = (edges[-1]-edges[0])/float(len(edges)-1)  # bin width
+                elif words[0] == "#dt":
+                    header['dt'] = float(words[1])
+                elif words[0] == "#dn":
+                    header['dn'] = int(words[1])
+                elif words[0] == "#lt":
+                    header['lt'] = float(words[1])
+                elif words[0] == "#file":
+                    filename = words[1]
+                    header['file'] = filename
+                elif words[0] == "#count":
+                    count = words[1]
+                    header['count'] = count
+                elif words[0] == "#abc":
+                    a = float(words[1])
+                    b = float(words[2])
+                    c = float(words[3])
+                    header.update({'a':a,'b':b,'c':c})
+                elif words[0] == "#redges":
+                    redges = [float(word) for word in words[1:]]  # skip first
+                    header['redges'] = np.array(redges)   # bin redges
 
-    f.close()
     print("HEADER")
     print(header)
     check_content_header(header)
@@ -113,18 +110,17 @@ def read_transition_square(filename,dim_trans):
     comment lines starting with # are skipped"""
 
     transition = np.zeros((dim_trans,dim_trans),int)
-    f = file(filename)
-    row = 0
-    for line in f:
-        if not line.startswith("#"):
-            words = line.split()
-            assert len(words) == dim_trans
-            transition[row,:] = [int(word) for word in words]
-            row += 1
-    if row != dim_trans:
-        print("wrong number of entries in ", filename)
-        quit()
-    f.close()
+    with open(filename,"r") as f:
+        row = 0
+        for line in f:
+            if not line.startswith("#"):
+                words = line.split()
+                assert len(words) == dim_trans
+                transition[row,:] = [int(word) for word in words]
+                row += 1
+        if row != dim_trans:
+            print("wrong number of entries in ", filename)
+            quit()
     return transition
 
 def read_transition_cube(filename,dim_rad,dim_trans):
@@ -132,22 +128,21 @@ def read_transition_cube(filename,dim_rad,dim_trans):
     # dim_rad is len(redges), is dimension of transition matrix
     # dim_trans is dimension of transition matrix
     transition = np.zeros((dim_rad,dim_trans,dim_trans))
-    f = file(filename)
     row = 0
     radbin = 0
-    for line in f:
-        if line.startswith("-"):
-            if row != dim_trans:
-                print("wrong number of entries in ", filename)
-                quit()
-            radbin += 1  # I reached next radial point
-            row = 0
-        elif not line.startswith("#"):
-            words = line.split()
-            assert len(words) == dim_trans
-            transition[radbin,row,:] = [int(word) for word in words]
-            row += 1
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith("-"):
+                if row != dim_trans:
+                    print("wrong number of entries in ", filename)
+                    quit()
+                radbin += 1  # I reached next radial point
+                row = 0
+            elif not line.startswith("#"):
+                words = line.split()
+                assert len(words) == dim_trans
+                transition[radbin,row,:] = [int(word) for word in words]
+                row += 1
     return transition
 
 #=========================== NOT MUCH USED/NOT UPDATED ============================
@@ -155,13 +150,12 @@ def read_transition_cube(filename,dim_rad,dim_trans):
 def guess_dim_transition_linebyline(filename):
     """get number of histogram bins from transition matrix file (one line per entry!!!)"""
     #print "Reading...", filename
-    f = file(filename)
     count = 0
-    for line in f:   # skip lines starting with #
-        if not line.startswith("#"):
-            assert len(line.split())==1
-            count += 1
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:   # skip lines starting with #
+            if not line.startswith("#"):
+                assert len(line.split())==1
+                count += 1
     dim_trans = int(np.sqrt(count))
     return dim_trans
 
@@ -173,26 +167,25 @@ def read_transition_linebyline(filename,dim_trans):
 
     transition = np.zeros((dim_trans,dim_trans))
     edges = []
-    f = file(filename)
-    for line in f:
-        if line.startswith("#edges"):
-            words = line.split()
-            edges = [float(word) for word in words[1:]]  # skip first
-            edges = np.array(edges)   # bin edges
-            assert len(edges) == dim_trans+1
-        if not line.startswith("#"):
-            transition[0,0] = np.float64(line)   # put first line in [0,0] element
-            k = 1
-            break
-    for line in f:  # read other lines
-        if not line.startswith("#"):
-            (k1, k2 ) = divmod ( k , dim_trans )
-            transition[k1,k2] = np.float64(line)
-            k += 1
-    if k != dim_trans**2:
-        print("wrong number of entries in ", filename)
-        quit()
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith("#edges"):
+                words = line.split()
+                edges = [float(word) for word in words[1:]]  # skip first
+                edges = np.array(edges)   # bin edges
+                assert len(edges) == dim_trans+1
+            if not line.startswith("#"):
+                transition[0,0] = np.float64(line)   # put first line in [0,0] element
+                k = 1
+                break
+        for line in f:  # read other lines
+            if not line.startswith("#"):
+                (k1, k2 ) = divmod ( k , dim_trans )
+                transition[k1,k2] = np.float64(line)
+                k += 1
+        if k != dim_trans**2:
+            print("wrong number of entries in ", filename)
+            quit()
 
     if len(edges) == 0:  # use linear
         edges = np.arange(dim_trans+1)
@@ -209,27 +202,26 @@ def read_transition_square_bkp(filename,dim_trans):
     transition = np.zeros((dim_trans,dim_trans))
     edges = []
     Dt = 0
-    f = file(filename)
     row = 0
-    for line in f:
-        if line.startswith("#Dt"):
-            words = line.split()
-            assert len(words)==2
-            Dt = float(words[1])   # this is the lagtime!!
-        if line.startswith("#edges"):
-            words = line.split()
-            edges = [float(word) for word in words[1:]]  # skip first
-            edges = np.array(edges)   # bin edges
-
-         # TODO   assert len(edges) == dim_trans+1
-        if not line.startswith("#"):
-            words = line.split()
-            transition[row,:] = [int(word) for word in words]
-            row += 1
-    if row != dim_trans:
-        print("wrong number of entries in ", filename)
-        quit()
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith("#Dt"):
+                words = line.split()
+                assert len(words)==2
+                Dt = float(words[1])   # this is the lagtime!!
+            if line.startswith("#edges"):
+                words = line.split()
+                edges = [float(word) for word in words[1:]]  # skip first
+                edges = np.array(edges)   # bin edges
+    
+             # TODO   assert len(edges) == dim_trans+1
+            if not line.startswith("#"):
+                words = line.split()
+                transition[row,:] = [int(word) for word in words]
+                row += 1
+        if row != dim_trans:
+            print("wrong number of entries in ", filename)
+            quit()
 
     if len(edges) == 0:  # use linear
         edges = np.arange(dim_trans+1)
