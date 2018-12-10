@@ -7,21 +7,20 @@ import matplotlib.pyplot as plt
 
 def read_coor_x_or_y_or_z(filename):
     #print "Reading...", filename
-    f = file(filename)
     data = []
-    for line in f:
-        if not line.startswith("#"):
-            data.append([float(word) for word in line.split()])
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if not line.startswith("#"):
+                data.append([float(word) for word in line.split()])
     return np.array(data)
 
 def read_data_rv(filename):
     """Extract data from files of Rick Venable"""
     data = []
-    f = file(filename)
-    for line in f:
-        words = line.split()
-        data.append([float(word) for word in words])
+    with open(filename,"r") as f:
+        for line in f:
+            words = line.split()
+            data.append([float(word) for word in words])
 
     data = np.array(data)
     #print "data",data.shape
@@ -57,10 +56,9 @@ def shift_wrt_layer(data1,data2):
 def store_hist(bin_edges,hist,filename,):
     assert len(bin_edges) == len(hist)+1
     bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
-    f = open(filename,"w+")
-    for i in range(len(hist)):
-        print(bin_edges[i], bin_edges[i+1], bin_midst[i], hist[i], file=f)
-    f.close()
+    with open(filename,"w+") as f:
+        for i in range(len(hist)):
+            print(bin_edges[i], bin_edges[i+1], bin_midst[i], hist[i], file=f)
     print("file written...",filename)
 
 def plot_histogram_pbc(coor,zpbc,figname,):
@@ -91,12 +89,11 @@ def plot_histogram_pbc(coor,zpbc,figname,):
     print("file written...",figname+".log.png")
 
     # print to a file for later use
-    f = file(figname+".log.txt","w+")
-    print("#freeenergy: binmidst F", file=f)
-    print("#zpbc", zpbc, file=f)
-    for i in range(len(bin_midst)):
-        print(bin_midst[i], -np.log(hist[i])+maxloghist, file=f) 
-    f.close()
+    with open(figname+".log.txt","w+") as f:
+        print("#freeenergy: binmidst F", file=f)
+        print("#zpbc", zpbc, file=f)
+        for i in range(len(bin_midst)):
+            print(bin_midst[i], -np.log(hist[i])+maxloghist, file=f) 
     print("file written...",figname+".log.txt")
 
 
