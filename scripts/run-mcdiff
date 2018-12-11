@@ -105,13 +105,13 @@ if __name__ == '__main__':
                                    #     (0 if no adjustment)
 
     (options, args) = parser.parse_args()
-    print "options:"
-    print options.__dict__
-    print "args:"
-    print args
+    print("options:")
+    print(options.__dict__)
+    print("args:")
+    print(args)
     # check arguments
     assert len(args) >= 1
-    print "="*20
+    print("="*20)
     find_parameters(args, options.pbc, options.model,
                 options.dv, options.dw, options.dwrad, options.D0, options.dtimezero,
                 options.temp, options.temp_end,

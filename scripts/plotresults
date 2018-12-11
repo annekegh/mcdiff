@@ -36,13 +36,13 @@ if __name__ == '__main__':
 
 
     (options, args) = parser.parse_args()
-    print "options:"
-    print options.__dict__
-    print "args:"
-    print args
+    print("options:")
+    print(options.__dict__)
+    print("args:")
+    print(args)
     # check arguments
     assert len(args) >= 1
-    print "="*20
+    print("="*20)
     list_filenames = args
 
     if options.outfile is None:
@@ -62,7 +62,7 @@ if __name__ == '__main__':
        Dradst = [None]
 
     make_plots(F,D,Drad,edges,figname,pbc=options.pbc,
-           legend=range(len(list_filenames)),
+           legend=list(range(len(list_filenames))),
            grey=options.grey,
            title=options.title,error=[Fst,Dst,Dradst],
            ave=options.ave,
