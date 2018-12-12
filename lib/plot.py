@@ -70,7 +70,9 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
     plt.ylabel(r"$F$ ($k_BT$)")
     plt.title(title)
     plt.ylim(0,4.5)
+    #plt.ylim(xmin=0)
     if legend is not None: plt.legend(legend)
+    plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
@@ -120,6 +122,7 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
     #plt.tight_layout()
+    plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,
@@ -165,6 +168,7 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
     #plt.tight_layout()
+    plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 
