@@ -19,7 +19,6 @@ def do_mc_cycles(MC,logger):
     MC.init_log_like()
     logger.log(0,MC)
 
-
     for imc in range(MC.nmc):  # loop over Monte Carlo moves
 
         if MC.lmax > 0:
@@ -90,24 +89,31 @@ def find_parameters(filenames,pbc,model,
     if outfile is None:
         import sys
         f = sys.stdout
-        picfile = "mc.pic"
+
+        # print to screen
+        #MC.print_log_like()
+        MC.print_statistics()
+
+        MC.print_laststate(f,final=True)  # print model, coeffs
+
     else:
-        f = file(outfile,"w+")  # print final model to a file
-        picfile = outfile+".pic"
+        with open(outfile,"w+") as f: # print final model to a file
+            # print to screen
+            #MC.print_log_like()
+            MC.print_statistics()
 
-    # print to screen
-    #MC.print_log_like()
-    MC.print_statistics()
-
-    MC.print_laststate(f,final=True)  # print model, coeffs
-    if outfile is not None:
-        f.close()
+            MC.print_laststate(f,final=True)  # print model, coeffs
 
     logger.model = MC.model   # this is not a hard copy
-    logger.dump(picfile)
     logger.statistics(MC)  #st=1000)
 
     # write average of pic file
+    if outfile is None:
+        picfile = "mc.pic"
+    else:
+        picfile = outfile+".pic"
+    logger.dump(picfile)
+
     ave_file = picfile+".ave.dat"
     write_average_from_pic(picfile,ave_file)
 

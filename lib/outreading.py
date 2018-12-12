@@ -8,29 +8,28 @@ def read_F_D_edges(filename):
     Lines starting with # are skipped.
     Assume F in units [kBT] and D in units [angstrom**2/ps]."""
 
-    f = file(filename)
-    F = []
-    D = []
-    bins_str = []   # beginning of bin
-    bins_end = []   # end of bin
-
-    startline = "   index  bin-str  bin-end"
-    for line in f:
-        if line.startswith(startline): 
-            break
-    for line in f:
-        if line.startswith("="):
-            break
-        if not line.startswith("#"):
-            words = line.split()
-            bins_str.append(float(words[1]))
-            bins_end.append(float(words[2]))
-            F.append(float(words[3]))
-            if len(words) >= 5:
-                D.append(float(words[4]))
-            elif len(words)!=4 and len(words)!=6:
-                raise ValueError("error in the format line"+line)
-    f.close()
+    with open(filename,"r") as f:
+        F = []
+        D = []
+        bins_str = []   # beginning of bin
+        bins_end = []   # end of bin
+    
+        startline = "   index  bin-str  bin-end"
+        for line in f:
+            if line.startswith(startline): 
+                break
+        for line in f:
+            if line.startswith("="):
+                break
+            if not line.startswith("#"):
+                words = line.split()
+                bins_str.append(float(words[1]))
+                bins_end.append(float(words[2]))
+                F.append(float(words[3]))
+                if len(words) >= 5:
+                    D.append(float(words[4]))
+                elif len(words)!=4 and len(words)!=6:
+                    raise ValueError("error in the format line"+line)
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
     # this returns three vectors: F values, D values, edges values
     return np.array(F),np.array(D),np.array(edges)
@@ -179,17 +178,16 @@ def read_Fcoeffs(filename,final=False):
     if final: startline = "===== final v_coeff ====="
 
     coeff = []
-    f = file(filename)
-    for line in f:
-        if line.startswith(startline):
-            break
-    for line in f:
-        if line.startswith("="):
-            break
-        if not line.startswith("#"):
-            words = line.split()
-            coeff.append(float(words[1]))
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith(startline):
+                break
+        for line in f:
+            if line.startswith("="):
+                break
+            if not line.startswith("#"):
+                words = line.split()
+                coeff.append(float(words[1]))
     return np.array(coeff)
 
 def read_Dcoeffs(filename,final=False):
@@ -197,17 +195,16 @@ def read_Dcoeffs(filename,final=False):
     if final: startline = "===== final w_coeff ====="
 
     coeff = []
-    f = file(filename)
-    for line in f:
-        if line.startswith(startline):
-            break
-    for line in f:
-        if line.startswith("="):
-            break
-        if not line.startswith("#"):
-            words = line.split()
-            coeff.append(float(words[1]))
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith(startline):
+                break
+        for line in f:
+            if line.startswith("="):
+                break
+            if not line.startswith("#"):
+                words = line.split()
+                coeff.append(float(words[1]))
 
     return np.array(coeff)
 
@@ -216,17 +213,16 @@ def read_Dradcoeffs(filename,final=False):
     if final: startline = "===== final wrad_coeff ====="
 
     coeff = []
-    f = file(filename)
-    for line in f:
-        if line.startswith(startline):
-            break
-    for line in f:
-        if line.startswith("="):
-            break
-        if not line.startswith("#"):
-            words = line.split()
-            coeff.append(float(words[1]))
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith(startline):
+                break
+        for line in f:
+            if line.startswith("="):
+                break
+            if not line.startswith("#"):
+                words = line.split()
+                coeff.append(float(words[1]))
 
     return np.array(coeff)
 
@@ -234,21 +230,20 @@ def read_dv_dw(filename,final=False):
     startline = "----- Settings MC -----"
     if final: startline = "----- final Settings MC -----"
 
-    f = file(filename)
-    for line in f:
-        if line.startswith(startline):
-            break
-    for line in f:
-        if line.startswith("dv"):
-            words = line.split()
-            dv = float(words[1])
-            break
-    for line in f:
-        if line.startswith("dw"):
-            words = line.split()
-            dw = float(words[1])
-            break
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith(startline):
+                break
+        for line in f:
+            if line.startswith("dv"):
+                words = line.split()
+                dv = float(words[1])
+                break
+        for line in f:
+            if line.startswith("dw"):
+                words = line.split()
+                dw = float(words[1])
+                break
     return dv,dw
 
 

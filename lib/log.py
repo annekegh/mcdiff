@@ -2,11 +2,12 @@
 
 import numpy as np
 
+
 class Logger(object):
     def __init__(self,MC):
         self.nmc = MC.nmc
         self.freq = 100
-        nf = MC.nmc/self.freq+1  # if n=1000, then I want 11 stores / if n=999, then I want 10 stores
+        nf = MC.nmc//self.freq+1  # if n=1000, then I want 11 stores / if n=999, then I want 10 stores
         self.nf = nf
 
         # arrays
@@ -32,7 +33,7 @@ class Logger(object):
                 self.wrad_coeff = np.zeros((nf,MC.model.ncosDrad),float)
 
     def log(self,j,MC):  # j is counter, counting starts with 1, ends with nmc
-        i = j/self.freq   # if n=1000, freq=100, then store 0,100,...,900,1000 
+        i = j//self.freq   # if n=1000, freq=100, then store 0,100,...,900,1000 
         if i*self.freq == j:
             #print i,j,self.freq,self.v.shape,MC.model.v.shape
             self.log_like[i]  = MC.log_like
@@ -65,10 +66,9 @@ class Logger(object):
         #f.close()
 
     def dump(self,filename):
-        f = file(filename,"w+")
-        import pickle
-        pickle.dump(self,f)
-        f.close()
+        with open(filename,"wb+") as f:
+            import pickle
+            pickle.dump(self,f)
 
     def print_MC_params(self,f=None,final=False):
         if f is None:
@@ -133,7 +133,7 @@ class Logger(object):
         # statistics_print versus statistics no print
 
         # st  --  start (cutting out the first MC steps)
-        s = st/self.freq
+        s = st//self.freq
         if s >= self.nf:
             print("WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s))
 
@@ -196,7 +196,7 @@ class CombinedLogger(Logger):
         self.nmc = log1.nmc + log2.nmc
         assert log1.freq==log2.freq, 'CombinedLogger requires Logger instances with equal frequency'
         self.freq = log1.freq
-        nf = self.nmc/self.freq + 1
+        nf = self.nmc//self.freq + 1
         self.nf = nf
         # arrays
         self.log_like  = np.concatenate([log1.log_like,log2.log_like])
@@ -226,7 +226,7 @@ class CombinedLogger(Logger):
         #... MC.model.blabla ==> model.blabla
         # TODO
         # st  --  start (cutting out the first MC steps)
-        s = st/self.freq
+        s = st//self.freq
         if s >= self.nf:
             print("WARNING: supposed to skip %i MC steps, i.e. %i frames, but skipped none" %(self.nmc,s))
 
@@ -278,11 +278,10 @@ class CombinedLogger(Logger):
 
 def load_logger(filename):
     """Load an object that I dumped before"""
-    f = open(filename)
-    import pickle
-    pic = pickle.load(f)
-    f.close()
-    return pic
+    with open(filename,"rb") as f:
+        import pickle
+        pic = pickle.load(f)
+        return pic
 
 #================================================
 
@@ -383,9 +382,9 @@ def write_average_from_pic(picfilename,datfilename):
     logger = load_logger(picfilename)
 
     import sys   # redirect output to chosen file
-    sys.stdout = file(datfilename,"w+")
-    logger.print_average(logger.model)
-    sys.stdout = sys.__stdout__
+    #sys.stdout = file(datfilename,"w+")
+    #getstring = logger.print_average(logger.model,)
+    #sys.stdout = sys.__stdout__
 
 def combine_picfiles(picfilename1,picfilename2,filename=None,do_radial=False):
     # take two picfiles, make loggers, and combine the loggers

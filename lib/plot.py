@@ -65,7 +65,7 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
                 assert len(std) == len(f)
                 plt.errorbar(x,f,yerr=std)
             if pbc:
-               plt.plot(x+L,f)
+                plt.plot(x+L,f)
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$F$ ($k_BT$)")
     plt.title(title)
@@ -266,7 +266,7 @@ def plot_ratio(D,Drad,filename,edges,title="anisotropy",transparent=False):
 
 
 def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
-               title=None,error=None,ave=False,transparent=False): 
+               title=None,error=None,ave=False,transparent=False):
     # assume F in units kBT, is a list
     # assume D, Drad in units angstrom**2/ps, is a list
     # assume error is a list of [list of arrays or a list] for F and D and Drad
@@ -286,7 +286,7 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
         Dradst = None
 
     if ave:
-        from mcdiff.outreading import average_profiles
+        from .outreading import average_profiles
         F_ave_mean, D_ave_mean, Drad_ave_mean, edges_mean, F_ave_st, D_ave_st, Drad_ave_st = average_profiles(F,D,Drad,edges) 
         f,d,drad,ed  = ([F_ave_mean],[D_ave_mean],[Drad_ave_mean],[edges_mean],)  #make lists of these arrays
         fst,dst,dradst = (F_ave_st,D_ave_st,Drad_ave_st)
@@ -302,4 +302,3 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
         plot_ratio(d,drad,outDratio,edges,transparent=transparent)
     else:
         plot_both(f,d,outboth,edges,)
-

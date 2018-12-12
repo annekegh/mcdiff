@@ -483,3 +483,70 @@ def analyze_partitioning_transient(F,D,pbc,dt,st,end,times,p_0,figname):
     ax.set_yscale("log", nonposy='clip')
     plt.savefig(figname+".fluxDeltap.png")
     plt.close('all')
+
+################################
+# LINK WITH COUNTING CROSSINGS
+################################
+
+def convert_P_cref_to_rate(P,cref):
+    return P*cref*2
+
+def convert_P_cref_to_crossings(P,cref,T):
+    return P*cref*2*T
+
+def convert_F_D_to_rate(F,D,dx,st,end,npart,ref=None):
+    if ref is None:
+        ref = st
+    # TODO st and end, height, in cref
+    # npart is number of particles in the system
+    P, Deff, heff, diff_h = calc_permeability(F,D,dx,st,end,ref=ref,doprint=False)   # P in angstrom/ps
+    v = F-min(F)
+    cref = np.exp(-v[ref])/np.sum(np.exp(-v))   # fraction in bin ref (no unit)
+    zpbc = len(F)*dx         # periodic box size
+    cref = cref/zpbc*npart   # number of particles per z-length (in # per angstrom)
+
+    print("P (in A/ps)",P)
+    print("P (in cm/s)",P*10000)  # TODO wild guess double check
+
+    return P*cref*2
+
+
+
+# Andreas: dcma crossings
+def expected_number_of_crossings_per_area(P,number_of_permeant_molecules,
+                                     cross_section_area, simulation_time,
+                                     skip=None, threshold=0.05):
+        """
+        Given a certain number of permeant molecules in the system, the
+        area of the membrane's cross-section, and the length of the simulation,
+        how many molecules will cross the membrane on average?
+        P = r / (2c_w), where r is the crossing rate per area and unit time.
+
+        Args:
+            number_of_permeant_molecules
+            cross_section_area: average area of the bilayer mid-plane in A^2
+            simulation_time: length of the simulation in ns
+            skip: same as in calculate_permeability
+            threshold: same as in calculate_permeability
+
+        Returns:
+            A tuple (int, int, int)
+                - expected number of crossing
+                - minimum of a 90% confidence interval
+                - maximum of a 90% confidence interval
+        """
+        p, resist, min_i, max_i = self.calculate_permeability(skip, threshold)
+        distribution = np.exp(-self.free_energy)
+        distribution *= (number_of_permeant_molecules/sum(distribution))
+        # distribution in (average # molecules / min_i bins)
+        # min_i bins ^= sum(bin_widths)
+        concentration_in_water = (
+                sum(distribution[:min_i]) /
+                (sum(self.bin_widths[:min_i]) * cross_section_area)
+        )  # in #molecules/A^3
+        simulation_time *= 1e3 # in ps
+        p *= 1e-4  # now in Angstrom/ps = 10^-8 cm / 10^-12 s = 10^4 cm/s
+        r = p * 2.0 * concentration_in_water  # in 1 / (A^2 ps)
+        n_crossings = r * simulation_time * cross_section_area
+        min_n, max_n = poisson.interval(0.9, n_crossings)
+        return n_crossings, min_n, max_n

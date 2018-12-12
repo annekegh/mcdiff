@@ -90,10 +90,11 @@ class CosinusModel(Model):
         if self.ncosP > 0:
             self.init_model_cosP()
 
-    def create_basis_center(self,dim,ncos,type="cos"):
+    def create_basis_center(self,dim,ncos,):
         x = np.arange(dim)
         basis = [np.cos(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range(ncos)]
         return np.array(basis).transpose()
+
     def create_basis_border(self,dim,dim2,ncos):
         x = np.arange(dim)
         basis = [np.cos(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range(ncos)]
@@ -118,7 +119,7 @@ class CosinusModel(Model):
 
     def init_model_cosP(self):
         print("INIT COS MODEL P", self.ncosP)
-        self.p_coeff = np.zeros((self.ncosP),float)
+        self.p_coeff = np.zeros(self.ncosP,float)
         self.p_coeff[0] = 1.  # normalization TODO
         self.p_basis = self.create_basis_center(self.dim_v,self.ncosP)
         self.update_p()
@@ -167,15 +168,16 @@ class SinusCosinusModel(CosinusModel):
 
     def create_basis_center(self,dim,ncos,):
         x = np.arange(dim)
-        basis1 = [np.cos(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range((ncos+1)/2)]
-        basis2 = [np.sin(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range(1,(ncos+1)/2)]
+        basis1 = [np.cos(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range((ncos+1)//2)]
+        basis2 = [np.sin(2*k*np.pi*(x+0.5)/dim)/(k+1) for k in range(1,(ncos+1)//2)]
         basis = basis1 + basis2
         print("basis SIN center",len(basis))
         return np.array(basis).transpose()
+
     def create_basis_border(self,dim,dim2,ncos):
         x = np.arange(dim)
-        basis1 = [np.cos(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range((ncos+1)/2)]
-        basis2 = [np.sin(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range(1,(ncos+1)/2)]
+        basis1 = [np.cos(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range((ncos+1)//2)]
+        basis2 = [np.sin(2*k*np.pi*(x+1.)/dim2)/(k+1) for k in range(1,(ncos+1)//2)]
         basis = basis1 + basis2
         #print "basis",basis
         print("basis SIN border",len(basis))
@@ -226,7 +228,7 @@ class StepModel(Model):
 
     def init_model_D(self,D0):
         print("INIT STEP MODEL D", self.ncosD)
-        self.w_coeff = np.zeros((self.ncosD),float)  # heights
+        self.w_coeff = np.zeros(self.ncosD,float)  # heights
         dx = self.dim_v /2. /self.ncosD   # use length of v vector 
         self.w_x0 = np.arange(0,self.ncosD*dx,dx)
         self.w_basis = self.create_basis_border(self.dim_w,self.dim_v,self.w_x0)
