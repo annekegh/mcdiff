@@ -325,6 +325,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
     # mfpt -- in ps
     # side -- right (default), left, both
     # numbering of bins starts with 0
+    # t -- default is None to compute mean fpt,  
     assert side in ["right","left","both"]
 
     # init -- initial z-bin
@@ -359,8 +360,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         mfpt2,tau2,std2 = get_mfpt_from_rate_k12(subrate,dt,k1,0,part)   # in ps  # this is exit to the left
         mfpt3,tau3,std3 = get_mfpt_from_rate_k12(subrate,dt,k1,k2,part)   # in ps  # this is exit on both sides
 
-    else:   # t is not None
-      if False:
+    elif t == "median": # t is not None, t is not a float
         # mfpt median
         #------------
         import scipy
@@ -368,10 +368,10 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         mfpt1,tau1,std1 = get_median_from_rate_k12(subrate,prop,dt,0,k2,part)   # in ps   # this is idential to "exit to right"
         mfpt2,tau2,std2 = get_median_from_rate_k12(subrate,prop,dt,k1,0,part)   # in ps  # this is exit to the left
         mfpt3,tau3,std3 = get_median_from_rate_k12(subrate,prop,dt,k1,k2,part)   # in ps  # this is exit on both sides
-      else:
-    #if False:   # TODO TODO TODO
+    elif isinstance(t,float):   # t is a float
         # mfpt before time t
         #-------------------
+        assert t>0.   # t should be a positive waiting time
         import scipy
         prop = scipy.linalg.expm2(subrate*t)
         mfpt1,tau1,std1 = get_mfpt_from_rate_k12_before(subrate,prop,dt,0,k2,part,t)   # in ps   # this is idential to "exit to right"

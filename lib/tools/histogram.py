@@ -78,7 +78,8 @@ def plot_histogram_pbc(coor,zpbc,figname,):
     plt.figure()
     maxloghist = max(np.log(hist))
     plt.plot(bin_midst,-np.log(hist)+maxloghist)
-    plt.ylim(0,3.5)   # hard coded ########### TODO
+    #plt.ylim(0,5)   # hard coded ########### TODO
+    plt.ylim(ymin=0.)
     plt.ylabel("F in kBT")
     plt.savefig(figname+".one.log.png")
     print("file written...",figname+".one.log.png")
@@ -114,6 +115,85 @@ def plot_histogram(coor,figname,ymin=None,ymax=None):
     plt.ylabel("F in kBT")
     plt.savefig(figname+".log.png")
     print("file written...",figname+".log.png")
+
+
+def step_distribution(coor,shift=1):
+    # coor  --  n-time-steps x n-atoms
+    # shift  --  lag time, waiting time snapshots to measure the step size
+    if isinstance(coor,list):
+        allsteps = []
+        for k,c in enumerate(coor):
+            steps = c[shift:,:] - c[:-shift,:]
+            #print "steps: mean,std",np.mean(steps),np.std(steps)
+            allsteps.extend(steps.ravel())
+        allsteps = np.array(allsteps)  #.ravel()
+    else:
+        allsteps = coor[shift:,:] - coor[:-shift,:]
+
+    mean = np.mean(allsteps)
+    std = np.std(allsteps)
+    std2 = np.std(allsteps**2)
+    #print "steps: mean,std,std2**2,std4,ratio",mean,std,std**4,std2**2, std2**2/std**4
+    return allsteps,mean,std,std2
+
+def plot_step_distribution(coor,figname,shift=1):
+    # coor  --  n-time-steps x n-atoms
+    # shift  --  lag time, waiting time snapshots to measure the step size
+    nbins = 100
+    plt.figure()
+    if isinstance(coor,list):
+        for k,c in enumerate(coor):
+            steps = c[shift:,:] - c[:-shift,:]
+            hist, bin_edges = np.histogram(steps, nbins, normed=True)
+            bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
+
+            #plt.plot(bin_midst,hist)
+            #store_hist(bin_edges,hist,figname+".shift%i.%i.txt"%(shift,k),)
+            #print "steps: mean,std",np.mean(steps),np.std(steps)
+
+    steps,mean,std,std2 = step_distribution(coor,shift=shift)
+    hist, bin_edges = np.histogram(steps, nbins, normed=True)
+    bin_midst = [(bin_edges[i]+bin_edges[i+1])/2. for i in range(len(bin_edges)-1)]
+
+    plt.plot(bin_midst,hist,"k--",label="data")
+
+    store_hist(bin_edges,hist,figname+".shift%i.txt"%shift)
+    mean = np.mean(steps)
+    std = np.std(steps)
+    std2 = np.std(steps**2)
+    print "steps: mean,std,std2**2,std4,ratio",mean,std,std**4,std2**2, std2**2/std**4
+    gaussian = np.exp(-((bin_midst-mean)/std)**2/2.)/np.sqrt(2*std**2*np.pi)
+    plt.plot(bin_midst,gaussian,color='grey',label="Gauss")
+
+    plt.xlabel("step size [A]")
+    plt.ylabel("probability [A]")
+    plt.savefig(figname+".shift%i.png"%shift)
+    plt.close()
+    print "file written...",figname+".shift%i.png"%shift
+    return mean,std,std2
+
+def plot_step_distribution_shifts(coor,figname,shifts):
+
+    data = []
+    for shift in shifts:
+        steps,mean,std,std2 = step_distribution(coor,shift=shift)
+        data.append([mean,std,std2])
+
+    plt.figure()
+    data = np.array(data)
+    mean = data[:,0]
+    std  = data[:,1]
+    std2 = data[:,2]
+    print "ratio"
+    ratio = std2**2/std**4
+    print ratio
+    #print shifts
+    plt.loglog(shifts,ratio,"o-")
+    plt.loglog(shifts,2.*np.ones(len(shifts)),"-",color="green")
+    plt.xlabel("shift (in unit dtc)")
+    plt.ylabel("ratio std2**2/std**4")
+    plt.savefig(figname+".ratiospread.png")
+    plt.close()
 
 def add_constant_tolist(list_vecs,list_c):
     list_tot = [vec for vec in list_vecs]  # a copy
