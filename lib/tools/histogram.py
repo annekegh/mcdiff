@@ -161,7 +161,7 @@ def plot_step_distribution(coor,figname,shift=1):
     mean = np.mean(steps)
     std = np.std(steps)
     std2 = np.std(steps**2)
-    print "steps: mean,std,std2**2,std4,ratio",mean,std,std**4,std2**2, std2**2/std**4
+    print("steps: mean,std,std2**2,std4,ratio",mean,std,std**4,std2**2, std2**2/std**4)
     gaussian = np.exp(-((bin_midst-mean)/std)**2/2.)/np.sqrt(2*std**2*np.pi)
     plt.plot(bin_midst,gaussian,color='grey',label="Gauss")
 
@@ -169,7 +169,7 @@ def plot_step_distribution(coor,figname,shift=1):
     plt.ylabel("probability [A]")
     plt.savefig(figname+".shift%i.png"%shift)
     plt.close()
-    print "file written...",figname+".shift%i.png"%shift
+    print("file written...",figname+".shift%i.png"%shift)
     return mean,std,std2
 
 def plot_step_distribution_shifts(coor,figname,shifts):
@@ -184,9 +184,9 @@ def plot_step_distribution_shifts(coor,figname,shifts):
     mean = data[:,0]
     std  = data[:,1]
     std2 = data[:,2]
-    print "ratio"
+    print("ratio")
     ratio = std2**2/std**4
-    print ratio
+    print(ratio)
     #print shifts
     plt.loglog(shifts,ratio,"o-")
     plt.loglog(shifts,2.*np.ones(len(shifts)),"-",color="green")
