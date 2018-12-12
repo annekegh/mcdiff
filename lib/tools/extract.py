@@ -125,7 +125,7 @@ def transition_matrix_add2(A,x,edges,shift=1):
 #===============================================
 
 def count_2D(B,X,Y,Z,edges,redges,shift=1):
-    print B.shape
+    print(B.shape)
     assert len(B.shape) == 3
     assert B.shape[0] == len(redges)
     assert B.shape[1] == len(edges)+1
