@@ -40,27 +40,26 @@ def read_Drad(filename):
     Lines starting with # are skipped.
     Assume Drad in units [angstrom**2/ps]."""
 
-    f = file(filename)
-    D = []
-    bins_str = []   # beginning of bin
-    bins_end = []   # end of bin
-
-    startline = "   index  bin-str  bin-end  diffusion-coefficient-at[i]"
-    for line in f:
-        if line.startswith(startline):
-            break
-    for line in f:
-        if line.startswith("="):
-            break
-        if not line.startswith("#"):
-            words = line.split()
-            bins_str.append(float(words[1]))
-            bins_end.append(float(words[2]))
-            if len(words) == 4 or len(words)==5:
-                D.append(float(words[3]))
-          #  else:  #if len(words)!=4:
-          #      raise ValueError("error in the format line"+line)
-    f.close()
+    with open(filename,"r") as f:
+        D = []
+        bins_str = []   # beginning of bin
+        bins_end = []   # end of bin
+    
+        startline = "   index  bin-str  bin-end  diffusion-coefficient-at[i]"
+        for line in f:
+            if line.startswith(startline):
+                break
+        for line in f:
+            if line.startswith("="):
+                break
+            if not line.startswith("#"):
+                words = line.split()
+                bins_str.append(float(words[1]))
+                bins_end.append(float(words[2]))
+                if len(words) == 4 or len(words)==5:
+                    D.append(float(words[3]))
+              #  else:  #if len(words)!=4:
+              #      raise ValueError("error in the format line"+line)
     edges = bins_str+[bins_end[-1]]  # last bin edge is added
     return np.array(D),np.array(edges)
 

@@ -274,12 +274,17 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
     # assume F in units kBT, is a list
     # assume D, Drad in units angstrom**2/ps, is a list
     # assume error is a list of [list of arrays or a list] for F and D and Drad
+    assert type(F) == list
+    assert type(D) == list
+    assert type(Drad) == list
+    assert type(edges) == list
     outF = filename+"_F.png"
     outD = filename+"_D.png"
     outDrad = filename+"_Drad.png"
     outDratio = filename+"_Dratio.png"
     outboth = filename+"_both.png"
 
+    # error bars
     if error is not None:
         Fst = error[0]
         Dst = error[1]
@@ -289,18 +294,21 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
         Dst = None
         Dradst = None
 
+    # store info in new variables with lower case names
+    # these contain lists of 1 profile only (ave) or lists of multiple profiles (no ave)
     if ave:
         from .outreading import average_profiles
         F_ave_mean, D_ave_mean, Drad_ave_mean, edges_mean, F_ave_st, D_ave_st, Drad_ave_st = average_profiles(F,D,Drad,edges) 
         f,d,drad,ed  = ([F_ave_mean],[D_ave_mean],[Drad_ave_mean],[edges_mean],)  #make lists of these arrays
         fst,dst,dradst = (F_ave_st,D_ave_st,Drad_ave_st)
     else:
-        f,d,drad,ed = (F,D,Drad,edges,)  # these are arrays
+        f,d,drad,ed = (F,D,Drad,edges,)  # these are lists of arrays
         fst,dst,dradst = (Fst,Dst,Dradst)      # these are lists of arrays or lists
 
+    # do plotting
     plot_F(f,outF,ed,pbc=pbc,grey=grey,title=title,error=fst,transparent=transparent)
     plot_D(d,outD,ed,pbc=pbc,grey=grey,title=title,error=dst,transparent=transparent,legend=legend)
-    if not None in Drad:
+    if not any(x is None for x in drad):
         plot_Drad(drad,outDrad,edges,pbc=pbc,grey=grey,title=title,error=dradst,transparent=transparent,legend=legend)
         plot_three(f,d,drad,outboth,edges,transparent=transparent)
         plot_ratio(d,drad,outDratio,edges,transparent=transparent)
