@@ -304,7 +304,7 @@ def calc_Dpar_ratios(F,D,Drad,t,dz,dt,st=None,end=None,edges=None):
 
 #    print Deff_t
     import scipy.linalg
-    Deff_t /= scipy.linalg.expm2((rate-np.diag(np.ones(n))*maxval)*t) * t
+    Deff_t /= scipy.linalg.expm((rate-np.diag(np.ones(n))*maxval)*t) * t
     print("t",t)
     print(Deff_t)
     return Deff_t
