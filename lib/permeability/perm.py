@@ -70,8 +70,8 @@ def calc_permeability(F,D,dx,st,end,edges=None,ref=0,doprint=False):
     ratio_h = heff/h
     if doprint:
         ##print "st,end %3i %3i"%(st,end),
-        print("st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h), end=' ')
-        print("P",P, "Deff",Deff, "heff",heff,"R",R, "dRdx",dRdx[st])
+        line = "st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h)
+        print(line,"P",P, "Deff",Deff, "heff",heff,"R",R, "dRdx",dRdx[st])
     return P,Deff,heff,diff_h
 
 ### 2) RADIAL PERMEABILITY
@@ -94,8 +94,8 @@ def calc_permeability_radial_h(F,Drad,dx,radius,st,end,edges=None,doprint=True):
     R = radius/Deff                               # permeability resistance, unit ps/A
 
     if doprint:
-        print("st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h), end=' ')
-        print("P",P, "Deff",Deff, "R",R)
+        line = "st,end,h %7.2f %7.2f %7.2f"%(edges[st],edges[end],h)
+        print(line,"P",P, "Deff",Deff, "R",R)
 
     return P,Deff,R
 
@@ -339,31 +339,23 @@ def calc_partition_coefficient(F,st,end,doprint=True):
     K_20 = c2/c0
 
     if doprint:
-        print("st,end", end=' ')
-        print("F0-left-cent", end=' ')
-        print("DF_left-0", end=' ')
-        print("DF_cent-0", end=' ')
-        print("K=exp(-DF)", end=' ')
-        print("K=left/0", end=' ')
-        print("K=cent/0")
+        line = "st,end"
+        line += " F0-left-cent"
+        line += " DF_left-0"
+        line += " DF_cent-0"
+        line += " K=exp(-DF)"
+        line += " K=left/0"
+        line += " K=cent/0"
+        print(line)
 
     if True:
-        print(st,end, end=' ')
-        print(F0,F1,F2, end=' ')
-        print(DeltaF_10, end=' ')
-        print(DeltaF_20, end=' ')
-        print(K, end=' ')
-        print(K_10, end=' ')
-        print(K_20)
-
-    if False:
-        print("st,end",st,end, end=' ')
-        print("F0-left-cent",F0,F1,F2, end=' ')
-        print("DF_left-0",DeltaF_10, end=' ')
-        print("DF_cent-0",DeltaF_20, end=' ')
-        print("K=exp(-DF)",K, end=' ')
-        print("K=left/0",K_10, end=' ')
-        print("K=cent/0",K_20)
+        print(st,end,
+            F0,F1,F2,
+            DeltaF_10,
+            DeltaF_20,
+            K,
+            K_10,
+            K_20)
 
     return K_20
 
