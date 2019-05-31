@@ -72,7 +72,8 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
     plt.ylim(0,4.5)
     #plt.ylim(xmin=0)
     if legend is not None: plt.legend(legend)
-    plt.grid(True)
+    #plt.grid(True)
+    plt.tight_layout()
     plt.savefig(filename,transparent=transparent)
 
 def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
@@ -116,13 +117,13 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
     #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
-    #plt.ylim(0.,0.6)
-    plt.ylim(ymin=0)
+    plt.ylim(0.,0.55)
+    #plt.ylim(bottom=0)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
-    #plt.tight_layout()
-    plt.grid(True)
+    plt.tight_layout()
+    #plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,
@@ -164,11 +165,13 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_{||}$ ($\AA^2/$ps)")
     #plt.ylim(0.,0.7)
+    plt.ylim(bottom=0)
+    plt.ylim(0.,0.55)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
-    #plt.tight_layout()
-    plt.grid(True)
+    plt.tight_layout()
+    #plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 
