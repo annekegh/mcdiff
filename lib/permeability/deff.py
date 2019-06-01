@@ -51,8 +51,8 @@ def calc_Dave_notmidF(F,D,st=None,end=None,edges=None):
         x_end = edges[end]
         h = edges[end]-edges[st]
         # print for postprocessing
-        print("st,end %3i %3i"%(st,end), end=' ')
-        print("st,end,h %7.2f %7.2f %7.2f"%(x_st,x_end,h), end=' ')
+        line = "st,end %3i %3i"%(st,end)
+        print(line,"st,end,h %7.2f %7.2f %7.2f"%(x_st,x_end,h)) #, end=' ')
     #print "Dave",Dave
     return Dave
 
@@ -131,7 +131,7 @@ def calc_Deff_1(F,D,st=None,end=None,ave=0,dz=None):
     if dz is not None:
         h = dz*len(part)
         P = Deff/h
-        print("P ave",ave,P, end=' ')
+        print("P ave",ave,P,) # end=' ')
 
     # effective D
     #print "Deff_1",Deff
@@ -304,7 +304,7 @@ def calc_Dpar_ratios(F,D,Drad,t,dz,dt,st=None,end=None,edges=None):
 
 #    print Deff_t
     import scipy.linalg
-    Deff_t /= scipy.linalg.expm2((rate-np.diag(np.ones(n))*maxval)*t) * t
+    Deff_t /= scipy.linalg.expm((rate-np.diag(np.ones(n))*maxval)*t) * t
     print("t",t)
     print(Deff_t)
     return Deff_t

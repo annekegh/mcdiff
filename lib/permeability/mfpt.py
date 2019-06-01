@@ -80,8 +80,7 @@ def calc_mfpt_szabo(F,D,dx,dt,st,end,getmax=False):
         #print "partcum",partcum
         #print "tot partcum",np.sum(part)
         #print "mfpt",mfpt
-        print("st,end",st,end, end=' ')
-        print("tau",tau,"maxmfpt",maxmfpt)
+        print("st,end",st,end, "tau",tau,"maxmfpt",maxmfpt)
 
     if getmax:
         return maxmfpt
@@ -178,9 +177,7 @@ def calc_mfpt(F,D,dx,dt,st,end,getmax=False,side=None):
         print("vals rate (1/dt)",vals)
         print("mfpt (ps)",mfpt)
     if True:
-        print("st,end,side",st,end,side, end=' ') 
-        print("tau (ps)",tau, end=' ')
-        print("maxmfpt (ps)", max(mfpt))
+        print("st,end,side",st,end,side, "tau (ps)",tau, "maxmfpt (ps)", max(mfpt))
 
     if False: #True:
         plt.figure()
@@ -364,7 +361,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         # mfpt median
         #------------
         import scipy
-        prop = scipy.linalg.expm2(subrate*t)
+        prop = scipy.linalg.expm(subrate*t)
         mfpt1,tau1,std1 = get_median_from_rate_k12(subrate,prop,dt,0,k2,part)   # in ps   # this is idential to "exit to right"
         mfpt2,tau2,std2 = get_median_from_rate_k12(subrate,prop,dt,k1,0,part)   # in ps  # this is exit to the left
         mfpt3,tau3,std3 = get_median_from_rate_k12(subrate,prop,dt,k1,k2,part)   # in ps  # this is exit on both sides
@@ -373,7 +370,7 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         #-------------------
         assert t>0.   # t should be a positive waiting time
         import scipy
-        prop = scipy.linalg.expm2(subrate*t)
+        prop = scipy.linalg.expm(subrate*t)
         mfpt1,tau1,std1 = get_mfpt_from_rate_k12_before(subrate,prop,dt,0,k2,part,t)   # in ps   # this is idential to "exit to right"
         mfpt2,tau2,std2 = get_mfpt_from_rate_k12_before(subrate,prop,dt,k1,0,part,t)   # in ps  # this is exit to the left
         mfpt3,tau3,std3 = get_mfpt_from_rate_k12_before(subrate,prop,dt,k1,k2,part,t)   # in ps  # this is exit on both sides
@@ -397,11 +394,12 @@ def calc_mfpt_hummer(F,D,dx,dt,b1,b2,init=None,doprint=True,dofig=False,t=None,s
         print("mfpt (ps)",mfpt)
       
     if doprint:  #rlb = right left both    # This is nice printing!
-        print("b1,b2,init",b1,b2,init, end=' ')
-        print("tau-rlb",tau1,tau2,tau3, end=' ')
-        print("maxmfpt-r", max(mfpt1), end=' ')
-        print("sel-rlb", sel_mfpt1, sel_mfpt2, sel_mfpt3, end=' ')
-        print("std", sel_std1,sel_std2,sel_std3)
+        line = "b1,b2,init %i %i %i"%(b1,b2,init)
+        line += " tau-rlb %f %f %f" %(tau1,tau2,tau3)
+        line += " maxmfpt-r %f" %(max(mfpt1))
+        line += " sel-rlb %f %f %f" %(sel_mfpt1, sel_mfpt2, sel_mfpt3)
+        line += " std %f %f %f" %(sel_std1,sel_std2,sel_std3)
+        print(line)
 
     if dofig:
         plt.figure()
@@ -474,7 +472,7 @@ def distribution_mfpt(F,D,dx,dt,b1,b2,trange):
     rho = []
     cdf = []
     for t in trange:
-        mat = scipy.linalg.expm2(subrate*t)   # needed in rho and cdf
+        mat = scipy.linalg.expm(subrate*t)   # needed in rho and cdf
         # (1) distribution rho(t)
         #------------------------
         # compute rho(t|k), probability to exit at time t

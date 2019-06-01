@@ -72,7 +72,8 @@ def plot_F(F,filename,edges,title="free energy",pbc=True,legend=None,grey=False,
     plt.ylim(0,4.5)
     #plt.ylim(xmin=0)
     if legend is not None: plt.legend(legend)
-    plt.grid(True)
+    #plt.grid(True)
+    plt.tight_layout()
     plt.savefig(filename,transparent=transparent)
 
 def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
@@ -116,13 +117,13 @@ def plot_D(D,filename,edges,title="diffusion",pbc=True,legend=None,grey=False,
     #plt.ylabel(r"$D_\mathrm{n}$ ($\AA^2/$ps)")
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_\perp$ ($\AA^2/$ps)")
-    #plt.ylim(0.,0.6)
-    plt.ylim(ymin=0)
+    plt.ylim(0.,0.55)
+    #plt.ylim(bottom=0)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
-    #plt.tight_layout()
-    plt.grid(True)
+    plt.tight_layout()
+    #plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,grey=False,
@@ -164,11 +165,13 @@ def plot_Drad(Drad,filename,edges,title="rad-diffusion",pbc=True,legend=None,gre
     plt.xlabel(r"$z$ ($\AA$)")
     plt.ylabel(r"$D_{||}$ ($\AA^2/$ps)")
     #plt.ylim(0.,0.7)
+    plt.ylim(bottom=0)
+    plt.ylim(0.,0.55)
     plt.title(title)
     if legend is not None:  # and error is None:    # not sure why this worked like that??
         plt.legend(legend)
-    #plt.tight_layout()
-    plt.grid(True)
+    plt.tight_layout()
+    #plt.grid(True)
     plt.savefig(filename,transparent=transparent)
 
 
@@ -274,12 +277,17 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
     # assume F in units kBT, is a list
     # assume D, Drad in units angstrom**2/ps, is a list
     # assume error is a list of [list of arrays or a list] for F and D and Drad
+    assert type(F) == list
+    assert type(D) == list
+    assert type(Drad) == list
+    assert type(edges) == list
     outF = filename+"_F.png"
     outD = filename+"_D.png"
     outDrad = filename+"_Drad.png"
     outDratio = filename+"_Dratio.png"
     outboth = filename+"_both.png"
 
+    # error bars
     if error is not None:
         Fst = error[0]
         Dst = error[1]
@@ -289,15 +297,18 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
         Dst = None
         Dradst = None
 
+    # store info in new variables with lower case names
+    # these contain lists of 1 profile only (ave) or lists of multiple profiles (no ave)
     if ave:
         from .outreading import average_profiles
         F_ave_mean, D_ave_mean, Drad_ave_mean, edges_mean, F_ave_st, D_ave_st, Drad_ave_st = average_profiles(F,D,Drad,edges) 
         f,d,drad,ed  = ([F_ave_mean],[D_ave_mean],[Drad_ave_mean],[edges_mean],)  #make lists of these arrays
         fst,dst,dradst = (F_ave_st,D_ave_st,Drad_ave_st)
     else:
-        f,d,drad,ed = (F,D,Drad,edges,)  # these are arrays
+        f,d,drad,ed = (F,D,Drad,edges,)  # these are lists of arrays
         fst,dst,dradst = (Fst,Dst,Dradst)      # these are lists of arrays or lists
 
+    # do plotting
     plot_F(f,outF,ed,pbc=pbc,grey=grey,title=title,error=fst,transparent=transparent)
     plot_D(d,outD,ed,pbc=pbc,grey=grey,title=title,error=dst,transparent=transparent,legend=legend)
 #    if not None in Drad:

@@ -171,10 +171,8 @@ class RunData(object):
             # shift other direction: this gives the same standard deviation
 
             print("average of last 200 timesteps")
-            print("not shifted   ", end=' ')
-            print("mean:", np.mean(mu[-100:]),  "sd", np.mean(sd[-100:]))
-            print("when shifted  ", end=' ')
-            print("mean:", np.mean(mu1[-100:]), "sd", np.mean(sd1[-100:]))
+            print("not shifted    mean:", np.mean(mu[-100:]),  "sd", np.mean(sd[-100:]))
+            print("when shifted   mean:", np.mean(mu1[-100:]), "sd", np.mean(sd1[-100:]))
 
             if outfile is not None:
                 f = file(outfile+".%s.z" %moltype,"w+")
