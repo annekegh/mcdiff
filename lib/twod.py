@@ -115,7 +115,7 @@ def propagator_radial_diffusion(n,dim_rad,rate,wrad,lagtime,
 
         rate_l[:,:] = rate[:,:]                 # take rate matrix for 1-D diffusion
         rate_l.ravel()[::n+1] -= sink           # and add sink term
-        mat_exp = scipy.linalg.expm2(lagtime*rate_l) # matrix exponential, no unit
+        mat_exp = scipy.linalg.expm(lagtime*rate_l) # matrix exponential, no unit
 
         # increment propagator by solution of sink equation for each l
         # propagator to arrive in radial bin k, contribution from Bessel function l

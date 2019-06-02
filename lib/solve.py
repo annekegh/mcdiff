@@ -26,7 +26,7 @@ def propagate_with_sink(time,F,D,edges,sink_index):
     #print "rate",rate
     #print "test",np.sum(rate,axis=0)
 
-    prop = scipy.linalg.expm2(time*rate)
+    prop = scipy.linalg.expm(time*rate)
     #print prop
     init = np.ones(len(prop))
     init[0] = 1.
