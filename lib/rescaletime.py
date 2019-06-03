@@ -328,7 +328,7 @@ def print_profile(filename,v,edges,startline="None"):
     if startline is not None:
         print(startline, file=f)
     for i in range(len(v)):
-        print("%8d %13.5e %13.5e  %13.5f"%( i,edges[i],edges[i+1],v[i]), file=f)
+        print("%8d %16.8e %16.8e  %16.8f"%( i,edges[i],edges[i+1],v[i]), file=f)
     print("="*10, file=f)
     print("file written...",filename)
     f.close()
@@ -339,7 +339,7 @@ def print_profile_2vecs(filename,v,d,edges,startline=None):
     if startline is not None:
         print(startline, file=f)
     for i in range(len(v)):
-        print("%8d %13.5e %13.5e  %13.5f  %13.5f"%( i,edges[i],edges[i+1],v[i],d[i]), file=f)
+        print("%8d %16.8e %16.8e  %16.8f  %16.8f"%( i,edges[i],edges[i+1],v[i],d[i]), file=f)
     print("="*10, file=f)
     print("file written...",filename)
     f.close()

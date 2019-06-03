@@ -230,8 +230,10 @@ class RadTransitions(object):
             self.dim_rad = dim_rad
             if 'edges' in header:
                 self.edges = header['edges']
+                self.dz = header['dz']
             else:
                 self.edges = np.arange(self.dim_trans+1.)
+                self.dz = 1.
             if 'redges' in header:
                 self.redges = header['redges']
             else:

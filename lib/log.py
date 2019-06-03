@@ -291,24 +291,24 @@ def print_coeffs(f,model,v_coeff=None,w_coeff=None,wrad_coeff=None,timezero=None
         if final: print("===== final v_coeff =====", file=f)
         else:     print("===== v_coeff =====", file=f)
         for i,val in enumerate(v_coeff):
-            print("%8d %13.5e" %(i,val), file=f)
+            print("%8d %16.8e" %(i,val), file=f)
     if model.ncosD>0:
         if final: print("===== final w_coeff =====", file=f)
         else:     print("===== w_coeff =====", file=f)
-        print("%8d %13.5e" %(0,w_coeff[0]+model.wunit), file=f)  # only the first needs to be shifted
+        print("%8d %16.8e" %(0,w_coeff[0]+model.wunit), file=f)  # only the first needs to be shifted
         for i,val in enumerate(w_coeff[1:]):
-            print("%8d %13.5e" %(i+1,val), file=f)
+            print("%8d %16.8e" %(i+1,val), file=f)
     if timezero is not None:
         if final: print("===== final timezero =====", file=f)
         else:     print("===== timezero =====", file=f)
-        print("%13.5e" %(timezero), file=f)
+        print("%16.8e" %(timezero), file=f)
     if wrad_coeff is not None:
       if model.ncosDrad > 0:
         if final: print("===== final wrad_coeff =====", file=f)
         else:     print("===== wrad_coeff =====", file=f)
-        print("%8d %13.5e" %(0,wrad_coeff[0]+model.wradunit), file=f)  # only the first needs to be shifted
+        print("%8d %16.8e" %(0,wrad_coeff[0]+model.wradunit), file=f)  # only the first needs to be shifted
         for i,val in enumerate(wrad_coeff[1:]):
-            print("%8d %13.5e" %(i+1,val), file=f)
+            print("%8d %16.8e" %(i+1,val), file=f)
     print("="*10, file=f)
 
 
@@ -348,15 +348,15 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
     else: maxi = model.dim_v-1
     for i in range(maxi):
         if error is None:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
+            f.write("%8d %8.3f %8.3f  %16.8e %16.8e\n" %(i,edges[i],edges[i+1],F[i],D[i]) )
         else:
-            f.write("%8d %8.3f %8.3f  %13.5e %13.5e  %13.5e %13.5e\n" %(
+            f.write("%8d %8.3f %8.3f  %16.8e %16.8e  %16.8e %16.8e\n" %(
                     i,edges[i],edges[i+1],F[i],D[i],Fst[i],Dst[i] ) )
     if not model.pbc:  # some other type of line: only F, no D
         if error is None:
-            f.write("%8d %8.3f %8.3f  %13.5e\n" %(model.dim_v-1,edges[-2],edges[-1],F[-1] ) )
+            f.write("%8d %8.3f %8.3f  %16.8e\n" %(model.dim_v-1,edges[-2],edges[-1],F[-1] ) )
         else:
-            f.write("%8d %8.3f %8.3f  %13.5e  %13.5e\n" %(
+            f.write("%8d %8.3f %8.3f  %16.8e  %16.8e\n" %(
                     i,edges[i],edges[i+1],F[-1],Fst[i],) )
     f.write("#Done\n")
 
@@ -370,9 +370,9 @@ def print_profiles(f,model,v,w,wrad=None,final=False,error=None,unit="internal")
         for i in range(model.dim_wrad):
             #print "i,dim_wrad,len(edges)",i, self.model.dim_wrad, len(edges)
             if error is None:
-                f.write("%8d %8.3f %8.3f  %13.5e\n" %(i,edges[i],edges[i+1],Drad[i] ) )
+                f.write("%8d %8.3f %8.3f  %16.8e\n" %(i,edges[i],edges[i+1],Drad[i] ) )
             else:
-                f.write("%8d %8.3f %8.3f  %13.5e  %13.5e\n" %(i,edges[i],edges[i+1],Drad[i],Dradst[i] ) )
+                f.write("%8d %8.3f %8.3f  %16.8e  %16.8e\n" %(i,edges[i],edges[i+1],Drad[i],Dradst[i] ) )
         f.write("#Done\n")
 
 #================================================
@@ -382,9 +382,9 @@ def write_average_from_pic(picfilename,datfilename):
     logger = load_logger(picfilename)
 
     import sys   # redirect output to chosen file
-    #sys.stdout = file(datfilename,"w+")
-    #getstring = logger.print_average(logger.model,)
-    #sys.stdout = sys.__stdout__
+    sys.stdout = open(datfilename,"w+")
+    getstring = logger.print_average(logger.model,)
+    sys.stdout = sys.__stdout__
 
 def combine_picfiles(picfilename1,picfilename2,filename=None,do_radial=False):
     # take two picfiles, make loggers, and combine the loggers

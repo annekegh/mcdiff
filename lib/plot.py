@@ -300,9 +300,8 @@ def make_plots(F,D,Drad,edges,filename,pbc=True,legend=None,grey=False,
 
     plot_F(f,outF,ed,pbc=pbc,grey=grey,title=title,error=fst,transparent=transparent)
     plot_D(d,outD,ed,pbc=pbc,grey=grey,title=title,error=dst,transparent=transparent,legend=legend)
-#    if not None in Drad:
-    #result =  any(elem in list1  for elem in list2)
-    if not any(None in val for val in Drad):
+    #if not None in Drad:
+    if all(isinstance(d,np.ndarray) for d in drad):
         plot_Drad(drad,outDrad,edges,pbc=pbc,grey=grey,title=title,error=dradst,transparent=transparent,legend=legend)
         plot_three(f,d,drad,outboth,edges,transparent=transparent)
         plot_ratio(d,drad,outDratio,edges,transparent=transparent)

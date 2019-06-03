@@ -62,7 +62,7 @@ def write_Tmat_cube(B,filename,lt,count,edges=None,redges=None,dt=None,dn=None):
         for i in range(size_r):
             for j in range(size_z):
                 f.write(" ".join([str(val) for val in B[i,j,:]])+"\n")
-            f.write("-")
+            f.write("-\n")
 
 #===============================================
 #  transition matrix: count the transitions in trajectory
