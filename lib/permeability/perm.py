@@ -394,7 +394,7 @@ def analyze_partitioning_transient(F,D,pbc,dt,st,end,times,p_0,figname):
     plt.figure(2)
     for i,lagtime in enumerate(times):
         rate = init_rate_matrix(len(F),F,np.log(D),pbc,)
-        prop = scipy.linalg.expm2(lagtime*rate)
+        prop = scipy.linalg.expm(lagtime*rate)
         prob = np.dot(prop,p_0)
         plt.figure(1)
         plt.plot(prob)
