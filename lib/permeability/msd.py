@@ -288,7 +288,7 @@ def do_theor_MSD(rate,prop,prop0,dz,n,edges,redges,measured,lagtime,fig):
     plt.figure(2)
     #for l in [1e0,1e1,1e2,1e3,1e4,1e5,1e6]:#1e7,1e8]: #[256,512,1024,2048,4096,8192]: #[0.1,1,2,4,8,16,32,]:
     for l in [1e3,1e4,1e5,1e6,]: #[256,512,1024,2048,4096,8192]: #[0.1,1,2,4,8,16,32,]:
-        prop0 = scipy.linalg.expm2(rate*l)
+        prop0 = scipy.linalg.expm(rate*l)
         msd = np.zeros(n)
         lim = n*(mult-1)/2 
         #lim = n*neighbour

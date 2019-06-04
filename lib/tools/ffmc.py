@@ -388,7 +388,7 @@ def log_likelihood(n,ilag,transition,lagtime,rate):
     """calculate log-likelihood from rate matrix and transition matrix
     assuming time step lagtime"""
     # calc propagator as matrix exponential
-    propagator = scipy.linalg.expm2(lagtime*rate)
+    propagator = scipy.linalg.expm(lagtime*rate)
     # sum over all transitions
     # in case of numerical issues try: np.log(np.abs(propagator[i,j]))
     log_like = np.float64(0.0)
