@@ -13,6 +13,9 @@ mcdiff uses the following third-party libraries
 - matplotlib >= 2.0.2
 
 ## Getting Started
+
+Installing the code takes approximately 5 minutes.
+
 ### System Dependencies
 
 - Linux or MacOS 
@@ -31,6 +34,7 @@ or pip
 ```
 pip install "numpy>=1.16.0" "scipy>=1.2.0" "matplotlib>=2.0.2"
 ```
+
 
 ### Download and Install mcdiff
 
