@@ -22,24 +22,22 @@ import copy
 def guess_dim_transition_linebyline(filename):
     """get number of histogram bins from transition matrix file (one line per entry!!!)"""
     #print "Reading...", filename
-    f = file(filename)
-    count = 0
-    for line in f:   # skip lines starting with #
-        if not line.startswith("#"):
-            assert len(line.split())==1
-            count += 1
-    f.close()
+    with open(filename,"r") as f:
+        count = 0
+        for line in f:   # skip lines starting with #
+            if not line.startswith("#"):
+                assert len(line.split())==1
+                count += 1
     dim_trans = int(np.sqrt(count))
     return dim_trans
 
 def guess_dim_transition_square(filename):
     """get number of histogram bins from transition matrix file"""
     #print "Reading...", filename
-    f = file(filename)
-    for line in f:   # skip lines starting with #
-        if not line.startswith("#"):
-            dim_trans = len(line.split())
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:   # skip lines starting with #
+            if not line.startswith("#"):
+                dim_trans = len(line.split())
     return dim_trans
 
 def read_transition_linebyline(filename,dim_trans):
@@ -49,26 +47,25 @@ def read_transition_linebyline(filename,dim_trans):
 
     transition = np.zeros((dim_trans,dim_trans))
     bins = []
-    f = file(filename)
-    for line in f:
-        if line.startswith("#bins"):
-            words = line.split()
-            bins = [float(word) for word in words[1:]]  # skip first
-            bins = np.array(bins)   # bin edges
-            assert len(bins) == dim_trans+1
-        if not line.startswith("#"):
-            transition[0,0] = np.float64(line)   # put first line in [0,0] element
-            k = 1
-            break
-    for line in f:  # read other lines
-        if not line.startswith("#"):
-            (k1, k2 ) = divmod ( k , dim_trans )
-            transition[k1,k2] = np.float64(line)
-            k += 1
-    if k != dim_trans**2:
-        print("wrong number of entries in ", filename)
-        quit()
-    f.close()
+    with open(filename,"r") as f:
+        for line in f:
+            if line.startswith("#bins"):
+                words = line.split()
+                bins = [float(word) for word in words[1:]]  # skip first
+                bins = np.array(bins)   # bin edges
+                assert len(bins) == dim_trans+1
+            if not line.startswith("#"):
+                transition[0,0] = np.float64(line)   # put first line in [0,0] element
+                k = 1
+                break
+        for line in f:  # read other lines
+            if not line.startswith("#"):
+                (k1, k2 ) = divmod ( k , dim_trans )
+                transition[k1,k2] = np.float64(line)
+                k += 1
+        if k != dim_trans**2:
+            print("wrong number of entries in ", filename)
+            quit()
 
     if len(bins) == 0:  # use linear
         bins = np.arange(dim_trans+1)
@@ -83,27 +80,26 @@ def read_transition_square(filename,dim_trans):
     transition = np.zeros((dim_trans,dim_trans))
     bins = []
     Dt = 0
-    f = file(filename)
-    row = 0
-    for line in f:
-        if line.startswith("#Dt"):
-            words = line.split()
-            assert len(words)==2
-            Dt = float(words[1])   # this is the lagtime!!
-        if line.startswith("#bins"):
-            words = line.split()
-            bins = [float(word) for word in words[1:]]  # skip first
-            bins = np.array(bins)   # bin edges
+    with open(filename,"r") as f:
+        row = 0
+        for line in f:
+            if line.startswith("#Dt"):
+                words = line.split()
+                assert len(words)==2
+                Dt = float(words[1])   # this is the lagtime!!
+            if line.startswith("#bins"):
+                words = line.split()
+                bins = [float(word) for word in words[1:]]  # skip first
+                bins = np.array(bins)   # bin edges
 
-         # TODO   assert len(bins) == dim_trans+1
-        if not line.startswith("#"):
-            words = line.split()
-            transition[row,:] = [int(word) for word in words]
-            row += 1
-    if row != dim_trans:
-        print("wrong number of entries in ", filename)
-        quit()
-    f.close()
+             # TODO   assert len(bins) == dim_trans+1
+            if not line.startswith("#"):
+                words = line.split()
+                transition[row,:] = [int(word) for word in words]
+                row += 1
+        if row != dim_trans:
+            print("wrong number of entries in ", filename)
+            quit()
 
     if len(bins) == 0:  # use linear
         bins = np.arange(dim_trans+1)

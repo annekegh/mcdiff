@@ -114,7 +114,9 @@ def calc_oxygentransportparameter(F,D,edges):
     # F in units kBT, D in units A^2/ps
     aveD = [(D[0]+D[-1])/2.] + ((D[1:]+D[:-1])/2.).tolist()
     aveD = np.array(aveD)
-    part = np.exp(-(F-min(F)))
+    #Fref = min(F)
+    Fref = F[0]    # in the water phase
+    part = np.exp(-(F-Fref))
     edges_mid = (edges[:-1]+edges[1:])/2.
     product = aveD*part     # in unit A^2/ps
     return product,edges_mid
