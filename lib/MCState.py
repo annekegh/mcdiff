@@ -63,7 +63,10 @@ class MCState(object):
     def set_model(self,model,data,ncosF,ncosD,ncosDrad,pull):
         self.data = data   # transitions etc
         # convert pull (kBT/angstrom) to dF (kBT) between bins
-        self.pull = -pull*self.data.dz   # dF/dz = -pull
+        if pull is not None:
+            self.pull = -pull*self.data.dz   # dF/dz = -pull
+        else:
+            self.pull = pull   #0.
 
         ncosP = 0
 

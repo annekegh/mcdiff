@@ -91,7 +91,7 @@ if __name__ == '__main__':
                       action="store_true",
                       help="this keyword reduces the transition matrix by deleting zero rows/columns before starting the Monte Carlo")
 
-    parser.add_option("--pull", dest="pull", default=0,
+    parser.add_option("--pull", dest="pull", default=None,
                       type="float", metavar="PULL",
                       help="Constant external force on the particle, in unit kBT/Angstrom. Positive (negative) PULL is force to the right (left) with a negative (positive) slope added to the free energy.")
 
