@@ -68,6 +68,6 @@ MIT License.
 See LICENSE file.
 
 ### Authors
-- An Ghysels, University of Ghent
+- An Ghysels, Ghent University
 - Gerhard Hummer, MPI for Biophysics
 
