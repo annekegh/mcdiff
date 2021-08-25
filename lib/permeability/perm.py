@@ -267,7 +267,7 @@ def calc_permeability_distribution(F,D,dx,dt,st,end,A,B,figname=None,ref=0,dopri
         plt.plot(fluxn,'--',label='neg')
         plt.xlabel("bin number")
         plt.ylabel("flux (1/ps)")
-        plt.title("flux[0]=%f.4"%(flux[0]))
+        plt.title("flux[0]=%.8f (1/ps)"%(flux[0]))
         plt.legend(loc='best')
         plt.savefig(figname+"flux.png")
         print("file written...",figname+"flux.png")
