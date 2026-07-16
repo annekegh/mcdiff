@@ -53,7 +53,7 @@ def find_parameters(filenames,pbc,model,
     print("python program to extract diffusion coefficient and free energy from transition counts")
     print("copyright: Gerhard Hummer (NIH, July 2012)")
     print("adapted by An Ghysels (August 2012)\n")
-
+    
     if seed is not None:
         np.random.seed(seed)
 
@@ -69,7 +69,6 @@ def find_parameters(filenames,pbc,model,
     else:
         data = Transitions(filenames,reduction=reduction)
     MC.set_model(model,data,ncosF,ncosD,ncosDrad,pull)
-
     # USE INFO from INITFILE
     if initfile is not None:
         import sys
@@ -77,7 +76,10 @@ def find_parameters(filenames,pbc,model,
         MC.use_initfile(initfile)
         MC.print_MC_params(f)
         MC.print_coeffs_laststate(f)
-
+    else:
+        if MC.dv is None: MC.dv = 0.5
+        if MC.dw is None: MC.dw = 0.5
+        if MC.dwrad is None: MC.dwrad = 0.5
     logger = Logger(MC)
 
     # MONTE CARLO OPTIMIZATION

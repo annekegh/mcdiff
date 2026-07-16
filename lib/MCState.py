@@ -13,7 +13,7 @@ from .twod import rad_log_like_lag, setup_bessel_functions
 from .model import Model, RadModel
 from .model import SinusCosinusModel,CosinusModel, RadCosinusModel
 from .model import StepModel, OneStepModel
-from .outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw, read_F_D_edges
+from .outreading import read_Fcoeffs, read_Dcoeffs, read_Dradcoeffs, read_dv_dw_dwrad, read_F_D_edges
 
 
 #------------------------
@@ -196,10 +196,22 @@ class MCState(object):
             print("USING initfile for wrad",initfile,nc,"values")
             self.model.wrad = np.log(Drad)-self.model.wradunit
 
-        dv,dw = read_dv_dw(initfile,final=True)
-        #TODO   self.dv = dv
-        #TODO   self.dw = dw
-
+        dv_init, dw_init, dwrad_init = read_dv_dw_dwrad(initfile,final=True)
+        if self.dv is None:
+            if dv_init is not None:
+                self.dv = dv_init
+            else:
+                self.dv = 0.5
+        if self.dw is None:
+            if dw_init is not None:
+                self.dw = dw_init
+            else:
+                self.dw = 0.5
+        if self.dwrad is None:
+            if dwrad_init is not None:
+                self.dwrad = dwrad_init
+            else:
+                self.dwrad = 0.5
     #======== MONTE CARLO MOVES ========
 
     def mcmove_timezero(self):

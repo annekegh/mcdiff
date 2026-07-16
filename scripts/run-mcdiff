@@ -39,15 +39,15 @@ if __name__ == '__main__':
     #parser.add_option("--dt", dest="dt", default=1.,   # in ps   # TODO this just the unit
     #                  type="float",
     #                  help="time step in ps between snapshots, so this is unit for lagtimes")
-    parser.add_option("--dv", dest="dv", default=0.5,   # in kBT, T is parameter temperature
+    parser.add_option("--dv", dest="dv", default=None,   # in kBT, T is parameter temperature
                       type="float",
-                      help="potential Monte Carlo move width")
-    parser.add_option("--dw", dest="dw", default=0.5,
+                      help="potential Monte Carlo move width, default is taken from initfile or 0.5 if there is no initfile.")
+    parser.add_option("--dw", dest="dw", default=None,
                       type="float",
-                      help="log(diffusion) Monte Carlo move width")
-    parser.add_option("--dwrad", dest="dwrad", default=0.5,
+                      help="log(diffusion) Monte Carlo move width, default is taken from initfile or 0.5 if there is no initfile.")
+    parser.add_option("--dwrad", dest="dwrad", default=None,
                       type="float",
-                      help="log(diffusion) Monte Carlo move width")
+                      help="log(diffusion) Monte Carlo move width, default is taken from initfile or 0.5 if there is no initfile.")
     parser.add_option("--D0", dest="D0", default="1.",
                       type="float",
                       help="first guess D0")
